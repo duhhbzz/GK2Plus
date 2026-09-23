@@ -1,0 +1,95 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\local.props"
+          Condition="Exists('..\..\local.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+
+    <AssemblyName>GK2Plus</AssemblyName>
+    <RootNamespace>GK2Plus</RootNamespace>
+
+    <Authors>duhhbzz</Authors>
+
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- VERSION at the repository root is the single source of truth. -->
+    <GK2PlusVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\VERSION').Trim())</GK2PlusVersion>
+
+    <Version>$(GK2PlusVersion)</Version>
+    <FileVersion>$(GK2PlusVersion).0</FileVersion>
+    <AssemblyVersion>$(GK2PlusVersion).0</AssemblyVersion>
+    <InformationalVersion>$(GK2PlusVersion)</InformationalVersion>
+
+    <DeployDir>$(GameDir)\BepInEx\plugins\GK2Plus</DeployDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+    <Reference Include="BepInEx">
+      <HintPath>$(GameDir)\BepInEx\core\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+  </ItemGroup>
+
+  <!-- Generate the compile-time BepInEx version constant. -->
+  <Target Name="GenerateGK2PlusVersion"
+          BeforeTargets="CoreCompile">
+
+    <WriteLinesToFile
+        File="$(IntermediateOutputPath)GK2Plus.Version.g.cs"
+        Lines="namespace GK2Plus.Core { internal static partial class ModInfo { internal const string Version = &quot;$(GK2PlusVersion)&quot;%3B } }"
+        Overwrite="true" />
+
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)GK2Plus.Version.g.cs" />
+    </ItemGroup>
+
+    <Message Text="Building GK2+ v$(GK2PlusVersion)"
+             Importance="high" />
+
+  </Target>
+
+  <Target Name="DeployGK2Plus"
+          AfterTargets="Build"
+          Condition="Exists('$(GameDir)\BepInEx')">
+
+    <MakeDir Directories="$(DeployDir)" />
+
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="$(DeployDir)" />
+
+    <Message Text="GK2+ deployed to $(DeployDir)"
+             Importance="high" />
+
+  </Target>
+
+</Project>
