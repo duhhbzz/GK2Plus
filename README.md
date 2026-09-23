@@ -1,4 +1,4 @@
-# GK2+
+# Graveyard Keeper Plus
 
 **GK2+** is a modular quality-of-life and gameplay enhancement suite for **Graveyard Keeper 2**, built on BepInEx and Harmony.
 
