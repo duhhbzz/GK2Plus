@@ -3,7 +3,8 @@
 </p>
 
 <p align="center">
-  <strong>A modular, all-in-one quality-of-life and gameplay enhancement suite for Graveyard Keeper 2.</strong>
+  <strong>One mod, your way.</strong><br>
+  A modular quality-of-life and gameplay enhancement suite for Graveyard Keeper 2.
 </p>
 
 <p align="center">
@@ -16,78 +17,130 @@
   <img alt="Version" src="https://img.shields.io/badge/version-0.0.1-blue">
   <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.5-purple">
   <img alt=".NET Standard" src="https://img.shields.io/badge/.NET%20Standard-2.1-blueviolet">
-  <img alt="Status" src="https://img.shields.io/badge/status-early%20development-orange">
+  <img alt="Status" src="https://img.shields.io/badge/status-foundation%20preview-orange">
 </p>
 
 ---
 
-> 🚧 **GK2+ is currently in early development.**
+> **GK2+ v0.0.1 is an early foundation preview.**
 >
-> The core plugin, modular feature system, compatibility foundation, versioning, and contribution workflow are in place. Gameplay modules are still being developed.
+> The plugin framework and native-style menu shell are working, but gameplay/QoL modules are still under development. The current F2 menu is available from the main menu and does not yet persist into active gameplay scenes.
 
 ## What is GK2+?
 
-**GK2+ (Graveyard Keeper Plus)** is designed to be a configurable, all-in-one enhancement suite for **Graveyard Keeper 2**.
+**GK2+ (Graveyard Keeper Plus)** is a configurable, all-in-one enhancement suite for **Graveyard Keeper 2**.
 
-The goal is to bring together many of the quality-of-life improvements, gameplay tweaks, and convenience features players commonly request into a single mod.
+The goal is to bring quality-of-life improvements, gameplay tweaks, convenience features, optional cheats, and useful management tools into one modular mod without forcing every feature on every player.
 
-Rather than forcing one implementation on every player, GK2+ is being built around **independent feature modules**. If you prefer another mod's implementation of a specific mechanic, you should be able to disable the equivalent GK2+ feature and continue using the other mod.
+Major systems are being built as independent modules. Where technically practical, players will be able to disable a GK2+ feature and continue using another mod's implementation instead.
 
 ### Design goals
 
-- One primary mod instead of dozens of small tweaks
-- Individually configurable gameplay features
+- One primary mod instead of dozens of tiny tweaks
+- Independently configurable feature modules
 - Compatibility-first design
-- Sensible vanilla-friendly defaults
+- Sensible, vanilla-friendly defaults
 - Clear conflict warnings where possible
-- Player-facing configuration UI
+- Native-style in-game configuration UI
 - Open development and community contributions
 - Transparent changelogs and semantic versioning
 
 ---
 
-## Current Status
+## v0.0.1 Foundation Preview
 
-### Foundation
+The first public build establishes the base that future GK2+ features will use.
 
-- ✅ BepInEx plugin bootstrap
-- ✅ Harmony integration
-- ✅ Modular feature registry
-- ✅ Master enable/disable configuration
-- ✅ Compatibility detection foundation
-- ✅ Automatic local deployment during development
-- ✅ Semantic versioning
-- ✅ Changelog workflow
-- ✅ Contribution guidelines
+### Included
 
-### In Development
+- BepInEx plugin bootstrap
+- Harmony integration foundation
+- Modular feature registry and feature base classes
+- Master GK2+ enable/disable configuration
+- Compatibility scan for loaded BepInEx plugins
+- Shared framework services for:
+  - events
+  - saves
+  - world access
+  - inventory
+  - crafting
+  - farming
+  - zombies
+  - quests
+  - localization
+  - UI
+  - diagnostics
+- Native-style GK2+ badge on the Graveyard Keeper 2 main menu
+- F2 GK2+ mod-menu shell on the main menu
+- Esc and Close-button handling
+- Category tabs for:
+  - General
+  - Inventory
+  - Crafting
+  - Farming
+  - Zombies
+  - Cheats
+  - More
+- GitHub and bug-report links from the More tab
+- Public reconnaissance tooling under `tools/recon/`
 
-- 🚧 Custom in-game GK2+ settings interface
-- 🚧 Feature-level configuration and toggles
-- 🚧 First gameplay/QoL modules
-- 🚧 Known-mod compatibility handling
+### Not included yet
 
-### Planned Feature Areas
+- Gameplay-changing QoL modules
+- Cheat actions
+- Persistent in-game F2 menu while actively playing
+- Final feature settings/toggles inside the custom menu
 
-- Inventory
-- Storage
-- Crafting
-- Movement
-- Farming
-- Automation
-- Economy
-- User Interface
-- Miscellaneous quality-of-life improvements
+These are development targets, not missing dependencies.
 
 ---
 
-## Modular by Design
+## Installation
 
-GK2+ is structured so major gameplay changes can be independently controlled.
+### Requirements
+
+- **Graveyard Keeper 2** on Windows
+- **BepInEx 5.4.23.5**
+
+### Install GK2+
+
+1. Install BepInEx for Graveyard Keeper 2.
+2. Download the GK2+ release archive.
+3. Extract the archive into your **Graveyard Keeper 2** installation directory.
+4. Confirm this file exists:
+
+```text
+Graveyard Keeper 2/BepInEx/plugins/GK2Plus/GK2Plus.dll
+```
+
+5. Launch the game normally.
+6. On the main menu, look for the **GK2+** status badge in the upper-right corner.
+7. Press **F2** from the main menu to open the current GK2+ menu shell.
+
+### Uninstall
+
+Delete:
+
+```text
+BepInEx/plugins/GK2Plus/
+```
+
+---
+
+## Current UI Limitation
+
+The v0.0.1 menu shell is currently attached to the game's main-menu UI lifecycle.
+
+**F2 works on the main menu, but the custom menu does not yet persist after entering active gameplay.** Fixing that lifecycle is one of the next framework tasks before gameplay features are promoted into public releases.
+
+---
+
+## Planned Feature Areas
+
+GK2+ is structured around several feature categories:
 
 ```text
 GK2+
-├── Core
 ├── Inventory
 ├── Storage
 ├── Crafting
@@ -95,13 +148,13 @@ GK2+
 ├── Farming
 ├── Automation
 ├── Economy
+├── Zombies
+├── Cheats
 ├── UI
 └── Misc
 ```
 
-The long-term goal is for players to be able to disable individual GK2+ mechanics without disabling the entire mod.
-
-This also allows GK2+ to coexist with specialized mods when players prefer another implementation.
+Planned work includes features such as continuous planting, storage/crafting improvements, zombie management tools, convenience options, and optional cheat utilities. Planned items may change as the game is researched and tested.
 
 ---
 
@@ -118,50 +171,58 @@ Where technically practical, GK2+ will:
 - use narrowly scoped Harmony patches,
 - document known incompatibilities.
 
-A feature toggle may not eliminate every possible mod conflict, but coexistence is a core design goal.
-
----
-
-## Requirements
-
-Current development baseline:
-
-- **Graveyard Keeper 2**
-- **BepInEx 5.4.23.5**
-- **Harmony**
-- **.NET Standard 2.1**
-- **Unity 6000.3.x**
-
-Requirements may change as Graveyard Keeper 2 and its modding ecosystem evolve.
-
----
-
-## Installation
-
-> GK2+ is not yet publicly released.
-
-Installation instructions will be added with the first player-facing release.
-
-Development builds currently deploy to:
-
-```text
-BepInEx/plugins/GK2Plus/
-```
+A feature toggle cannot guarantee compatibility with every third-party patch, but coexistence is a core project goal.
 
 ---
 
 ## Configuration
 
-During early development, configuration is exposed through BepInEx configuration support and ConfigurationManager.
+The base plugin currently exposes a master enable/disable option through BepInEx configuration.
 
-The long-term goal is a dedicated in-game **GK2+ settings interface** with:
+The custom GK2+ interface is being built to eventually provide:
 
 - category navigation,
-- feature toggles,
+- per-feature toggles,
 - configurable values,
 - compatibility notices,
 - restart-required indicators,
-- per-feature descriptions.
+- feature descriptions,
+- optional cheat tools.
+
+---
+
+## Development
+
+Repository structure:
+
+```text
+src/GK2Plus/
+├── Core/
+├── Features/
+├── Framework/
+│   ├── Crafting/
+│   ├── Diagnostics/
+│   ├── Events/
+│   ├── Farming/
+│   ├── Inventory/
+│   ├── Localization/
+│   ├── Quests/
+│   ├── Saves/
+│   ├── UI/
+│   ├── World/
+│   └── Zombies/
+├── Patches/
+├── UI/
+└── Plugin.cs
+```
+
+Public reconnaissance helpers live under:
+
+```text
+tools/recon/
+```
+
+Game assemblies, decompiled source, extracted assets, private runtime reports, and local development paths are not distributed with the project.
 
 ---
 
@@ -173,43 +234,16 @@ GK2+ follows **Semantic Versioning**:
 MAJOR.MINOR.PATCH
 ```
 
-The repository root [`VERSION`](VERSION) file is the source of truth for the current version.
-
-Examples:
+The repository-root [`VERSION`](VERSION) file is the single source of truth.
 
 ```text
-0.0.x  Early development / foundation work
-0.1.0  First usable player-facing feature release
+0.0.x  Foundation / early development releases
+0.1.0  First meaningful gameplay/QoL release target
 0.x.0  Significant feature milestones
 1.0.0  Stable major release
 ```
 
-See the full [Changelog](CHANGELOG.md) for release history.
-
----
-
-## Development
-
-Project structure:
-
-```text
-src/GK2Plus/
-├── Core/
-├── Features/
-│   ├── Inventory/
-│   ├── Storage/
-│   ├── Crafting/
-│   ├── Movement/
-│   ├── Farming/
-│   ├── Automation/
-│   ├── Economy/
-│   └── Misc/
-├── Patches/
-├── UI/
-└── Plugin.cs
-```
-
-GK2+ currently builds against the game's managed assemblies and automatically deploys the compiled DLL to the local BepInEx plugin directory during development.
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
 
@@ -217,48 +251,28 @@ GK2+ currently builds against the game's managed assemblies and automatically de
 
 GK2+ is open source and community contributions are welcome.
 
-Pull requests are reviewed before merge to help protect:
+Pull requests are reviewed for build correctness, in-game behavior, regression risk, compatibility, architecture, maintainability, licensing, and attribution.
 
-- stability,
-- compatibility,
-- maintainability,
-- modular design,
-- licensing and attribution requirements.
-
-Please read the [Contribution Guidelines](CONTRIBUTING.md) before submitting changes.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
 
 ---
 
-## Changelog
+## Reporting Bugs
 
-All notable player-facing changes are documented in:
+Use GitHub Issues:
 
-[CHANGELOG.md](CHANGELOG.md)
+https://github.com/duhhbzz/GK2Plus/issues
 
-Upcoming changes are tracked under the **Unreleased** section until a release is prepared.
+Please include the GK2+ version, game version, BepInEx version, other installed mods, reproduction steps, and relevant BepInEx log output.
 
 ---
 
 ## License
 
-GK2+ is licensed under the terms in:
-
-[LICENSE](LICENSE)
+See [LICENSE](LICENSE).
 
 ---
 
 ## Credits
 
-Thanks to:
-
-- the Graveyard Keeper 2 modding community,
-- the BepInEx contributors,
-- the Harmony contributors,
-- tool and framework authors supporting the GK2 modding ecosystem,
-- everyone who reports bugs, suggests features, tests builds, or contributes code.
-
----
-
-<p align="center">
-  <strong>GK2+ — one mod, your way.</strong>
-</p>
+Thanks to the Graveyard Keeper 2 modding community, the BepInEx contributors, the Harmony contributors, and everyone who tests builds, reports bugs, suggests features, or contributes code.

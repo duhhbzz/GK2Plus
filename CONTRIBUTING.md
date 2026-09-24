@@ -2,9 +2,7 @@
 
 Thanks for your interest in contributing to **GK2+ (Graveyard Keeper Plus)**.
 
-GK2+ is intended to be a modular, configurable, all-in-one quality-of-life and gameplay enhancement suite for **Graveyard Keeper 2**.
-
-Community contributions are welcome through pull requests, but all changes are reviewed before merge to protect compatibility, stability, maintainability, and the modular design of the project.
+GK2+ is a modular, configurable quality-of-life and gameplay enhancement suite for **Graveyard Keeper 2**. Community pull requests are welcome, but changes are reviewed before merge to protect stability, compatibility, maintainability, licensing, and the project's modular design.
 
 ---
 
@@ -12,21 +10,21 @@ Community contributions are welcome through pull requests, but all changes are r
 
 Contributions should:
 
-- Keep features modular whenever practical.
-- Avoid unnecessary changes to unrelated game systems.
-- Preserve compatibility with existing GK2+ modules.
-- Prefer configurable behavior over hard-coded behavior.
-- Allow major gameplay features to be disabled independently.
-- Avoid unnecessary conflicts with other mods.
-- Keep player-facing behavior documented.
-- Keep code readable and maintainable.
-- Be tested before submission.
+- keep features modular whenever practical,
+- avoid unnecessary changes to unrelated game systems,
+- preserve compatibility with existing GK2+ modules,
+- prefer configurable behavior over hard-coded behavior,
+- allow major gameplay features to be disabled independently where practical,
+- avoid unnecessary conflicts with other mods,
+- keep player-facing behavior documented,
+- keep code readable and maintainable,
+- be tested before submission.
 
-GK2+ should remain a mod suite where players can choose which features they want rather than being forced into a single playstyle.
+GK2+ should remain a mod suite where players choose the features they want rather than being forced into one playstyle.
 
 ---
 
-## Development Environment
+## Development Baseline
 
 GK2+ currently targets:
 
@@ -44,28 +42,23 @@ Exact supported versions may change as the game and modding ecosystem evolve.
 
 ```text
 src/GK2Plus/
-├── Core/
-├── Features/
-│   ├── Inventory/
-│   ├── Storage/
-│   ├── Crafting/
-│   ├── Movement/
-│   ├── Farming/
-│   ├── Automation/
-│   ├── Economy/
-│   └── Misc/
-├── Patches/
-├── UI/
-└── Plugin.cs
+├── Core/          # plugin metadata, feature system, compatibility metadata
+├── Features/      # player-facing gameplay/QoL modules
+├── Framework/     # adapters/services that talk to game systems
+├── Patches/       # shared/narrow patch infrastructure when needed
+├── UI/            # feature-facing UI structure
+└── Plugin.cs      # BepInEx entry point
 ```
 
-New gameplay features should normally live under the appropriate `Features` category.
+The intended separation is:
 
-Shared infrastructure belongs under `Core`.
+```text
+Framework = how GK2+ talks to the game
+Feature   = behavior GK2+ provides
+Patch     = smallest unavoidable interception
+```
 
-UI code should remain under `UI`.
-
-Harmony patches should be scoped as narrowly as possible.
+New gameplay functionality should normally live under the appropriate `Features` category. Shared access to game systems should be implemented behind `Framework` services rather than duplicated across features.
 
 ---
 
@@ -73,17 +66,16 @@ Harmony patches should be scoped as narrowly as possible.
 
 Major gameplay features should normally:
 
-1. Have a clear feature ID.
+1. Have a stable feature ID.
 2. Have a player-readable name and description.
 3. Register through the GK2+ feature system.
 4. Expose an enable/disable setting when technically practical.
 5. Avoid patching unrelated methods.
 6. Document known compatibility concerns.
 7. Fail safely when possible.
+8. Avoid assuming every other GK2+ feature is enabled.
 
-Contributors should never assume that every GK2+ feature is enabled.
-
-Features should be written with coexistence in mind.
+Features should be designed with coexistence in mind.
 
 ---
 
@@ -93,29 +85,66 @@ GK2+ is designed to coexist with other Graveyard Keeper 2 mods whenever practica
 
 If your contribution overlaps with another known mod:
 
-- Document the overlap.
-- Avoid unnecessary patch conflicts.
-- Provide a way for users to disable the GK2+ implementation when practical.
-- Note known incompatibilities in the pull request.
+- document the overlap,
+- avoid unnecessary patch conflicts,
+- provide a way to disable the GK2+ implementation when practical,
+- note known incompatibilities in the pull request.
 
-Do not intentionally block, disable, or interfere with another mod unless required to prevent a confirmed technical failure.
-
-Compatibility warnings are preferred over silent conflicts.
+Do not intentionally block, remove, or interfere with another mod unless required to prevent a confirmed technical failure. Compatibility warnings and player choice are preferred.
 
 ---
 
 ## Harmony Patching Guidelines
 
-When using Harmony:
+When Harmony is required:
 
-- Patch the narrowest method necessary.
-- Avoid broad patches when a smaller patch will work.
-- Avoid modifying unrelated behavior.
-- Avoid unnecessary transpilers when prefixes or postfixes are sufficient.
-- Document why the patch is required.
-- Consider compatibility with other Harmony patches on the same method.
+- patch the narrowest method necessary,
+- avoid broad patches when a smaller interception will work,
+- avoid modifying unrelated behavior,
+- prefer prefixes/postfixes over transpilers when they are sufficient,
+- document why the patch is required,
+- consider other Harmony patches that may target the same method,
+- make toggleable feature patches respect their feature state.
 
-If a patch belongs to a toggleable feature, the patch behavior should respect that setting.
+Do not jump directly into broad patching when a framework/API path exists.
+
+---
+
+## UI Contributions
+
+GK2+ is building a native-style in-game interface.
+
+UI contributions should:
+
+- preserve the established visual direction,
+- remain usable at common resolutions,
+- avoid blocking normal game controls when closed,
+- group settings by feature/category,
+- clearly identify restart-required settings,
+- reuse game-native UI patterns/assets at runtime when appropriate without redistributing proprietary assets.
+
+The current menu lifecycle is still being improved; avoid tightly coupling new feature UI to the main-menu hierarchy.
+
+---
+
+## Reconnaissance and Game Internals
+
+Public recon **tooling** may be contributed under:
+
+```text
+tools/recon/
+```
+
+Do **not** commit private/proprietary recon output such as:
+
+- decompiled game source,
+- game DLLs,
+- extracted game assets,
+- raw architecture dumps,
+- private deep-dive reports,
+- runtime reports containing local paths or proprietary data.
+
+Game internals may be referenced by name where necessary for legitimate mod interoperability, but proprietary game content must not be redistributed.
 
 ---
 
@@ -123,28 +152,11 @@ If a patch belongs to a toggleable feature, the patch behavior should respect th
 
 Player-facing settings should:
 
-- Use clear names.
-- Include useful descriptions.
-- Have sensible defaults.
-- Be exposed through the GK2+ UI when practical.
-
-Settings that require a restart should be clearly documented.
-
----
-
-## UI Contributions
-
-GK2+ plans to provide its own in-game configuration interface.
-
-UI contributions should:
-
-- Follow the visual direction of GK2+.
-- Remain usable at common resolutions.
-- Avoid blocking normal game controls.
-- Clearly identify settings that require restart.
-- Group settings by feature or category.
-
-Temporary compatibility with BepInEx ConfigurationManager is acceptable during development.
+- use clear names,
+- include useful descriptions,
+- have sensible defaults,
+- be exposed through the GK2+ UI when practical,
+- document restart requirements.
 
 ---
 
@@ -156,9 +168,7 @@ GK2+ follows Semantic Versioning:
 MAJOR.MINOR.PATCH
 ```
 
-The repository root `VERSION` file is the single source of truth for the current version.
-
-Do not independently hard-code or change version strings inside source files.
+The repository-root `VERSION` file is the single source of truth. Do not independently hard-code release version strings elsewhere.
 
 Version bumps are normally handled by project maintainers during release preparation.
 
@@ -166,15 +176,13 @@ Version bumps are normally handled by project maintainers during release prepara
 
 ## Changelog
 
-All notable player-facing changes should be added under:
+Player-facing changes belong under:
 
 ```md
 ## [Unreleased]
 ```
 
-in `CHANGELOG.md`.
-
-Use the appropriate section:
+Use the relevant sections:
 
 - Added
 - Changed
@@ -182,22 +190,22 @@ Use the appropriate section:
 - Compatibility
 - Known Issues
 
-Do not create a numbered release section unless requested by a maintainer.
+Do not create or alter a numbered release section unless requested by a maintainer.
 
 ---
 
 ## Before Opening a Pull Request
 
-Please make sure:
+Please verify:
 
-- The project builds successfully.
-- The game launches with GK2+ installed.
-- No new errors appear in `BepInEx/LogOutput.log`.
-- Existing GK2+ functionality still loads.
-- Your feature can be disabled if applicable.
-- Your change is documented.
-- `CHANGELOG.md` is updated when appropriate.
-- No local machine paths or build artifacts are committed.
+- the project builds successfully,
+- the game launches with GK2+ installed,
+- no new unexpected errors appear in `BepInEx/LogOutput.log`,
+- existing GK2+ behavior still loads,
+- your feature can be disabled if applicable,
+- the change is documented,
+- `CHANGELOG.md` is updated when appropriate,
+- local-only files are not included.
 
 Do not commit:
 
@@ -205,9 +213,13 @@ Do not commit:
 local.props
 bin/
 obj/
+dist/
+*.bak
 BepInEx/
-game files
+game DLLs
+game assets
 decompiled game source
+private recon output
 ```
 
 ---
@@ -216,84 +228,47 @@ decompiled game source
 
 Pull requests should include:
 
-- A clear title.
-- A summary of what changed.
-- Why the change is useful.
-- Which game systems are affected.
-- How the change was tested.
-- Whether it may conflict with other mods.
-- Screenshots for UI changes when applicable.
+- a clear title,
+- a summary of what changed,
+- why the change is useful,
+- which game systems are affected,
+- how the change was tested,
+- whether it may conflict with other mods,
+- screenshots for visible UI changes when applicable.
 
-Large features should preferably be discussed in an issue before implementation.
-
-Pull requests may be requested to change before merge.
-
-Submission does not guarantee acceptance.
-
----
-
-## Game Files and Decompiled Code
-
-Do not commit proprietary Graveyard Keeper 2 game files to this repository.
-
-This includes, but is not limited to:
-
-- `Assembly-CSharp.dll`
-- Unity game assemblies
-- game assets
-- extracted textures
-- decompiled source files copied directly from the game
-
-Code may reference game types and methods as required for mod development, but proprietary game content should not be redistributed through this repository.
+Large features should preferably be discussed in an issue before implementation. Submission does not guarantee acceptance, and maintainers may request revisions before merge.
 
 ---
 
 ## Third-Party Code and Assets
 
-Only contribute code or assets that you have the right to contribute.
+Only contribute code or assets you have the right to contribute.
 
-If code is based on another open-source project:
+If work is based on another open-source project:
 
-- Verify that its license permits reuse.
-- Preserve required notices.
-- Provide attribution.
-- Identify the source in the pull request.
+- verify that its license permits reuse,
+- preserve required notices,
+- provide required attribution,
+- identify the source in the pull request.
 
 Do not copy another mod's implementation simply because it is publicly downloadable.
 
 ---
 
-## Code Review
-
-All pull requests are reviewed before merge.
-
-Review may include:
-
-- Build verification.
-- In-game testing.
-- Compatibility testing.
-- Architecture review.
-- Code quality review.
-- License and attribution review.
-
-Changes that risk breaking the modular design of GK2+ may be rejected or requested to be redesigned.
-
----
-
 ## Reporting Bugs and Requesting Features
 
-Bug reports and feature requests should be submitted through GitHub Issues.
+Use GitHub Issues for bugs and feature requests.
 
-When reporting a bug, include:
+Bug reports should include:
 
-- GK2+ version.
-- Graveyard Keeper 2 version.
-- BepInEx version.
-- Other installed mods.
-- Steps to reproduce.
-- Relevant log output.
+- GK2+ version,
+- Graveyard Keeper 2 version,
+- BepInEx version,
+- other installed mods,
+- steps to reproduce,
+- relevant log output.
 
-For feature requests, describe the player problem or quality-of-life issue you want solved, not only the proposed implementation.
+For feature requests, describe the player problem or quality-of-life issue you want solved, not only a proposed implementation.
 
 ---
 
@@ -301,8 +276,4 @@ For feature requests, describe the player problem or quality-of-life issue you w
 
 By contributing to GK2+, you agree that your contribution may be distributed under the project's existing license.
 
-See `LICENSE` for the current license terms.
-
----
-
-Thank you for helping improve GK2+.
+See `LICENSE` for the current terms.

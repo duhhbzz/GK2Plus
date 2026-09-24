@@ -1,7 +1,10 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using GK2Plus.Core;
+using GK2Plus.Framework;
+using GK2Plus.Framework.Diagnostics;
+using GK2Plus.Framework.UI;
 
 namespace GK2Plus
 {
@@ -11,6 +14,7 @@ namespace GK2Plus
         private Harmony _harmony;
         private FeatureRegistry _featureRegistry;
         private CompatibilityManager _compatibilityManager;
+        private GK2Services _services;
 
         internal static ConfigEntry<bool> MasterEnabled { get; private set; }
 
@@ -34,6 +38,19 @@ namespace GK2Plus
                 new CompatibilityManager(Logger);
 
             _compatibilityManager.Scan();
+
+            _services =
+                new GK2Services(Logger);
+
+            _services.Initialize();
+
+            FrameworkDiagnostics.LogReady(Logger);
+
+            // 0.0.x bootstrap. Menu ownership will move behind GK2UIService
+            // once the persistent in-game UI lifecycle is finalized.
+            ModMenuController.Create(Logger);
+
+            StartCoroutine(MainMenuBadgeController.Run(Logger));
 
             _featureRegistry =
                 new FeatureRegistry();
@@ -74,6 +91,7 @@ namespace GK2Plus
 
         private void OnDestroy()
         {
+            _services?.Shutdown();
             _harmony?.UnpatchSelf();
         }
     }

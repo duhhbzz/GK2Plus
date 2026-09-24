@@ -1,0 +1,6 @@
+# GK2 reverse-engineering outputs
+# Keep generated/decompiled proprietary game content outside the repo.
+_Recon/
+recon-output/
+**/decompiled/
+**/game-source/

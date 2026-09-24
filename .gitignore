@@ -430,3 +430,9 @@ FodyWeavers.xsd
 
 # Local development paths
 local.props
+
+# GK2+ local iterative backups
+*.bak
+
+# GK2+ release output
+/dist/
