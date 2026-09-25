@@ -1054,6 +1054,16 @@ Button close = closeButton.GetComponent<Button>();
             }
         }
 
+        public void RefreshActiveTab()
+        {
+            if (_built &&
+                _pageTitle != null &&
+                _pageText != null)
+            {
+                SetActiveTab(_activeTab);
+            }
+        }
+
         public void ToggleMenu()
         {
             if (!_built || _menuRoot == null)
