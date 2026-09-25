@@ -8,7 +8,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Functional Cheats tab with **+1/+5/+10/+100 Silver**, **+1/+5/+10/+100 Gold**, **Heal Player**, and **Refill Stamina**.
+- Functional Cheats tab with **+1/+5/+10/+100 Silver**, **+1/+5/+10/+100 Gold**, **Heal Player**, and **Refill Energy**.
 - Reusable UI action registration so feature modules can expose controls without embedding feature logic in `ModMenuController`.
 - Per-save cheat taint sidecar that permanently marks a save lineage after the first confirmed cheat use.
 - Achievement integrity guard that blocks GK2's platform achievement progress/unlock boundary for cheat-tainted saves.
