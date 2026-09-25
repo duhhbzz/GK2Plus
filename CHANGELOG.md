@@ -8,6 +8,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Optional **Manual Save** feature: adds a native-style `Save Game` button to the in-game pause menu, delegates persistence to GK2's own `SaveSystem`, and augments the Exit to Main Menu confirmation with the native last-save age.
 - Persistent GK2+ F2 menu lifecycle across the main menu and active gameplay.
 - Dedicated top-level overlay Canvas so the GK2+ menu renders above native game windows while open.
 - Save-safety framework for protected persistent mutations.

@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using GK2Plus.Core;
+using GK2Plus.Features.General;
 using GK2Plus.Framework;
 using GK2Plus.Framework.Diagnostics;
 using GK2Plus.Framework.UI;
@@ -76,15 +77,13 @@ namespace GK2Plus
         }
 
 
-        private static void RegisterFeatures(
+        private void RegisterFeatures(
             FeatureRegistry registry
         )
         {
-            // Gameplay features will be registered here as
-            // individual modules.
-            //
-            // Example:
-            // registry.Register(new LargerStacksFeature());
+            registry.Register(
+                new ManualSaveFeature(_services.Saves)
+            );
         }
 
         private void OnDestroy()
