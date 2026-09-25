@@ -43,6 +43,11 @@
       <Private>false</Private>
     </Reference>
 
+    <Reference Include="LazyBearTechnology">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\LazyBearTechnology.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
     <Reference Include="UnityEngine">
       <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.dll</HintPath>
       <Private>false</Private>
