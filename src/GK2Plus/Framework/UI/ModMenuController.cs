@@ -1086,6 +1086,18 @@ Button close = closeButton.GetComponent<Button>();
                 $"parent='{_menuRoot.transform.parent?.name ?? "<none>"}'.");
         }
 
+        public void ShowMenu()
+        {
+            if (!_built || _menuRoot == null)
+            {
+                return;
+            }
+
+            _menuRoot.SetActive(true);
+            _menuRoot.transform.SetAsLastSibling();
+            SetActiveTab(_activeTab);
+        }
+
         public void HideMenu()
         {
             if (_menuRoot != null)
