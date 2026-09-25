@@ -18,6 +18,7 @@ Contributions should:
 - avoid unnecessary conflicts with other mods,
 - keep player-facing behavior documented,
 - keep code readable and maintainable,
+- treat CPU, GPU, RAM, disk I/O, and cleanup behavior as part of correctness,
 - be tested before submission.
 
 GK2+ should remain a mod suite where players choose the features they want rather than being forced into one playstyle.
@@ -110,6 +111,44 @@ Do not jump directly into broad patching when a framework/API path exists.
 
 ---
 
+## Performance and Resource Requirements
+
+All contributions must follow [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
+In particular:
+
+- do not add heavy work to per-frame Update loops,
+- prefer game events over polling,
+- cache expensive Unity/reflection lookups,
+- pair every event subscription with an unsubscribe,
+- avoid retaining stale scene/game objects,
+- avoid repeated LINQ/reflection allocations in hot paths,
+- do not create continuous production log/recon writes,
+- keep hidden UI idle,
+- clean up owned GameObjects/components/resources on shutdown,
+- document any periodic background work and why it is necessary.
+
+A feature that works functionally but leaks objects, grows memory indefinitely, or performs avoidable continuous I/O is not release-ready.
+
+---
+
+## Save Safety and Persistent Mutations
+
+Features that alter persistent player, economy, progression, quest, or world state must use the shared save-safety layer rather than implementing their own backup behavior.
+
+See [docs/SAVE_SAFETY.md](docs/SAVE_SAFETY.md).
+
+General rules:
+
+- Low-risk/session-only actions should not create unnecessary disk writes.
+- Moderate/High-risk persistent actions should pass through GK2SaveService.
+- Repeated risky actions should reuse the current safety checkpoint instead of copying the same save repeatedly.
+- Normal launch/load/save activity must not create GK2+ safety backups.
+- Backup retention must remain bounded.
+- Do not automatically restore/overwrite a live save unless a restore workflow has been explicitly designed and tested.
+
+---
+
 ## UI Contributions
 
 GK2+ is building a native-style in-game interface.
@@ -123,7 +162,7 @@ UI contributions should:
 - clearly identify restart-required settings,
 - reuse game-native UI patterns/assets at runtime when appropriate without redistributing proprietary assets.
 
-The current menu lifecycle is still being improved; avoid tightly coupling new feature UI to the main-menu hierarchy.
+The current menu controller is persistent and hosted under the game's persistent GUI root. Avoid coupling feature UI to scene-specific/main-menu-only hierarchies, and avoid creating duplicate persistent UI roots.
 
 ---
 
@@ -205,6 +244,9 @@ Please verify:
 - your feature can be disabled if applicable,
 - the change is documented,
 - `CHANGELOG.md` is updated when appropriate,
+- performance/resource impact has been considered,
+- persistent mutations use the save-safety service,
+- no new unexpected backup/log churn occurs during ordinary play,
 - local-only files are not included.
 
 Do not commit:

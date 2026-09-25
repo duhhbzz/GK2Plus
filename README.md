@@ -10,6 +10,8 @@
 <p align="center">
   <a href="CHANGELOG.md">Changelog</a> •
   <a href="CONTRIBUTING.md">Contributing</a> •
+  <a href="docs/PERFORMANCE.md">Performance</a> •
+  <a href="docs/SAVE_SAFETY.md">Save Safety</a> •
   <a href="LICENSE">License</a>
 </p>
 
@@ -22,9 +24,9 @@
 
 ---
 
-> **GK2+ v0.0.1 is an early foundation preview.**
+> **GK2+ is still in early development.**
 >
-> The plugin framework and native-style menu shell are working, but gameplay/QoL modules are still under development. The current F2 menu is available from the main menu and does not yet persist into active gameplay scenes.
+> The repository may contain unreleased work beyond the latest packaged build. Current development source includes a persistent F2 menu that works from both the main menu and active gameplay. Gameplay/QoL modules are still being implemented and validated.
 
 ## What is GK2+?
 
@@ -40,18 +42,18 @@ Major systems are being built as independent modules. Where technically practica
 - Independently configurable feature modules
 - Compatibility-first design
 - Sensible, vanilla-friendly defaults
-- Clear conflict warnings where possible
 - Native-style in-game configuration UI
+- Save-safe persistent mutations
+- Low CPU, GPU, RAM, and disk overhead
+- Clear conflict warnings where possible
 - Open development and community contributions
 - Transparent changelogs and semantic versioning
 
 ---
 
-## v0.0.1 Foundation Preview
+## Current Development State
 
-The first public build establishes the base that future GK2+ features will use.
-
-### Included
+The current source tree includes:
 
 - BepInEx plugin bootstrap
 - Harmony integration foundation
@@ -71,8 +73,11 @@ The first public build establishes the base that future GK2+ features will use.
   - UI
   - diagnostics
 - Native-style GK2+ badge on the Graveyard Keeper 2 main menu
-- F2 GK2+ mod-menu shell on the main menu
+- Persistent F2 GK2+ menu shell from:
+  - the main menu
+  - active gameplay
 - Esc and Close-button handling
+- Dedicated overlay Canvas so GK2+ renders above native game windows while open
 - Category tabs for:
   - General
   - Inventory
@@ -82,16 +87,100 @@ The first public build establishes the base that future GK2+ features will use.
   - Cheats
   - More
 - GitHub and bug-report links from the More tab
-- Public reconnaissance tooling under `tools/recon/`
+- Save-safety infrastructure for future persistent mutations
+- Public reconnaissance tooling under tools/recon/
 
 ### Not included yet
 
-- Gameplay-changing QoL modules
-- Cheat actions
-- Persistent in-game F2 menu while actively playing
+- Finished gameplay-changing QoL modules
+- Functional cheat actions
 - Final feature settings/toggles inside the custom menu
+- Automated backup restore
 
 These are development targets, not missing dependencies.
+
+---
+
+## UI Lifecycle
+
+GK2+ uses a persistent UI controller and attaches the menu to the game's persistent GUI root rather than a main-menu-only hierarchy.
+
+The menu is built once, retained, and shown/hidden with **F2**.
+
+Current validated behavior:
+
+~~~text
+Launch
+→ F2 on main menu
+→ load save
+→ F2 during gameplay
+→ Esc / Close
+→ open over native game windows
+→ return to main menu
+→ F2 again
+~~~
+
+The GK2+ overlay has its own Canvas/sorting order so vanilla windows and interaction prompts do not render over the mod menu.
+
+---
+
+## Save Safety
+
+Persistent cheats and progression tools should not directly mutate a live save without a safety gate.
+
+GK2+ uses a checkpoint model:
+
+~~~text
+Normal launch/load/save
+→ no GK2+ backup writes
+
+First Moderate/High-risk GK2+ action
+→ create one safety checkpoint
+
+More risky actions
+→ reuse that checkpoint
+
+GK2 loads or writes a save
+→ invalidate checkpoint
+
+Next risky action
+→ create one new checkpoint
+~~~
+
+Backups are stored under:
+
+~~~text
+BepInEx/config/GK2Plus/SaveBackups/<slot>/
+~~~
+
+The current retention target is **5 backups per save slot**.
+
+Save files are copied as streams rather than loaded into one large managed buffer, reducing unnecessary RAM pressure. GK2+ also avoids a second full-file checksum pass solely for backup verification.
+
+See [docs/SAVE_SAFETY.md](docs/SAVE_SAFETY.md) for the full design.
+
+---
+
+## Performance and Resource Use
+
+Performance is an architecture requirement for GK2+.
+
+The project follows these rules:
+
+- no heavy work every frame;
+- prefer native game events over polling;
+- cache expensive lookups;
+- every event subscription must be unsubscribed;
+- persistent objects must have explicit ownership and cleanup;
+- hidden UI should not perform background work;
+- avoid reflection/LINQ/large allocations in hot paths;
+- keep Harmony patches narrow and cheap;
+- no continuous recon/log writes in normal production use;
+- cap backup retention and deduplicate backup writes.
+
+The current menu is retained rather than rebuilt every time F2 is pressed.
+
+See [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ---
 
@@ -109,29 +198,31 @@ These are development targets, not missing dependencies.
 3. Extract the archive into your **Graveyard Keeper 2** installation directory.
 4. Confirm this file exists:
 
-```text
+~~~text
 Graveyard Keeper 2/BepInEx/plugins/GK2Plus/GK2Plus.dll
-```
+~~~
 
 5. Launch the game normally.
-6. On the main menu, look for the **GK2+** status badge in the upper-right corner.
-7. Press **F2** from the main menu to open the current GK2+ menu shell.
+6. Look for the **GK2+** status badge on the main menu.
+7. Press **F2** to open the GK2+ menu.
+
+Current development source supports F2 from both the main menu and active gameplay.
 
 ### Uninstall
 
 Delete:
 
-```text
+~~~text
 BepInEx/plugins/GK2Plus/
-```
+~~~
 
----
+Optional GK2+ configuration/backups live under:
 
-## Current UI Limitation
+~~~text
+BepInEx/config/GK2Plus/
+~~~
 
-The v0.0.1 menu shell is currently attached to the game's main-menu UI lifecycle.
-
-**F2 works on the main menu, but the custom menu does not yet persist after entering active gameplay.** Fixing that lifecycle is one of the next framework tasks before gameplay features are promoted into public releases.
+Deleting the plugin does not automatically delete those user-created/configuration files.
 
 ---
 
@@ -139,7 +230,7 @@ The v0.0.1 menu shell is currently attached to the game's main-menu UI lifecycle
 
 GK2+ is structured around several feature categories:
 
-```text
+~~~text
 GK2+
 ├── Inventory
 ├── Storage
@@ -152,9 +243,11 @@ GK2+
 ├── Cheats
 ├── UI
 └── Misc
-```
+~~~
 
-Planned work includes features such as continuous planting, storage/crafting improvements, zombie management tools, convenience options, and optional cheat utilities. Planned items may change as the game is researched and tested.
+Planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, convenience options, and optional cheat utilities.
+
+Planned items may change as the game is researched and tested.
 
 ---
 
@@ -187,7 +280,8 @@ The custom GK2+ interface is being built to eventually provide:
 - compatibility notices,
 - restart-required indicators,
 - feature descriptions,
-- optional cheat tools.
+- optional cheat tools,
+- backup/safety status.
 
 ---
 
@@ -195,7 +289,7 @@ The custom GK2+ interface is being built to eventually provide:
 
 Repository structure:
 
-```text
+~~~text
 src/GK2Plus/
 ├── Core/
 ├── Features/
@@ -214,15 +308,22 @@ src/GK2Plus/
 ├── Patches/
 ├── UI/
 └── Plugin.cs
-```
+~~~
 
 Public reconnaissance helpers live under:
 
-```text
+~~~text
 tools/recon/
-```
+~~~
 
-Game assemblies, decompiled source, extracted assets, private runtime reports, and local development paths are not distributed with the project.
+Development standards:
+
+- [Performance and Resource Standards](docs/PERFORMANCE.md)
+- [Save Safety](docs/SAVE_SAFETY.md)
+- [Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [Contributing](CONTRIBUTING.md)
+
+Game assemblies, decompiled source, extracted proprietary assets, private runtime reports, and local development paths are not distributed with the project.
 
 ---
 
@@ -230,20 +331,20 @@ Game assemblies, decompiled source, extracted assets, private runtime reports, a
 
 GK2+ follows **Semantic Versioning**:
 
-```text
+~~~text
 MAJOR.MINOR.PATCH
-```
+~~~
 
-The repository-root [`VERSION`](VERSION) file is the single source of truth.
+The repository-root [VERSION](VERSION) file is the single source of truth.
 
-```text
+~~~text
 0.0.x  Foundation / early development releases
 0.1.0  First meaningful gameplay/QoL release target
 0.x.0  Significant feature milestones
 1.0.0  Stable major release
-```
+~~~
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+See [CHANGELOG.md](CHANGELOG.md) for release history and unreleased development changes.
 
 ---
 
@@ -251,7 +352,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 GK2+ is open source and community contributions are welcome.
 
-Pull requests are reviewed for build correctness, in-game behavior, regression risk, compatibility, architecture, maintainability, licensing, and attribution.
+Pull requests are reviewed for build correctness, in-game behavior, regression risk, compatibility, architecture, maintainability, licensing, attribution, and resource efficiency.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
 
@@ -264,6 +365,8 @@ Use GitHub Issues:
 https://github.com/duhhbzz/GK2Plus/issues
 
 Please include the GK2+ version, game version, BepInEx version, other installed mods, reproduction steps, and relevant BepInEx log output.
+
+For performance issues, also include what you were doing when CPU/RAM/disk behavior changed and whether the issue grows over time.
 
 ---
 
