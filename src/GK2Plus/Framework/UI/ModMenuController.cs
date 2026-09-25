@@ -32,9 +32,18 @@ namespace GK2Plus.Framework.UI
         private GameObject _githubButton;
         private GameObject _nexusButton;
         private GameObject _bugButton;
+        private GameObject _contentRoot;
+        private GameObject _menuButtonLabelTemplate;
+        private Sprite _menuButtonSprite;
 
         private readonly Dictionary<string, GameObject> _tabButtons =
             new Dictionary<string, GameObject>();
+
+        private readonly List<GK2MenuAction> _registeredMenuActions =
+            new List<GK2MenuAction>();
+
+        private readonly Dictionary<GK2MenuAction, GameObject> _registeredActionButtons =
+            new Dictionary<GK2MenuAction, GameObject>();
 
         private string _activeTab = "General";
         private bool _built;
@@ -58,6 +67,33 @@ namespace GK2Plus.Framework.UI
             ModMenuController controller = host.AddComponent<ModMenuController>();
             controller._logger = logger;
             return controller;
+        }
+
+        public void RegisterMenuAction(GK2MenuAction action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            if (_registeredMenuActions.Any(existing =>
+                string.Equals(existing.Id, action.Id, StringComparison.OrdinalIgnoreCase)))
+            {
+                _logger?.LogWarning(
+                    $"GK2+ ignored duplicate menu action id '{action.Id}'.");
+                return;
+            }
+
+            _registeredMenuActions.Add(action);
+
+            if (_built &&
+                _contentRoot != null &&
+                _menuButtonLabelTemplate != null &&
+                _menuButtonSprite != null)
+            {
+                BuildRegisteredActionButtons();
+                SetActiveTab(_activeTab);
+            }
         }
 
         private void Start()
@@ -472,6 +508,10 @@ namespace GK2Plus.Framework.UI
             contentBg.color = new Color(0.12f, 0.02f, 0.07f, 0.86f);
             contentBg.raycastTarget = false;
 
+            _contentRoot = content;
+            _menuButtonLabelTemplate = buttonLabelTemplate;
+            _menuButtonSprite = redButtonSprite;
+
             _pageTitle = CreateNativeTitleText(
                 buttonLabelTemplate,
                 content.transform,
@@ -539,6 +579,8 @@ namespace GK2Plus.Framework.UI
             );
             _bugButton.GetComponent<Button>().onClick.AddListener(
                 () => Application.OpenURL(ProjectLinks.BugReportUrl));
+
+            BuildRegisteredActionButtons();
 
             if (dividerSprite != null)
             {
@@ -620,6 +662,121 @@ Button close = closeButton.GetComponent<Button>();
             _logger?.LogInfo(
                 $"GK2+ mod menu host attached to '{uiRoot.name}' " +
                 $"(scene='{uiRoot.gameObject.scene.name}', sortingOrder={overlayCanvas.sortingOrder}).");
+        }
+
+        private void BuildRegisteredActionButtons()
+        {
+            foreach (GameObject existing in _registeredActionButtons.Values)
+            {
+                if (existing != null)
+                {
+                    Destroy(existing);
+                }
+            }
+
+            _registeredActionButtons.Clear();
+
+            if (_contentRoot == null ||
+                _menuButtonLabelTemplate == null ||
+                _menuButtonSprite == null)
+            {
+                return;
+            }
+
+            foreach (IGrouping<string, GK2MenuAction> group in
+                _registeredMenuActions.GroupBy(action => action.Tab))
+            {
+                List<GK2MenuAction> actions = group.ToList();
+                int count = actions.Count;
+
+                if (count == 0)
+                {
+                    continue;
+                }
+
+                const float maxRowWidth = 350f;
+                const float gap = 6f;
+                float buttonWidth = Mathf.Min(
+                    108f,
+                    (maxRowWidth - ((count - 1) * gap)) / count);
+                float rowWidth =
+                    (count * buttonWidth) + ((count - 1) * gap);
+                float firstX =
+                    (-rowWidth / 2f) + (buttonWidth / 2f);
+
+                for (int i = 0; i < count; i++)
+                {
+                    GK2MenuAction action = actions[i];
+                    float x =
+                        firstX + i * (buttonWidth + gap);
+
+                    GameObject buttonObject = CreateActionButton(
+                        _menuButtonLabelTemplate,
+                        _contentRoot.transform,
+                        _menuButtonSprite,
+                        action.Label,
+                        new Vector2(x, -142f),
+                        new Vector2(buttonWidth, 20f));
+
+                    Button button = buttonObject.GetComponent<Button>();
+                    button.onClick.AddListener(() =>
+                    {
+                        if (!action.CanExecute())
+                        {
+                            _logger?.LogWarning(
+                                $"GK2+ menu action '{action.Id}' is currently unavailable.");
+                            RefreshRegisteredActionButtons();
+                            return;
+                        }
+
+                        try
+                        {
+                            action.Execute();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(
+                                $"GK2+ menu action '{action.Id}' failed: {ex}");
+                        }
+
+                        RefreshRegisteredActionButtons();
+                    });
+
+                    _registeredActionButtons[action] = buttonObject;
+                }
+            }
+
+            RefreshRegisteredActionButtons();
+        }
+
+        private void RefreshRegisteredActionButtons()
+        {
+            foreach (var pair in _registeredActionButtons)
+            {
+                GK2MenuAction action = pair.Key;
+                GameObject buttonObject = pair.Value;
+
+                if (buttonObject == null)
+                {
+                    continue;
+                }
+
+                bool visible = string.Equals(
+                    action.Tab,
+                    _activeTab,
+                    StringComparison.OrdinalIgnoreCase);
+
+                buttonObject.SetActive(visible);
+
+                if (visible)
+                {
+                    Button button = buttonObject.GetComponent<Button>();
+                    if (button != null)
+                    {
+                        button.interactable = action.CanExecute();
+                    }
+                }
+            }
         }
 
         private GameObject CreateActionButton(
@@ -751,6 +908,8 @@ Button close = closeButton.GetComponent<Button>();
             if (_githubButton != null) _githubButton.SetActive(more);
             if (_nexusButton != null) _nexusButton.SetActive(more);
             if (_bugButton != null) _bugButton.SetActive(more);
+
+            RefreshRegisteredActionButtons();
         }
 
         private string GetPlaceholderText(string tab)
@@ -790,9 +949,9 @@ Button close = closeButton.GetComponent<Button>();
                         followText;
                 case "Cheats":
                     return
-                        "Coming Soon\n\n" +
-                        "Planned: optional testing/debug helpers and gated convenience tools.\n\n" +
-                        followText;
+                        "Functional Cheats\n\n" +
+                        "Money actions use the GK2+ save-safety checkpoint before changing persistent state.\n" +
+                        "Heal Player uses GK2's native HP system and does not create a backup.";
                 case "More":
                     return
                         "GK2+ Project Links\n\n" +
@@ -872,11 +1031,15 @@ Button close = closeButton.GetComponent<Button>();
             }
 
             _tabButtons.Clear();
+            _registeredActionButtons.Clear();
             _pageTitle = null;
             _pageText = null;
             _githubButton = null;
             _nexusButton = null;
             _bugButton = null;
+            _contentRoot = null;
+            _menuButtonLabelTemplate = null;
+            _menuButtonSprite = null;
             _built = false;
         }
 
