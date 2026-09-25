@@ -13,6 +13,7 @@
   <a href="docs/PERFORMANCE.md">Performance</a> •
   <a href="docs/SAVE_SAFETY.md">Save Safety</a> •
   <a href="docs/RELEASE_CHECKLIST.md">Release Checklist</a> •
+  <a href="docs/THUNDERSTORE.md">Thunderstore</a> •
   <a href="LICENSE">License</a>
 </p>
 
@@ -349,6 +350,7 @@ Development standards:
 - [Performance and Resource Standards](docs/PERFORMANCE.md)
 - [Save Safety](docs/SAVE_SAFETY.md)
 - [Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [Thunderstore / R2ModMan Plan](docs/THUNDERSTORE.md)
 - [Contributing](CONTRIBUTING.md)
 
 Game assemblies, decompiled source, extracted proprietary assets, private runtime reports, and local development paths are not distributed with the project.
