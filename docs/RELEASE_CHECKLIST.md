@@ -129,13 +129,25 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
 - [ ] Use `docs/NEXUS_PAGE.md` for the restored Nexus description/file copy.
 - [ ] Add the final Nexus URL to `ProjectLinks.NexusUrl` in a follow-up release if the URL is not known before v0.1.0 ships.
 
-### Thunderstore / R2ModMan follow-up
+### Thunderstore / R2ModMan
 
-- [ ] Confirm the Graveyard Keeper II Thunderstore community is publicly available.
-- [ ] Confirm the community's dependency/package naming for BepInEx.
-- [ ] Add Thunderstore `manifest.json`, icon, README, and package layout.
-- [ ] Publish the same GK2+ version/build; do not create a Thunderstore-only gameplay binary.
-- [ ] Test install/launch through R2ModMan/Thunderstore Mod Manager.
+- [x] Confirm the **Graveyard Keeper 2** Thunderstore community is publicly available.
+- [x] Confirm the BepInEx dependency string: `BepInEx-BepInExPack-5.4.2305`.
+- [x] Add Thunderstore README, generated manifest, generated 256x256 icon, and BepInEx plugin layout.
+- [ ] Create/select the permanent Thunderstore Team that will own GK2+.
+- [ ] Build the Thunderstore package:
+
+~~~powershell
+.\tools\release\Build-ThunderstorePackage.ps1
+~~~
+
+- [ ] Confirm output is `dist/GK2Plus-0.1.0-Thunderstore.zip`.
+- [ ] Validate the package with Thunderstore's manifest/package validator.
+- [ ] Upload under community **Graveyard Keeper 2**, category **Mods**, NSFW **No**.
+- [ ] Confirm the listing declares `BepInEx-BepInExPack-5.4.2305`.
+- [ ] Install through Thunderstore Mod Manager or R2ModMan into a clean profile.
+- [ ] Confirm the installed DLL/version matches the GitHub/Nexus v0.1.0 build.
+- [ ] Confirm F2, Manual Save, and Cheats load from the mod-manager profile.
 
 ---
 
