@@ -28,9 +28,14 @@ namespace GK2Plus.Framework.UI
 
         public override void Shutdown()
         {
-            _modMenuController?.ShutdownController();
-            _modMenuController = null;
+            // Unity objects can compare equal to null after native destruction
+            // even while the managed reference is still non-null.
+            if (_modMenuController != null)
+            {
+                _modMenuController.ShutdownController();
+            }
 
+            _modMenuController = null;
             base.Shutdown();
         }
     }
