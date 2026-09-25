@@ -70,26 +70,27 @@ namespace GK2Plus.Framework.UI
             for (int frame = 0; frame < 7200; frame++)
             {
                 Component mainMenu;
-                Canvas canvas;
+                RectTransform uiRoot;
                 GameObject bodyTemplate;
                 GameObject buttonLabelTemplate;
 
                 if (TryGetReadyContext(
                     out mainMenu,
-                    out canvas,
+                    out uiRoot,
                     out bodyTemplate,
                     out buttonLabelTemplate))
                 {
                     try
                     {
                         BuildMenu(
-                            mainMenu.transform,
-                            canvas.transform,
+                            uiRoot,
                             bodyTemplate,
                             buttonLabelTemplate);
 
                         _built = true;
-                        _logger?.LogInfo("GK2+ mod menu shell ready. Press F2 to toggle.");
+                        _logger?.LogInfo(
+                            "GK2+ mod menu shell ready under persistent GUIElements.Root. " +
+                            "Press F2 to toggle.");
                     }
                     catch (Exception ex)
                     {
@@ -115,6 +116,7 @@ namespace GK2Plus.Framework.UI
 
             if (Input.GetKeyDown(KeyCode.F2))
             {
+                _logger?.LogInfo("GK2+ F2 detected; toggling mod menu.");
                 ToggleMenu();
                 return;
             }
@@ -127,12 +129,12 @@ namespace GK2Plus.Framework.UI
 
         private bool TryGetReadyContext(
             out Component mainMenu,
-            out Canvas canvas,
+            out RectTransform uiRoot,
             out GameObject bodyTemplate,
             out GameObject buttonLabelTemplate)
         {
             mainMenu = null;
-            canvas = null;
+            uiRoot = null;
             bodyTemplate = null;
             buttonLabelTemplate = null;
 
@@ -154,11 +156,15 @@ namespace GK2Plus.Framework.UI
                 return false;
             }
 
-            canvas = mainMenu.GetComponentInParent<Canvas>();
-            if (canvas == null || !canvas.gameObject.activeInHierarchy)
+            GUIElements guiElements = GUIElements.Instance;
+            if (guiElements == null ||
+                guiElements.Root == null ||
+                !guiElements.gameObject.activeInHierarchy)
             {
                 return false;
             }
+
+            uiRoot = guiElements.Root;
 
             Transform root = mainMenu.transform;
             Transform hint = root.Find("Bg/Vertical Group/ButtonTipsStr");
@@ -181,12 +187,11 @@ namespace GK2Plus.Framework.UI
         }
 
         private void BuildMenu(
-            Transform mainMenuRoot,
-            Transform canvasParent,
+            Transform uiRoot,
             GameObject bodyTemplate,
             GameObject buttonLabelTemplate)
         {
-            Transform old = canvasParent.Find(RootObjectName);
+            Transform old = uiRoot.Find(RootObjectName);
             if (old != null)
             {
                 Destroy(old.gameObject);
@@ -208,7 +213,10 @@ namespace GK2Plus.Framework.UI
                 typeof(RectTransform)
             );
 
-            overlay.transform.SetParent(canvasParent, false);
+            // Keep the visual tree active while cloning TMP/native UI templates.
+            // Some GK2/TMP materials are initialized lazily and cloning them under
+            // an inactive hierarchy can leave materialForRendering null.
+            overlay.transform.SetParent(uiRoot, false);
             overlay.transform.SetAsLastSibling();
 
             RectTransform overlayRect = overlay.GetComponent<RectTransform>();
@@ -218,6 +226,20 @@ namespace GK2Plus.Framework.UI
             overlayRect.offsetMax = Vector2.zero;
 
             _menuRoot = overlay;
+
+            // Native GK2 windows use their own child Canvases/sorting orders.
+            // A plain RectTransform under GUIElements.Root can therefore render
+            // behind the main menu, HUD prompts, and other LazyWindows even when
+            // it is the last sibling. Give GK2+ its own override canvas so an
+            // open mod menu is consistently the top interactive window.
+            Canvas overlayCanvas = overlay.AddComponent<Canvas>();
+            overlayCanvas.overrideSorting = true;
+            overlayCanvas.sortingOrder = 30000;
+
+            if (overlay.GetComponent<GraphicRaycaster>() == null)
+            {
+                overlay.AddComponent<GraphicRaycaster>();
+            }
 
             GameObject dimmer = CreateImage(
                 overlay.transform,
@@ -588,7 +610,16 @@ Button close = closeButton.GetComponent<Button>();
             close.onClick.AddListener(HideMenu);
 
             SetActiveTab("General");
+
+            // Phase 1: keep the proven manual shell lifecycle, but host it on
+            // the persistent GUIElements.Root instead of the main-menu window.
+            // Native LazyWindow stack integration will follow once we clone a
+            // real GK2 window prefab rather than synthesizing the component.
             _menuRoot.SetActive(false);
+
+            _logger?.LogInfo(
+                $"GK2+ mod menu host attached to '{uiRoot.name}' " +
+                $"(scene='{uiRoot.gameObject.scene.name}', sortingOrder={overlayCanvas.sortingOrder}).");
         }
 
         private GameObject CreateActionButton(
@@ -780,6 +811,7 @@ Button close = closeButton.GetComponent<Button>();
         {
             if (!_built || _menuRoot == null)
             {
+                _logger?.LogWarning("GK2+ F2 toggle ignored because the menu shell is not ready.");
                 return;
             }
 
@@ -791,6 +823,10 @@ Button close = closeButton.GetComponent<Button>();
                 _menuRoot.transform.SetAsLastSibling();
                 SetActiveTab(_activeTab);
             }
+
+            _logger?.LogInfo(
+                $"GK2+ mod menu {(show ? "shown" : "hidden")} in {DetectContext()} context; " +
+                $"parent='{_menuRoot.transform.parent?.name ?? "<none>"}'.");
         }
 
         public void HideMenu()
@@ -799,6 +835,32 @@ Button close = closeButton.GetComponent<Button>();
             {
                 _menuRoot.SetActive(false);
             }
+        }
+
+        public void ShutdownController()
+        {
+            HideMenu();
+            CleanupPartialMenu();
+
+            if (this != null)
+            {
+                Destroy(this.gameObject);
+            }
+        }
+
+        private static string DetectContext()
+        {
+            foreach (var behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
+            {
+                if (behaviour != null &&
+                    behaviour.GetType().Name == "UIMainMenuWindow" &&
+                    behaviour.gameObject.activeInHierarchy)
+                {
+                    return "MainMenu";
+                }
+            }
+
+            return "Gameplay";
         }
 
         private void CleanupPartialMenu()
@@ -907,11 +969,10 @@ Button close = closeButton.GetComponent<Button>();
             SetProperty(tmp, "paragraphSpacing", 2.00f);
             SetProperty(tmp, "margin", Vector4.zero);
 
-            // Brighter face + very small dark outline for readability.
-            // The extra tracking above prevents the outline from merging narrow glyphs.
+            // Preserve the native TMP material/outline. Calling outlineWidth here
+            // forces TMP to instantiate a material and can throw when GK2 has not
+            // populated materialForRendering yet.
             SetProperty(tmp, "color", new Color(1f, 0.84f, 0.48f, 1f));
-            SetProperty(tmp, "outlineWidth", 0.035f);
-            SetProperty(tmp, "outlineColor", new Color32(32, 8, 18, 255));
 
             TrySetEnumProperty(tmp, "fontStyle", "Normal");
             TrySetEnumProperty(tmp, "fontWeight", "Regular");
