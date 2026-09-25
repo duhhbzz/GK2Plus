@@ -292,6 +292,14 @@ namespace GK2Plus.Features.General
                 if (typeName == "LocalizedLabel" ||
                     typeName == "LocalizedVerticalOffset")
                 {
+                    // Destroy() is deferred until end-of-frame. Disable the
+                    // cloned localization behaviour immediately so OnEnable
+                    // cannot overwrite "Save Game" when the clone is reactivated.
+                    if (component is Behaviour behaviour)
+                    {
+                        behaviour.enabled = false;
+                    }
+
                     UnityEngine.Object.Destroy(component);
                 }
             }
