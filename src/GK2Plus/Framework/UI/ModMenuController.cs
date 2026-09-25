@@ -227,6 +227,20 @@ namespace GK2Plus.Framework.UI
 
             _menuRoot = overlay;
 
+            // Native GK2 windows use their own child Canvases/sorting orders.
+            // A plain RectTransform under GUIElements.Root can therefore render
+            // behind the main menu, HUD prompts, and other LazyWindows even when
+            // it is the last sibling. Give GK2+ its own override canvas so an
+            // open mod menu is consistently the top interactive window.
+            Canvas overlayCanvas = overlay.AddComponent<Canvas>();
+            overlayCanvas.overrideSorting = true;
+            overlayCanvas.sortingOrder = 30000;
+
+            if (overlay.GetComponent<GraphicRaycaster>() == null)
+            {
+                overlay.AddComponent<GraphicRaycaster>();
+            }
+
             GameObject dimmer = CreateImage(
                 overlay.transform,
                 "Dimmer",
@@ -605,7 +619,7 @@ Button close = closeButton.GetComponent<Button>();
 
             _logger?.LogInfo(
                 $"GK2+ mod menu host attached to '{uiRoot.name}' " +
-                $"(scene='{uiRoot.gameObject.scene.name}').");
+                $"(scene='{uiRoot.gameObject.scene.name}', sortingOrder={overlayCanvas.sortingOrder}).");
         }
 
         private GameObject CreateActionButton(
