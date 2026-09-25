@@ -8,6 +8,8 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Functional Cheats tab actions for **Give 1 Silver**, **Give 1 Gold**, and **Heal Player**.
+- Reusable UI action registration so feature modules can expose controls without embedding feature logic in `ModMenuController`.
 - Optional **Manual Save** feature: adds a native-style `Save Game` button to the in-game pause menu, delegates persistence to GK2's own `SaveSystem`, and augments the Exit to Main Menu confirmation with the native last-save age.
 - Persistent GK2+ F2 menu lifecycle across the main menu and active gameplay.
 - Dedicated top-level overlay Canvas so the GK2+ menu renders above native game windows while open.
