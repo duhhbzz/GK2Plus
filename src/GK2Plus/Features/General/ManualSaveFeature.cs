@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Reflection;
 using GK2Plus.Core;
 using GK2Plus.Framework.Saves;
@@ -179,6 +180,12 @@ namespace GK2Plus.Features.General
 
                 RebindGamepadCallbacks(lazyButton);
 
+                // Unity localization/UI callbacks can run after the clone is
+                // re-enabled. Re-assert our label on the next frame after the
+                // cloned localization components have been destroyed.
+                pauseWindow.StartCoroutine(
+                    FinalizeSaveButtonLabel(saveButtonObject));
+
                 Logger.LogInfo(
                     "Manual Save injected native Save Game button into " +
                     "UIGamePauseWindow.");
@@ -209,6 +216,19 @@ namespace GK2Plus.Features.General
                 Logger.LogWarning(
                     "Manual Save was not completed: " +
                     (error ?? "unknown error"));
+            }
+        }
+
+        private IEnumerator FinalizeSaveButtonLabel(
+            GameObject saveButtonObject)
+        {
+            yield return null;
+
+            if (saveButtonObject != null)
+            {
+                SetNativeButtonLabel(
+                    saveButtonObject,
+                    "Save Game");
             }
         }
 
@@ -281,7 +301,8 @@ namespace GK2Plus.Features.General
                     "Cloned pause-menu button label was not found.");
             }
 
-            foreach (Component component in label.GetComponents<Component>())
+            foreach (Component component in
+                buttonObject.GetComponentsInChildren<Component>(true))
             {
                 if (component == null)
                 {
@@ -292,9 +313,9 @@ namespace GK2Plus.Features.General
                 if (typeName == "LocalizedLabel" ||
                     typeName == "LocalizedVerticalOffset")
                 {
-                    // Destroy() is deferred until end-of-frame. Disable the
-                    // cloned localization behaviour immediately so OnEnable
-                    // cannot overwrite "Save Game" when the clone is reactivated.
+                    // Localization can exist above/below the visible TMP label.
+                    // Disable every cloned localization behaviour immediately;
+                    // Destroy() itself is deferred until end-of-frame.
                     if (component is Behaviour behaviour)
                     {
                         behaviour.enabled = false;
