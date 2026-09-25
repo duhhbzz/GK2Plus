@@ -291,10 +291,19 @@ namespace GK2Plus.Features.Cheats
                     Confirm,
                     Cancel)
                 {
-                    ShowCloseButton = true
+                    ShowCloseButton = true,
+                    CloseButtonAction = Cancel
                 };
 
-            dialog.Open(data);
+            try
+            {
+                dialog.Open(data);
+            }
+            catch
+            {
+                _uiService.ShowMenu();
+                throw;
+            }
 
             void Cancel()
             {
