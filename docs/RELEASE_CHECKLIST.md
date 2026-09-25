@@ -4,24 +4,38 @@
 
 ### Repository / Packaging
 
-- [ ] Confirm VERSION matches the intended release.
+- [ ] Confirm `VERSION` matches the intended release.
 - [ ] Confirm experimental/local-only source is not present.
-- [ ] Confirm no *.bak, bin/, obj/, local.props, private recon output, game DLLs, extracted game assets, or local save data are staged.
-- [ ] Run git status and inspect every changed/untracked file.
-- [ ] Build the release package from a clean tree.
+- [ ] Confirm no `*.bak`, `bin/`, `obj/`, `local.props`, private recon output, game DLLs, extracted game assets, or local save data are staged.
+- [ ] Run `git status` and inspect every changed/untracked file.
+- [ ] Build the release package from a clean tree with `tools/release/Build-ReleasePackage.ps1`.
 - [ ] Confirm only intended GK2+ files are included.
+- [ ] Record the release ZIP SHA256 printed by the packaging script.
+- [ ] Use the same version/build artifact for GitHub Releases and Nexus Mods.
 
 ### Launch / UI Lifecycle
 
 - [ ] Launch Graveyard Keeper 2 with the newly built DLL.
 - [ ] Confirm BepInEx loads GK2+ without unexpected errors.
-- [ ] Confirm the main-menu GK2+ badge appears.
+- [ ] Confirm the main-menu GK2+ badge shows the intended version.
 - [ ] Confirm F2 opens/closes GK2+ from the main menu.
 - [ ] Load a save and confirm F2 opens/closes GK2+ during active gameplay.
 - [ ] Confirm Esc and the Close button work.
 - [ ] Open representative vanilla windows and confirm GK2+ renders above them while open.
 - [ ] Return to the main menu and confirm F2 still works.
 - [ ] Confirm there is only one persistent GK2+ menu/controller instance.
+
+### Manual Save
+
+- [ ] Confirm the pause menu contains exactly one **Save Game** button.
+- [ ] Confirm keyboard/mouse can activate Save Game.
+- [ ] Confirm controller/D-pad navigation includes Save Game.
+- [ ] Confirm the native saving indicator appears.
+- [ ] Confirm the day/time does not advance merely because Manual Save was used.
+- [ ] Save in a recognizable location, quit without sleeping, reload, and confirm the location persists.
+- [ ] Confirm representative inventory/money/world-object state persists.
+- [ ] Confirm Exit to Main Menu shows a correct last-save age/time.
+- [ ] Confirm the last-save status updates after Manual Save.
 
 ### Save Safety / Disk I/O
 
@@ -35,6 +49,19 @@
 - [ ] Confirm a failed required backup blocks the protected mutation.
 - [ ] Confirm backup creation does not buffer the entire save into managed memory.
 - [ ] Confirm no automated restore overwrites the live save.
+
+### Cheats / Achievement Integrity
+
+- [ ] Confirm Cheats actions are unavailable without a loaded gameplay save.
+- [ ] Confirm the first cheat opens the native permanent-achievement warning.
+- [ ] Confirm **Cancel** performs no cheat mutation and does not taint the save.
+- [ ] Confirm **Enable Cheats** writes the active `<slot>.gk2plus-cheat-taint` marker before the cheat executes.
+- [ ] Confirm the Cheats tab changes to the tainted-save warning.
+- [ ] Confirm closing/reopening the game preserves tainted status and does not show the first-cheat dialog again.
+- [ ] Confirm all retained GK2+ backups for the slot contain `GK2Plus-CheatTaint.txt`.
+- [ ] Confirm a new backup created after tainting also contains the marker.
+- [ ] Confirm cheat actions fail closed if the achievement guard cannot initialize.
+- [ ] When practical, confirm a real achievement platform call is blocked while a tainted save is active.
 
 ### Performance / Resource Behavior
 
@@ -52,34 +79,63 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
 
 ---
 
-## v0.0.1 — First Nexus Release
+## v0.1.0 — First Gameplay Release
 
-Historical checklist for the initial foundation package:
+### Functional validation
 
-- [ ] Confirm VERSION is 0.0.1.
-- [ ] Run tools/release/Build-NexusPackage.ps1.
-- [ ] Confirm BepInEx loads GK2+ 0.0.1 without unexpected errors.
-- [ ] Confirm the main-menu GK2+ badge appears.
-- [ ] Confirm F2 opens the menu from the main menu.
-- [ ] Confirm Esc and Close work.
-- [ ] Confirm GitHub and Report Bug buttons work.
-- [ ] Confirm the Nexus button is disabled and labelled Nexus Soon.
-- [ ] Upload dist/GK2Plus-0.0.1.zip as the functioning Nexus file.
-- [ ] Use the copy in docs/NEXUS_PAGE.md for the page and file description.
-- [ ] Publish the page only after the functioning file is attached.
-- [ ] Record the final Nexus Mods URL.
+- [x] Persistent F2 menu works in main menu and gameplay.
+- [x] Manual Save works from the pause menu.
+- [x] Manual Save reloads at the same player location without sleeping.
+- [x] Moved world-object state persisted across manual save/reload.
+- [x] Last-save status updates from native save metadata.
+- [x] Pause-menu Save Game controller navigation works.
+- [x] Silver/Gold cheat increments work and trigger native money feedback.
+- [x] Refill Energy restores the visible work/action energy bar.
+- [x] First money mutation creates one checkpoint.
+- [x] Repeated money actions reuse that checkpoint.
+- [x] Active cheat-taint sidecar persists after restart.
+- [x] All five retained test backups received cheat-taint markers.
+- [ ] Heal Player tested while actual HP is below maximum.
+- [ ] Naturally triggered platform achievement attempt observed being blocked on a tainted save.
+
+### Release preparation
+
+- [ ] Confirm `VERSION` is `0.1.0`.
+- [ ] Confirm `CHANGELOG.md` contains the dated `0.1.0` section.
+- [ ] Confirm README describes current functional features instead of the foundation preview.
+- [ ] Confirm `docs/NEXUS_PAGE.md` reflects v0.1.0.
+- [ ] Run:
+
+~~~powershell
+.\tools\release\Build-ReleasePackage.ps1
+~~~
+
+- [ ] Install/test the DLL produced by the release build.
+- [ ] Confirm the final archive is named `GK2Plus-0.1.0.zip`.
+- [ ] Capture final screenshots:
+  - [ ] Cheats tab
+  - [ ] pause-menu Save Game button
+  - [ ] Exit confirmation / Last saved status
+  - [ ] optional first-cheat warning
+- [ ] Merge the release-preparation PR.
+- [ ] Create/push tag `v0.1.0`.
+- [ ] Create GitHub Release **GK2+ v0.1.0 — First Gameplay Release**.
+- [ ] Attach `GK2Plus-0.1.0.zip` to the GitHub release.
+- [ ] Upload the exact same ZIP to Nexus Mods.
+- [ ] Use `docs/NEXUS_PAGE.md` for the restored Nexus description/file copy.
+- [ ] Add the final Nexus URL to `ProjectLinks.NexusUrl` in a follow-up release if the URL is not known before v0.1.0 ships.
+
+### Thunderstore / R2ModMan follow-up
+
+- [ ] Confirm the Graveyard Keeper II Thunderstore community is publicly available.
+- [ ] Confirm the community's dependency/package naming for BepInEx.
+- [ ] Add Thunderstore `manifest.json`, icon, README, and package layout.
+- [ ] Publish the same GK2+ version/build; do not create a Thunderstore-only gameplay binary.
+- [ ] Test install/launch through R2ModMan/Thunderstore Mod Manager.
 
 ---
 
-## v0.0.2 — Official Nexus Link
+## v0.0.1 — Historical Foundation Release
 
-- [ ] Set ProjectLinks.NexusUrl in src/GK2Plus/Core/ProjectLinks.cs to the official Nexus page URL.
-- [ ] Change VERSION to 0.0.2.
-- [ ] Add a 0.0.2 release section to CHANGELOG.md noting the Nexus-link change and any other included work.
-- [ ] Build with tools/release/Build-NexusPackage.ps1.
-- [ ] Run the Every Release quality gates above.
-- [ ] Launch and confirm the More-tab button says Nexus Mods and opens the correct page.
-- [ ] Confirm GitHub and Report Bug links still work.
-- [ ] Upload dist/GK2Plus-0.0.2.zip to Nexus.
-- [ ] Update the Nexus file description using the v0.0.2 template.
-- [ ] Commit, tag v0.0.2, and push.
+- Initial framework/menu preview.
+- Retained here only as release history; use the current checklist for new releases.
