@@ -67,8 +67,10 @@ This Thunderstore package declares the Graveyard Keeper 2 community's BepInEx pa
 
 ## Links
 
-Source / issues:
+- [GitHub / Source](https://github.com/duhhbzz/GK2Plus)
+- [Report an Issue](https://github.com/duhhbzz/GK2Plus/issues)
+- [☕ Support on Buy Me a Coffee](https://buymeacoffee.com/duhhbzz)
 
-https://github.com/duhhbzz/GK2Plus
+Support is completely optional. GK2+ remains free and open source, with no features or support gated behind donations.
 
 **GK2+ — one mod, your way.**
