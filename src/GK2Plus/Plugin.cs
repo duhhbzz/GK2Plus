@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using GK2Plus.Core;
+using GK2Plus.Features.Cheats;
 using GK2Plus.Features.General;
 using GK2Plus.Framework;
 using GK2Plus.Framework.Diagnostics;
@@ -83,6 +84,12 @@ namespace GK2Plus
         {
             registry.Register(
                 new ManualSaveFeature(_services.Saves)
+            );
+
+            registry.Register(
+                new BasicCheatsFeature(
+                    _services.Saves,
+                    _services.UI)
             );
         }
 

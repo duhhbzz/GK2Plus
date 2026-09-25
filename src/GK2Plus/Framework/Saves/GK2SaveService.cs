@@ -24,6 +24,8 @@ namespace GK2Plus.Framework.Saves
     {
         private const string SaveDataExtension = ".dat";
         private const string SaveInfoExtension = ".info";
+        private const string CheatTaintExtension = ".gk2plus-cheat-taint";
+        private const string CheatTaintBackupFileName = "GK2Plus-CheatTaint.txt";
         private const int MaxBackupsPerSlot = 5;
 
         private bool _initialized;
@@ -48,6 +50,26 @@ namespace GK2Plus.Framework.Saves
         public bool IsSaveOperationInProgress => _saveLoading || _saveWriting;
 
         public int BackupRetentionPerSlot => MaxBackupsPerSlot;
+
+        public bool IsActiveSaveCheatTainted
+        {
+            get
+            {
+                try
+                {
+                    SaveSlotData slotData =
+                        MainGame.Instance?.SaveSlotData;
+
+                    return slotData != null &&
+                           !string.IsNullOrWhiteSpace(slotData.slotName) &&
+                           IsSlotCheatTainted(slotData.slotName);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
 
         public bool HasLoadedSave
         {
@@ -333,6 +355,89 @@ namespace GK2Plus.Framework.Saves
         }
 
         /// <summary>
+        /// Permanently marks the active save lineage as cheat-tainted.
+        /// The marker lives beside GK2's save files without changing the game's
+        /// serialized schema. Existing GK2+ backups are marked at the same time.
+        /// </summary>
+        public bool TryMarkActiveSaveCheatTainted(
+            string cheatId,
+            out string error)
+        {
+            error = null;
+
+            if (!TryGetActiveSlot(
+                out SaveSlotData slotData,
+                out error))
+            {
+                return false;
+            }
+
+            if (IsSaveOperationInProgress)
+            {
+                error = "GK2 is currently loading or writing a save.";
+                return false;
+            }
+
+            try
+            {
+                string markerPath =
+                    GetCheatTaintPath(slotData.slotName);
+
+                if (!File.Exists(markerPath))
+                {
+                    WriteCheatTaintMarker(
+                        markerPath,
+                        slotData.slotName,
+                        cheatId);
+                }
+
+                if (!TryMarkExistingBackupsCheatTainted(
+                    slotData.slotName,
+                    markerPath,
+                    out error))
+                {
+                    Logger.LogError(
+                        $"GK2+ cheat taint was written for slot '{slotData.slotName}', " +
+                        $"but one or more existing backups could not be marked: {error}");
+                    return false;
+                }
+
+                Logger.LogWarning(
+                    $"GK2+ cheat taint active for slot '{slotData.slotName}'. " +
+                    "Platform achievements will be blocked while this save is loaded.");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+
+                Logger.LogError(
+                    $"GK2+ failed to mark the active save as cheat-tainted: {ex}");
+
+                return false;
+            }
+        }
+
+        public bool IsSlotCheatTainted(string slotName)
+        {
+            if (string.IsNullOrWhiteSpace(slotName))
+            {
+                return false;
+            }
+
+            try
+            {
+                return File.Exists(
+                    GetCheatTaintPath(slotName));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Explicitly creates a new backup of the active slot.
         ///
         /// Protected mutations do not call this directly; they use the checkpoint
@@ -481,6 +586,18 @@ namespace GK2Plus.Framework.Saves
                     infoSource,
                     Path.Combine(tempDirectory, Path.GetFileName(infoSource)));
 
+                bool cheatTainted =
+                    IsSlotCheatTainted(slotData.slotName);
+
+                if (cheatTainted)
+                {
+                    CopyStableFile(
+                        GetCheatTaintPath(slotData.slotName),
+                        Path.Combine(
+                            tempDirectory,
+                            CheatTaintBackupFileName));
+                }
+
                 File.WriteAllText(
                     Path.Combine(tempDirectory, "GK2Plus-Backup.txt"),
                     BuildManifest(
@@ -488,7 +605,8 @@ namespace GK2Plus.Framework.Saves
                         reason,
                         saveFolder,
                         dataSource,
-                        infoSource),
+                        infoSource,
+                        cheatTainted),
                     Encoding.UTF8);
 
                 Directory.Move(tempDirectory, finalDirectory);
@@ -641,7 +759,8 @@ namespace GK2Plus.Framework.Saves
             string reason,
             string saveFolder,
             string dataSource,
-            string infoSource)
+            string infoSource,
+            bool cheatTainted)
         {
             StringBuilder builder = new StringBuilder();
 
@@ -656,8 +775,118 @@ namespace GK2Plus.Framework.Saves
                 "DataFile=" + Path.GetFileName(dataSource));
             builder.AppendLine(
                 "InfoFile=" + Path.GetFileName(infoSource));
+            builder.AppendLine(
+                "CheatTainted=" + cheatTainted);
 
             return builder.ToString();
+        }
+
+        private string GetCheatTaintPath(string slotName)
+        {
+            return Path.Combine(
+                SaveSystem.SaveFolder,
+                slotName + CheatTaintExtension);
+        }
+
+        private void WriteCheatTaintMarker(
+            string destinationPath,
+            string slotName,
+            string cheatId)
+        {
+            string tempPath = destinationPath + ".tmp";
+
+            try
+            {
+                string contents =
+                    "GK2+ Cheat Taint\n" +
+                    "================\n" +
+                    "FormatVersion=1\n" +
+                    "GK2PlusVersion=" + ModInfo.Version + "\n" +
+                    "SlotName=" + slotName + "\n" +
+                    "FirstCheatId=" + (cheatId ?? string.Empty) + "\n" +
+                    "FirstCheatUtc=" + DateTime.UtcNow.ToString("O") + "\n" +
+                    "AchievementsDisabled=True\n";
+
+                File.WriteAllText(
+                    tempPath,
+                    contents,
+                    Encoding.UTF8);
+
+                if (File.Exists(destinationPath))
+                {
+                    File.Delete(tempPath);
+                    return;
+                }
+
+                File.Move(
+                    tempPath,
+                    destinationPath);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                {
+                    try
+                    {
+                        File.Delete(tempPath);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private bool TryMarkExistingBackupsCheatTainted(
+            string slotName,
+            string activeMarkerPath,
+            out string error)
+        {
+            error = null;
+
+            string safeSlot =
+                SanitizePathPart(slotName, 64);
+
+            string slotBackupRoot =
+                Path.Combine(BackupRootPath, safeSlot);
+
+            if (!Directory.Exists(slotBackupRoot))
+            {
+                return true;
+            }
+
+            try
+            {
+                foreach (DirectoryInfo backup in
+                    new DirectoryInfo(slotBackupRoot).GetDirectories())
+                {
+                    if (backup.Name.EndsWith(
+                        ".tmp",
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    string destination =
+                        Path.Combine(
+                            backup.FullName,
+                            CheatTaintBackupFileName);
+
+                    if (!File.Exists(destination))
+                    {
+                        CopyStableFile(
+                            activeMarkerPath,
+                            destination);
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
 
         private static string SanitizePathPart(

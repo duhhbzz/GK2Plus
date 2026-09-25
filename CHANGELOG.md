@@ -8,6 +8,12 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Functional Cheats tab with **+1/+5/+10/+100 Silver**, **+1/+5/+10/+100 Gold**, **Heal Player**, and **Refill Energy**.
+- Reusable UI action registration so feature modules can expose controls without embedding feature logic in `ModMenuController`.
+- Per-save cheat taint sidecar that permanently marks a save lineage after the first confirmed cheat use.
+- Achievement integrity guard that blocks GK2's platform achievement progress/unlock boundary for cheat-tainted saves.
+- First-cheat native confirmation dialog warning that achievements will be disabled for the save and its GK2+ backups.
+- Cheat-taint propagation to existing and future GK2+ safety backups.
 - Optional **Manual Save** feature: adds a native-style `Save Game` button to the in-game pause menu, delegates persistence to GK2's own `SaveSystem`, and augments the Exit to Main Menu confirmation with the native last-save age.
 - Persistent GK2+ F2 menu lifecycle across the main menu and active gameplay.
 - Dedicated top-level overlay Canvas so the GK2+ menu renders above native game windows while open.
@@ -40,8 +46,9 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Known Issues
 
-- Gameplay/QoL feature modules and cheat actions are still under development.
-- Save-safety infrastructure is not yet wired to public cheat actions.
+- Additional gameplay/QoL feature modules and cheat actions are still under development.
+- Heal Player still needs runtime validation once the test save can take damage.
+- Achievement blocking/taint persistence still needs runtime validation before release.
 - Automated backup restore is intentionally not implemented yet.
 
 
