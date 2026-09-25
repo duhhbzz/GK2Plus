@@ -4,7 +4,11 @@ using HarmonyLib;
 using GK2Plus.Core;
 using GK2Plus.Framework;
 using GK2Plus.Framework.Diagnostics;
+using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
+#if DEBUG
+using UnityEngine;
+#endif
 
 namespace GK2Plus
 {
@@ -74,6 +78,40 @@ namespace GK2Plus
                 $"GK2+ v{ModInfo.Version} loaded successfully."
             );
         }
+
+#if DEBUG
+        private void Update()
+        {
+            if (_services == null || !Input.GetKeyDown(KeyCode.F9))
+            {
+                return;
+            }
+
+            Logger.LogInfo(
+                "[DEV] F9 save-safety probe requested " +
+                "(Moderate risk; no game state will be changed)."
+            );
+
+            if (_services.Saves.TryPrepareMutation(
+                "Dev-Save-Safety-Probe",
+                SaveMutationRisk.Moderate,
+                out SaveMutationContext context))
+            {
+                Logger.LogInfo(
+                    "[DEV] Save-safety probe passed. " +
+                    $"slot='{context.SlotName}', " +
+                    $"checkpoint='{context.BackupDirectory}'."
+                );
+            }
+            else
+            {
+                Logger.LogWarning(
+                    "[DEV] Save-safety probe was blocked. " +
+                    "Check the preceding save-safety log message for the reason."
+                );
+            }
+        }
+#endif
 
         private static void RegisterFeatures(
             FeatureRegistry registry
