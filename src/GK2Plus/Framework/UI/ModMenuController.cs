@@ -26,6 +26,7 @@ namespace GK2Plus.Framework.UI
 
         private ManualLogSource _logger;
         private GameObject _menuRoot;
+        private GK2ModMenuWindow _nativeWindow;
         private GameObject _pageTitle;
         private GameObject _pageText;
 
@@ -70,26 +71,27 @@ namespace GK2Plus.Framework.UI
             for (int frame = 0; frame < 7200; frame++)
             {
                 Component mainMenu;
-                Canvas canvas;
+                RectTransform uiRoot;
                 GameObject bodyTemplate;
                 GameObject buttonLabelTemplate;
 
                 if (TryGetReadyContext(
                     out mainMenu,
-                    out canvas,
+                    out uiRoot,
                     out bodyTemplate,
                     out buttonLabelTemplate))
                 {
                     try
                     {
                         BuildMenu(
-                            mainMenu.transform,
-                            canvas.transform,
+                            uiRoot,
                             bodyTemplate,
                             buttonLabelTemplate);
 
                         _built = true;
-                        _logger?.LogInfo("GK2+ mod menu shell ready. Press F2 to toggle.");
+                        _logger?.LogInfo(
+                            "GK2+ mod menu shell ready under GUIElements.Root " +
+                            "and registered with the native LazyWindow stack. Press F2 to toggle.");
                     }
                     catch (Exception ex)
                     {
@@ -108,7 +110,7 @@ namespace GK2Plus.Framework.UI
 
         private void Update()
         {
-            if (!_built || _menuRoot == null)
+            if (!_built || _menuRoot == null || _nativeWindow == null)
             {
                 return;
             }
@@ -127,12 +129,12 @@ namespace GK2Plus.Framework.UI
 
         private bool TryGetReadyContext(
             out Component mainMenu,
-            out Canvas canvas,
+            out RectTransform uiRoot,
             out GameObject bodyTemplate,
             out GameObject buttonLabelTemplate)
         {
             mainMenu = null;
-            canvas = null;
+            uiRoot = null;
             bodyTemplate = null;
             buttonLabelTemplate = null;
 
@@ -154,11 +156,15 @@ namespace GK2Plus.Framework.UI
                 return false;
             }
 
-            canvas = mainMenu.GetComponentInParent<Canvas>();
-            if (canvas == null || !canvas.gameObject.activeInHierarchy)
+            GUIElements guiElements = GUIElements.Instance;
+            if (guiElements == null ||
+                guiElements.Root == null ||
+                !guiElements.gameObject.activeInHierarchy)
             {
                 return false;
             }
+
+            uiRoot = guiElements.Root;
 
             Transform root = mainMenu.transform;
             Transform hint = root.Find("Bg/Vertical Group/ButtonTipsStr");
@@ -181,12 +187,11 @@ namespace GK2Plus.Framework.UI
         }
 
         private void BuildMenu(
-            Transform mainMenuRoot,
-            Transform canvasParent,
+            Transform uiRoot,
             GameObject bodyTemplate,
             GameObject buttonLabelTemplate)
         {
-            Transform old = canvasParent.Find(RootObjectName);
+            Transform old = uiRoot.Find(RootObjectName);
             if (old != null)
             {
                 Destroy(old.gameObject);
@@ -208,7 +213,9 @@ namespace GK2Plus.Framework.UI
                 typeof(RectTransform)
             );
 
-            overlay.transform.SetParent(canvasParent, false);
+            // Build inactive so the LazyWindow Update loop cannot run before Init().
+            overlay.SetActive(false);
+            overlay.transform.SetParent(uiRoot, false);
             overlay.transform.SetAsLastSibling();
 
             RectTransform overlayRect = overlay.GetComponent<RectTransform>();
@@ -218,6 +225,12 @@ namespace GK2Plus.Framework.UI
             overlayRect.offsetMax = Vector2.zero;
 
             _menuRoot = overlay;
+            _nativeWindow = overlay.AddComponent<GK2ModMenuWindow>();
+
+            if (overlay.GetComponent<GraphicRaycaster>() == null)
+            {
+                overlay.AddComponent<GraphicRaycaster>();
+            }
 
             GameObject dimmer = CreateImage(
                 overlay.transform,
@@ -588,7 +601,14 @@ Button close = closeButton.GetComponent<Button>();
             close.onClick.AddListener(HideMenu);
 
             SetActiveTab("General");
-            _menuRoot.SetActive(false);
+
+            // LazyWindow.Init() wires Back/Escape handling, modality and the
+            // LazyWindowsStackController, then leaves the window hidden.
+            _nativeWindow.Init();
+
+            _logger?.LogInfo(
+                $"GK2+ mod menu host attached to '{uiRoot.name}' " +
+                $"(scene='{uiRoot.gameObject.scene.name}').");
         }
 
         private GameObject CreateActionButton(
@@ -778,37 +798,78 @@ Button close = closeButton.GetComponent<Button>();
 
         public void ToggleMenu()
         {
-            if (!_built || _menuRoot == null)
+            if (!_built || _menuRoot == null || _nativeWindow == null)
             {
                 return;
             }
 
-            bool show = !_menuRoot.activeSelf;
-            _menuRoot.SetActive(show);
-
-            if (show)
+            if (_nativeWindow.IsShown)
             {
-                _menuRoot.transform.SetAsLastSibling();
-                SetActiveTab(_activeTab);
+                _nativeWindow.Close();
+                return;
             }
+
+            _menuRoot.transform.SetAsLastSibling();
+            SetActiveTab(_activeTab);
+            _nativeWindow.Open(new GK2ModMenuWindowData());
+
+            _logger?.LogDebug(
+                $"GK2+ mod menu opened in {DetectContext()} context; " +
+                $"nativeTop={_nativeWindow.IsTop}; sorting={_nativeWindow.Canvas.sortingOrder}.");
         }
 
         public void HideMenu()
         {
-            if (_menuRoot != null)
+            if (_nativeWindow != null && _nativeWindow.IsShown)
+            {
+                _nativeWindow.Close();
+            }
+            else if (_menuRoot != null)
             {
                 _menuRoot.SetActive(false);
             }
         }
 
+        public void ShutdownController()
+        {
+            HideMenu();
+            CleanupPartialMenu();
+
+            if (gameObject != null)
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private static string DetectContext()
+        {
+            foreach (var behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
+            {
+                if (behaviour != null &&
+                    behaviour.GetType().Name == "UIMainMenuWindow" &&
+                    behaviour.gameObject.activeInHierarchy)
+                {
+                    return "MainMenu";
+                }
+            }
+
+            return "Gameplay";
+        }
+
         private void CleanupPartialMenu()
         {
+            if (_nativeWindow != null && _nativeWindow.IsShown)
+            {
+                _nativeWindow.CloseWithoutCallback();
+            }
+
             if (_menuRoot != null)
             {
                 Destroy(_menuRoot);
                 _menuRoot = null;
             }
 
+            _nativeWindow = null;
             _tabButtons.Clear();
             _pageTitle = null;
             _pageText = null;
