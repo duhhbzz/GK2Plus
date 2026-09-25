@@ -1,18 +1,25 @@
 using System;
+using System.Reflection;
 using GK2Plus.Core;
 using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
+using HarmonyLib;
+using LazyBearTechnology;
 
 namespace GK2Plus.Features.Cheats
 {
     /// <summary>
-    /// First functional GK2+ cheat slice. Uses native player systems and routes
-    /// persistent mutations through save safety.
+    /// First functional GK2+ cheat slice. Uses native player systems, routes
+    /// persistent mutations through save safety, and permanently taints a save
+    /// before the first cheat is executed so platform achievements are blocked.
     /// </summary>
     internal sealed class BasicCheatsFeature : FeatureBase
     {
         private const string MoneyResource = "money";
         private const string StaminaResource = "stamina";
+
+        private static BasicCheatsFeature _activeInstance;
+        private static bool _achievementBlockLogged;
 
         private readonly GK2SaveService _saveService;
         private readonly GK2UIService _uiService;
@@ -41,6 +48,15 @@ namespace GK2Plus.Features.Cheats
 
         protected override void OnEnabled()
         {
+            _activeInstance = this;
+            _achievementBlockLogged = false;
+
+            PatchAchievementPlatformBoundary();
+
+            _uiService.RegisterTabNotice(
+                "Cheats",
+                BuildCheatNotice);
+
             RegisterMoneyAction(
                 "cheats.give-1-silver",
                 "+1 Silver",
@@ -81,24 +97,78 @@ namespace GK2Plus.Features.Cheats
                 "+100 Gold",
                 1000000);
 
-            _uiService.RegisterMenuAction(
-                new GK2MenuAction(
-                    "cheats.heal-player",
-                    "Cheats",
-                    "Heal Player",
-                    HealPlayer,
-                    CanUseCheats));
+            RegisterCheatAction(
+                "cheats.heal-player",
+                "Heal Player",
+                HealPlayer);
 
-            _uiService.RegisterMenuAction(
-                new GK2MenuAction(
-                    "cheats.refill-stamina",
-                    "Cheats",
-                    "Refill Stamina",
-                    RefillStamina,
-                    CanUseCheats));
+            RegisterCheatAction(
+                "cheats.refill-stamina",
+                "Refill Stamina",
+                RefillStamina);
 
             Logger.LogInfo(
-                "Basic Cheats enabled: Money increments, Heal Player, and Refill Stamina.");
+                "Basic Cheats enabled: Money increments, Heal Player, " +
+                "Refill Stamina, and per-save achievement protection.");
+        }
+
+        private void PatchAchievementPlatformBoundary()
+        {
+            MethodInfo progressMethod = AccessTools.Method(
+                typeof(AchievementsSystem),
+                "TrySetAchievementProgressOnPlatform");
+
+            MethodInfo unlockMethod = AccessTools.Method(
+                typeof(AchievementsSystem),
+                "TryUnlockAchievementOnPlatform");
+
+            if (progressMethod == null ||
+                unlockMethod == null)
+            {
+                Logger.LogError(
+                    "Basic Cheats could not resolve GK2's platform achievement " +
+                    "boundary. Cheat actions will remain unavailable.");
+
+                return;
+            }
+
+            HarmonyMethod prefix = new HarmonyMethod(
+                typeof(BasicCheatsFeature),
+                nameof(AchievementPlatformPrefix));
+
+            Harmony.Patch(
+                progressMethod,
+                prefix: prefix);
+
+            Harmony.Patch(
+                unlockMethod,
+                prefix: prefix);
+
+            Logger.LogInfo(
+                "GK2+ achievement guard patched GK2's platform progress/unlock boundary.");
+        }
+
+        private static bool AchievementPlatformPrefix()
+        {
+            BasicCheatsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                !feature._saveService.IsActiveSaveCheatTainted)
+            {
+                return true;
+            }
+
+            if (!_achievementBlockLogged)
+            {
+                _achievementBlockLogged = true;
+
+                feature.Logger.LogWarning(
+                    "GK2+ blocked a platform achievement call because the " +
+                    "active save is cheat-tainted.");
+            }
+
+            return false;
         }
 
         private void RegisterMoneyAction(
@@ -106,12 +176,26 @@ namespace GK2Plus.Features.Cheats
             string label,
             int bronzeAmount)
         {
+            RegisterCheatAction(
+                id,
+                label,
+                () => GiveMoney(bronzeAmount));
+        }
+
+        private void RegisterCheatAction(
+            string id,
+            string label,
+            Action cheatAction)
+        {
             _uiService.RegisterMenuAction(
                 new GK2MenuAction(
                     id,
                     "Cheats",
                     label,
-                    () => GiveMoney(bronzeAmount),
+                    () => RequestCheatExecution(
+                        id,
+                        label,
+                        cheatAction),
                     CanUseCheats));
         }
 
@@ -119,6 +203,111 @@ namespace GK2Plus.Features.Cheats
         {
             return _saveService.HasLoadedSave &&
                    !_saveService.IsSaveOperationInProgress;
+        }
+
+        private string BuildCheatNotice()
+        {
+            if (!_saveService.HasLoadedSave)
+            {
+                return
+                    "Load a save to use cheats.\n" +
+                    "Cheat actions are disabled from the main menu.";
+            }
+
+            if (_saveService.IsActiveSaveCheatTainted)
+            {
+                return
+                    "CHEATS USED - ACHIEVEMENTS DISABLED FOR THIS SAVE\n" +
+                    "This also applies to this slot's GK2+ safety backups.";
+            }
+
+            return
+                "Using any cheat permanently disables platform achievements for this save.\n" +
+                "The first cheat will ask for confirmation.";
+        }
+
+        private void RequestCheatExecution(
+            string cheatId,
+            string label,
+            Action cheatAction)
+        {
+            if (!CanUseCheats())
+            {
+                Logger.LogWarning(
+                    $"Cheat '{cheatId}' is currently unavailable.");
+                return;
+            }
+
+            if (_saveService.IsActiveSaveCheatTainted)
+            {
+                cheatAction();
+                return;
+            }
+
+            UIDialogWindow dialog =
+                LazyUI.GetWindow<UIDialogWindow>();
+
+            if (dialog == null)
+            {
+                Logger.LogWarning(
+                    "GK2+ could not open the native cheat confirmation dialog.");
+                return;
+            }
+
+            _uiService.HideMenu();
+
+            string information =
+                "Using a cheat will permanently disable platform achievements " +
+                "for this save and its GK2+ safety backups.\n\n" +
+                "This cannot be undone for this save.\n\n" +
+                $"Enable cheats and use {label}?";
+
+            UIDialogWindowData data =
+                new UIDialogWindowData(
+                    "Enable Cheats?",
+                    information,
+                    Confirm,
+                    Cancel)
+                {
+                    ShowCloseButton = true
+                };
+
+            dialog.Open(data);
+
+            void Cancel()
+            {
+                dialog.Close();
+                _uiService.ShowMenu();
+            }
+
+            void Confirm()
+            {
+                dialog.Close();
+
+                if (!_saveService.TryMarkActiveSaveCheatTainted(
+                    cheatId,
+                    out string error))
+                {
+                    Logger.LogError(
+                        $"GK2+ did not execute cheat '{cheatId}' because the " +
+                        $"save could not be safely tainted: {error}");
+
+                    _uiService.ShowMenu();
+                    return;
+                }
+
+                _uiService.RefreshMenu();
+
+                try
+                {
+                    cheatAction();
+                }
+                finally
+                {
+                    _uiService.ShowMenu();
+                    _uiService.RefreshMenu();
+                }
+            }
         }
 
         private void GiveMoney(int amount)
