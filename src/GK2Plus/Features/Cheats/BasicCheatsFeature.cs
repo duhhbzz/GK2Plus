@@ -16,7 +16,7 @@ namespace GK2Plus.Features.Cheats
     internal sealed class BasicCheatsFeature : FeatureBase
     {
         private const string MoneyResource = "money";
-        private const string StaminaResource = "stamina";
+        private const string EnergyResource = "energy";
 
         private static BasicCheatsFeature _activeInstance;
         private static bool _achievementBlockLogged;
@@ -105,13 +105,13 @@ namespace GK2Plus.Features.Cheats
                 HealPlayer);
 
             RegisterCheatAction(
-                "cheats.refill-stamina",
-                "Refill Stamina",
-                RefillStamina);
+                "cheats.refill-energy",
+                "Refill Energy",
+                RefillEnergy);
 
             Logger.LogInfo(
                 "Basic Cheats enabled: Money increments, Heal Player, " +
-                "Refill Stamina, and per-save achievement protection.");
+                "Refill Energy, and per-save achievement protection.");
         }
 
         private bool TryPatchAchievementPlatformBoundary()
@@ -414,42 +414,41 @@ namespace GK2Plus.Features.Cheats
                 $"Heal Player completed: {before} -> {hp.Hp}/{hp.MaxHpValue} HP.");
         }
 
-        private void RefillStamina()
+        private void RefillEnergy()
         {
             PlayerData playerData = MainGame.PlayerData;
-            PlayerStaminaGameResSystem staminaSystem =
-                PlayerStaminaGameResSystem.GetSystem();
+            PlayerEnergyGameResSystem energySystem =
+                PlayerEnergyGameResSystem.GetSystem();
 
             if (playerData == null ||
-                playerData.staminaSystem == null ||
-                staminaSystem == null)
+                energySystem == null)
             {
                 Logger.LogWarning(
-                    "Refill Stamina was blocked because the native stamina system is unavailable.");
+                    "Refill Energy was blocked because the native energy system is unavailable.");
                 return;
             }
 
             float before =
-                playerData.GetRes(StaminaResource);
+                playerData.GetRes(EnergyResource);
 
             bool success = _saveService.TryRunProtectedMutation(
-                "Refill Stamina",
+                "Refill Energy",
                 SaveMutationRisk.Low,
-                playerData.staminaSystem.SetMax,
-                staminaSystem.HasMax);
+                () => energySystem.Set(energySystem.Max),
+                energySystem.HasMax);
 
             if (!success)
             {
                 Logger.LogWarning(
-                    "Refill Stamina did not complete.");
+                    "Refill Energy did not complete.");
                 return;
             }
 
             float after =
-                playerData.GetRes(StaminaResource);
+                playerData.GetRes(EnergyResource);
 
             Logger.LogInfo(
-                $"Refill Stamina completed: {before:0.##} -> {after:0.##}/{staminaSystem.Max:0.##}.");
+                $"Refill Energy completed: {before:0.##} -> {after:0.##}/{energySystem.Max:0.##}.");
         }
     }
 }
