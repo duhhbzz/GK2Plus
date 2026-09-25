@@ -45,6 +45,9 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<GK2MenuAction, GameObject> _registeredActionButtons =
             new Dictionary<GK2MenuAction, GameObject>();
 
+        private readonly Dictionary<string, Func<string>> _tabNotices =
+            new Dictionary<string, Func<string>>(StringComparer.OrdinalIgnoreCase);
+
         private string _activeTab = "General";
         private bool _built;
 
@@ -93,6 +96,30 @@ namespace GK2Plus.Framework.UI
             {
                 BuildRegisteredActionButtons();
                 SetActiveTab(_activeTab);
+            }
+        }
+
+        public void RegisterTabNotice(
+            string tab,
+            Func<string> noticeProvider)
+        {
+            if (string.IsNullOrWhiteSpace(tab) ||
+                noticeProvider == null)
+            {
+                return;
+            }
+
+            _tabNotices[tab] = noticeProvider;
+
+            if (_built &&
+                string.Equals(
+                    _activeTab,
+                    tab,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                SetText(
+                    _pageText,
+                    GetPlaceholderText(_activeTab));
             }
         }
 
@@ -997,6 +1024,19 @@ Button close = closeButton.GetComponent<Button>();
                         "Planned: a central zombie manager, stats overview, and equipment tools.\n\n" +
                         followText;
                 case "Cheats":
+                    if (_tabNotices.TryGetValue(
+                        "Cheats",
+                        out Func<string> cheatsNotice))
+                    {
+                        string dynamicNotice =
+                            cheatsNotice();
+
+                        if (!string.IsNullOrWhiteSpace(dynamicNotice))
+                        {
+                            return dynamicNotice;
+                        }
+                    }
+
                     return
                         "Money cheats use a save-safety checkpoint.\n" +
                         "Health and stamina refills use native player systems.";
@@ -1080,6 +1120,7 @@ Button close = closeButton.GetComponent<Button>();
 
             _tabButtons.Clear();
             _registeredActionButtons.Clear();
+            _tabNotices.Clear();
             _pageTitle = null;
             _pageText = null;
             _githubButton = null;
