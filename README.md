@@ -409,6 +409,16 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
 
 ---
 
+## Support Development
+
+If you enjoy GK2+ and want to support continued development, testing, and future features:
+
+[☕ Buy Me a Coffee](https://buymeacoffee.com/duhhbzz)
+
+GK2+ is free and open source. Donations are completely optional and do not gate features or support.
+
+---
+
 ## License
 
 See [LICENSE](LICENSE).
