@@ -213,8 +213,9 @@ namespace GK2Plus.Framework.UI
                 typeof(RectTransform)
             );
 
-            // Build inactive so the LazyWindow Update loop cannot run before Init().
-            overlay.SetActive(false);
+            // Keep the visual tree active while cloning TMP/native UI templates.
+            // Some GK2/TMP materials are initialized lazily and cloning them under
+            // an inactive hierarchy can leave materialForRendering null.
             overlay.transform.SetParent(uiRoot, false);
             overlay.transform.SetAsLastSibling();
 
@@ -225,12 +226,6 @@ namespace GK2Plus.Framework.UI
             overlayRect.offsetMax = Vector2.zero;
 
             _menuRoot = overlay;
-            _nativeWindow = overlay.AddComponent<GK2ModMenuWindow>();
-
-            if (overlay.GetComponent<GraphicRaycaster>() == null)
-            {
-                overlay.AddComponent<GraphicRaycaster>();
-            }
 
             GameObject dimmer = CreateImage(
                 overlay.transform,
@@ -602,6 +597,15 @@ Button close = closeButton.GetComponent<Button>();
 
             SetActiveTab("General");
 
+            // Add the native window component only after the full visual tree has
+            // been built. RequireComponent supplies Canvas + gamepad navigation.
+            _nativeWindow = overlay.AddComponent<GK2ModMenuWindow>();
+
+            if (overlay.GetComponent<GraphicRaycaster>() == null)
+            {
+                overlay.AddComponent<GraphicRaycaster>();
+            }
+
             // LazyWindow.Init() wires Back/Escape handling, modality and the
             // LazyWindowsStackController, then leaves the window hidden.
             _nativeWindow.Init();
@@ -968,11 +972,10 @@ Button close = closeButton.GetComponent<Button>();
             SetProperty(tmp, "paragraphSpacing", 2.00f);
             SetProperty(tmp, "margin", Vector4.zero);
 
-            // Brighter face + very small dark outline for readability.
-            // The extra tracking above prevents the outline from merging narrow glyphs.
+            // Preserve the native TMP material/outline. Calling outlineWidth here
+            // forces TMP to instantiate a material and can throw when GK2 has not
+            // populated materialForRendering yet.
             SetProperty(tmp, "color", new Color(1f, 0.84f, 0.48f, 1f));
-            SetProperty(tmp, "outlineWidth", 0.035f);
-            SetProperty(tmp, "outlineColor", new Color32(32, 8, 18, 255));
 
             TrySetEnumProperty(tmp, "fontStyle", "Normal");
             TrySetEnumProperty(tmp, "fontWeight", "Regular");
