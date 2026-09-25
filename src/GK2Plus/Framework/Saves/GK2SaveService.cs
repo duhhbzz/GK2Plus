@@ -307,6 +307,32 @@ namespace GK2Plus.Framework.Saves
         }
 
         /// <summary>
+        /// Returns the timestamp stored by GK2 for the active slot's most
+        /// recent native save. This is updated by GameSave.PrepareToSave(),
+        /// regardless of whether the save came from sleep or GK2+ manual save.
+        /// </summary>
+        public bool TryGetLastSaveDateTime(out DateTime savedAt)
+        {
+            savedAt = default;
+
+            if (!TryGetActiveSlot(out SaveSlotData slotData, out _))
+            {
+                return false;
+            }
+
+            try
+            {
+                savedAt = slotData.GetSaveDateTime();
+                return savedAt != default;
+            }
+            catch
+            {
+                savedAt = default;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Explicitly creates a new backup of the active slot.
         ///
         /// Protected mutations do not call this directly; they use the checkpoint
