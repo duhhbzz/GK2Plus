@@ -147,6 +147,20 @@ General rules:
 - Backup retention must remain bounded.
 - Do not automatically restore/overwrite a live save unless a restore workflow has been explicitly designed and tested.
 
+### Cheat Integrity
+
+Player-facing actions intentionally classified as **cheats** must also preserve GK2+'s achievement-integrity policy:
+
+- route first use through the shared cheat-taint/confirmation flow;
+- never execute the first cheat if the active save could not be marked tainted;
+- do not bypass the achievement platform guard;
+- keep the taint marker outside GK2's serialized save schema;
+- propagate taint to GK2+ safety backups for the same slot;
+- fail closed if achievement protection cannot initialize;
+- ordinary QoL features must not taint a save merely because they are implemented by GK2+.
+
+A new Cheats-tab action should use the shared registration/gating path rather than implementing its own confirmation or taint logic.
+
 ---
 
 ## UI Contributions
