@@ -55,10 +55,19 @@ namespace GK2Plus.Framework.Saves
         {
             get
             {
-                return TryGetActiveSlot(
-                    out SaveSlotData slotData,
-                    out _) &&
-                    IsSlotCheatTainted(slotData.slotName);
+                try
+                {
+                    SaveSlotData slotData =
+                        MainGame.Instance?.SaveSlotData;
+
+                    return slotData != null &&
+                           !string.IsNullOrWhiteSpace(slotData.slotName) &&
+                           IsSlotCheatTainted(slotData.slotName);
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 
