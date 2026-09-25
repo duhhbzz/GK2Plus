@@ -46,10 +46,7 @@ namespace GK2Plus
 
             FrameworkDiagnostics.LogReady(Logger);
 
-            // 0.0.x bootstrap. Menu ownership will move behind GK2UIService
-            // once the persistent in-game UI lifecycle is finalized.
-            ModMenuController.Create(Logger);
-
+            // The UI framework service owns the persistent GK2+ menu lifecycle.
             StartCoroutine(MainMenuBadgeController.Run(Logger));
 
             _featureRegistry =
