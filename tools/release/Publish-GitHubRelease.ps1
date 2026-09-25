@@ -47,12 +47,6 @@ try {
         throw 'Failed to update main from origin.'
     }
 
-    gh release view $tag *> $null
-
-    if ($LASTEXITCODE -eq 0) {
-        throw "GitHub Release $tag already exists."
-    }
-
     $args = @(
         'release', 'create', $tag,
         $zipPath,
@@ -68,7 +62,7 @@ try {
     & gh @args
 
     if ($LASTEXITCODE -ne 0) {
-        throw 'GitHub Release creation failed.'
+        throw "GitHub Release creation failed. If $tag already exists, inspect it with: gh release view $tag"
     }
 
     Write-Host ''
