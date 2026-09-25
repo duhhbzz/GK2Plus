@@ -26,7 +26,6 @@ namespace GK2Plus.Framework.UI
 
         private ManualLogSource _logger;
         private GameObject _menuRoot;
-        private GK2ModMenuWindow _nativeWindow;
         private GameObject _pageTitle;
         private GameObject _pageText;
 
@@ -90,8 +89,8 @@ namespace GK2Plus.Framework.UI
 
                         _built = true;
                         _logger?.LogInfo(
-                            "GK2+ mod menu shell ready under GUIElements.Root " +
-                            "and registered with the native LazyWindow stack. Press F2 to toggle.");
+                            "GK2+ mod menu shell ready under persistent GUIElements.Root. " +
+                            "Press F2 to toggle.");
                     }
                     catch (Exception ex)
                     {
@@ -110,13 +109,14 @@ namespace GK2Plus.Framework.UI
 
         private void Update()
         {
-            if (!_built || _menuRoot == null || _nativeWindow == null)
+            if (!_built || _menuRoot == null)
             {
                 return;
             }
 
             if (Input.GetKeyDown(KeyCode.F2))
             {
+                _logger?.LogInfo("GK2+ F2 detected; toggling mod menu.");
                 ToggleMenu();
                 return;
             }
@@ -597,18 +597,11 @@ Button close = closeButton.GetComponent<Button>();
 
             SetActiveTab("General");
 
-            // Add the native window component only after the full visual tree has
-            // been built. RequireComponent supplies Canvas + gamepad navigation.
-            _nativeWindow = overlay.AddComponent<GK2ModMenuWindow>();
-
-            if (overlay.GetComponent<GraphicRaycaster>() == null)
-            {
-                overlay.AddComponent<GraphicRaycaster>();
-            }
-
-            // LazyWindow.Init() wires Back/Escape handling, modality and the
-            // LazyWindowsStackController, then leaves the window hidden.
-            _nativeWindow.Init();
+            // Phase 1: keep the proven manual shell lifecycle, but host it on
+            // the persistent GUIElements.Root instead of the main-menu window.
+            // Native LazyWindow stack integration will follow once we clone a
+            // real GK2 window prefab rather than synthesizing the component.
+            _menuRoot.SetActive(false);
 
             _logger?.LogInfo(
                 $"GK2+ mod menu host attached to '{uiRoot.name}' " +
@@ -802,33 +795,29 @@ Button close = closeButton.GetComponent<Button>();
 
         public void ToggleMenu()
         {
-            if (!_built || _menuRoot == null || _nativeWindow == null)
+            if (!_built || _menuRoot == null)
             {
+                _logger?.LogWarning("GK2+ F2 toggle ignored because the menu shell is not ready.");
                 return;
             }
 
-            if (_nativeWindow.IsShown)
+            bool show = !_menuRoot.activeSelf;
+            _menuRoot.SetActive(show);
+
+            if (show)
             {
-                _nativeWindow.Close();
-                return;
+                _menuRoot.transform.SetAsLastSibling();
+                SetActiveTab(_activeTab);
             }
 
-            _menuRoot.transform.SetAsLastSibling();
-            SetActiveTab(_activeTab);
-            _nativeWindow.Open(new GK2ModMenuWindowData());
-
-            _logger?.LogDebug(
-                $"GK2+ mod menu opened in {DetectContext()} context; " +
-                $"nativeTop={_nativeWindow.IsTop}; sorting={_nativeWindow.Canvas.sortingOrder}.");
+            _logger?.LogInfo(
+                $"GK2+ mod menu {(show ? "shown" : "hidden")} in {DetectContext()} context; " +
+                $"parent='{_menuRoot.transform.parent?.name ?? "<none>"}'.");
         }
 
         public void HideMenu()
         {
-            if (_nativeWindow != null && _nativeWindow.IsShown)
-            {
-                _nativeWindow.Close();
-            }
-            else if (_menuRoot != null)
+            if (_menuRoot != null)
             {
                 _menuRoot.SetActive(false);
             }
@@ -839,9 +828,9 @@ Button close = closeButton.GetComponent<Button>();
             HideMenu();
             CleanupPartialMenu();
 
-            if (gameObject != null)
+            if (this != null)
             {
-                Destroy(gameObject);
+                Destroy(this.gameObject);
             }
         }
 
@@ -862,18 +851,12 @@ Button close = closeButton.GetComponent<Button>();
 
         private void CleanupPartialMenu()
         {
-            if (_nativeWindow != null && _nativeWindow.IsShown)
-            {
-                _nativeWindow.CloseWithoutCallback();
-            }
-
             if (_menuRoot != null)
             {
                 Destroy(_menuRoot);
                 _menuRoot = null;
             }
 
-            _nativeWindow = null;
             _tabButtons.Clear();
             _pageTitle = null;
             _pageText = null;
