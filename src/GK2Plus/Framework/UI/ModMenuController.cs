@@ -694,28 +694,47 @@ Button close = closeButton.GetComponent<Button>();
                     continue;
                 }
 
+                const int maxPerRow = 4;
                 const float maxRowWidth = 350f;
                 const float gap = 6f;
-                float buttonWidth = Mathf.Min(
-                    108f,
-                    (maxRowWidth - ((count - 1) * gap)) / count);
-                float rowWidth =
-                    (count * buttonWidth) + ((count - 1) * gap);
-                float firstX =
-                    (-rowWidth / 2f) + (buttonWidth / 2f);
+                const float firstRowY = -92f;
+                const float rowGap = 27f;
 
                 for (int i = 0; i < count; i++)
                 {
-                    GK2MenuAction action = actions[i];
+                    int row = i / maxPerRow;
+                    int indexInRow = i % maxPerRow;
+                    int rowStart = row * maxPerRow;
+                    int rowCount = Mathf.Min(
+                        maxPerRow,
+                        count - rowStart);
+
+                    float buttonWidth = Mathf.Min(
+                        108f,
+                        (maxRowWidth - ((rowCount - 1) * gap)) / rowCount);
+
+                    float rowWidth =
+                        (rowCount * buttonWidth) +
+                        ((rowCount - 1) * gap);
+
+                    float firstX =
+                        (-rowWidth / 2f) +
+                        (buttonWidth / 2f);
+
                     float x =
-                        firstX + i * (buttonWidth + gap);
+                        firstX +
+                        indexInRow * (buttonWidth + gap);
+
+                    float y =
+                        firstRowY -
+                        row * rowGap;
 
                     GameObject buttonObject = CreateActionButton(
                         _menuButtonLabelTemplate,
                         _contentRoot.transform,
                         _menuButtonSprite,
                         action.Label,
-                        new Vector2(x, -142f),
+                        new Vector2(x, y),
                         new Vector2(buttonWidth, 20f));
 
                     Button button = buttonObject.GetComponent<Button>();
@@ -902,6 +921,7 @@ Button close = closeButton.GetComponent<Button>();
 
             SetText(_pageTitle, tabName);
             SetText(_pageText, GetPlaceholderText(tabName));
+            LayoutPageTextForTab(tabName);
 
             bool more = tabName == "More";
 
@@ -910,6 +930,35 @@ Button close = closeButton.GetComponent<Button>();
             if (_bugButton != null) _bugButton.SetActive(more);
 
             RefreshRegisteredActionButtons();
+        }
+
+        private void LayoutPageTextForTab(string tab)
+        {
+            if (_pageText == null)
+            {
+                return;
+            }
+
+            RectTransform rect =
+                _pageText.GetComponent<RectTransform>();
+
+            if (rect == null)
+            {
+                return;
+            }
+
+            bool cheats = string.Equals(
+                tab,
+                "Cheats",
+                StringComparison.OrdinalIgnoreCase);
+
+            rect.anchoredPosition = cheats
+                ? new Vector2(0f, -40f)
+                : new Vector2(0f, -40f);
+
+            rect.sizeDelta = cheats
+                ? new Vector2(350f, 42f)
+                : new Vector2(350f, 102f);
         }
 
         private string GetPlaceholderText(string tab)
@@ -949,9 +998,8 @@ Button close = closeButton.GetComponent<Button>();
                         followText;
                 case "Cheats":
                     return
-                        "Functional Cheats\n\n" +
-                        "Money actions use the GK2+ save-safety checkpoint before changing persistent state.\n" +
-                        "Heal Player uses GK2's native HP system and does not create a backup.";
+                        "Money cheats use a save-safety checkpoint.\n" +
+                        "Health and stamina refills use native player systems.";
                 case "More":
                     return
                         "GK2+ Project Links\n\n" +
