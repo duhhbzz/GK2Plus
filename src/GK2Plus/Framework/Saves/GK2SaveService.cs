@@ -226,6 +226,87 @@ namespace GK2Plus.Framework.Saves
         }
 
         /// <summary>
+        /// Requests a normal native GK2 save of the currently loaded slot.
+        ///
+        /// This deliberately does not create a GK2+ safety checkpoint first:
+        /// the requested operation is the save itself, and SaveSystem's normal
+        /// write events invalidate any older checkpoint when the write completes.
+        /// </summary>
+        public bool TryManualSave(out string error)
+        {
+            error = null;
+
+            if (!TryGetActiveSlot(out SaveSlotData slotData, out error))
+            {
+                return false;
+            }
+
+            if (IsSaveOperationInProgress)
+            {
+                error = "GK2 is already loading or writing a save.";
+                return false;
+            }
+
+            MainGame mainGame = MainGame.Instance;
+            GameSave gameSave = mainGame?.GameSave;
+
+            if (gameSave == null)
+            {
+                error = "The active GameSave is unavailable.";
+                return false;
+            }
+
+            bool callbackReceived = false;
+            bool success = false;
+
+            try
+            {
+                Logger.LogInfo(
+                    $"GK2+ manual save requested for slot '{slotData.slotName}'.");
+
+                SaveSystem.Save(
+                    slotData,
+                    gameSave,
+                    callbackSuccessful: () =>
+                    {
+                        callbackReceived = true;
+                        success = true;
+                    },
+                    callbackUnsuccessful: () =>
+                    {
+                        callbackReceived = true;
+                        success = false;
+                    });
+
+                if (!callbackReceived)
+                {
+                    error = "GK2 SaveSystem returned without a completion callback.";
+                    Logger.LogError("GK2+ manual save failed: " + error);
+                    return false;
+                }
+
+                if (!success)
+                {
+                    error = "GK2 SaveSystem reported that the save failed.";
+                    Logger.LogError("GK2+ manual save failed: " + error);
+                    return false;
+                }
+
+                Logger.LogInfo(
+                    $"GK2+ manual save completed for slot '{slotData.slotName}'.");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                Logger.LogError(
+                    $"GK2+ manual save threw an unexpected exception: {ex}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Explicitly creates a new backup of the active slot.
         ///
         /// Protected mutations do not call this directly; they use the checkpoint
