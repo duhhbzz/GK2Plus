@@ -23,6 +23,7 @@ namespace GK2Plus.Features.Cheats
 
         private readonly GK2SaveService _saveService;
         private readonly GK2UIService _uiService;
+        private bool _achievementGuardReady;
 
         public BasicCheatsFeature(
             GK2SaveService saveService,
@@ -51,7 +52,8 @@ namespace GK2Plus.Features.Cheats
             _activeInstance = this;
             _achievementBlockLogged = false;
 
-            PatchAchievementPlatformBoundary();
+            _achievementGuardReady =
+                TryPatchAchievementPlatformBoundary();
 
             _uiService.RegisterTabNotice(
                 "Cheats",
@@ -112,40 +114,52 @@ namespace GK2Plus.Features.Cheats
                 "Refill Stamina, and per-save achievement protection.");
         }
 
-        private void PatchAchievementPlatformBoundary()
+        private bool TryPatchAchievementPlatformBoundary()
         {
-            MethodInfo progressMethod = AccessTools.Method(
+            try
+            {
+                MethodInfo progressMethod = AccessTools.Method(
                 typeof(AchievementsSystem),
                 "TrySetAchievementProgressOnPlatform");
 
-            MethodInfo unlockMethod = AccessTools.Method(
-                typeof(AchievementsSystem),
-                "TryUnlockAchievementOnPlatform");
+                MethodInfo unlockMethod = AccessTools.Method(
+                    typeof(AchievementsSystem),
+                    "TryUnlockAchievementOnPlatform");
 
-            if (progressMethod == null ||
-                unlockMethod == null)
+                if (progressMethod == null ||
+                    unlockMethod == null)
+                {
+                    Logger.LogError(
+                        "Basic Cheats could not resolve GK2's platform achievement " +
+                        "boundary. Cheat actions will remain unavailable.");
+
+                    return false;
+                }
+
+                HarmonyMethod prefix = new HarmonyMethod(
+                    typeof(BasicCheatsFeature),
+                    nameof(AchievementPlatformPrefix));
+
+                Harmony.Patch(
+                    progressMethod,
+                    prefix: prefix);
+
+                Harmony.Patch(
+                    unlockMethod,
+                    prefix: prefix);
+
+                Logger.LogInfo(
+                    "GK2+ achievement guard patched GK2's platform progress/unlock boundary.");
+
+                return true;
+            }
+            catch (Exception ex)
             {
                 Logger.LogError(
-                    "Basic Cheats could not resolve GK2's platform achievement " +
-                    "boundary. Cheat actions will remain unavailable.");
+                    $"GK2+ achievement guard failed to initialize: {ex}");
 
-                return;
+                return false;
             }
-
-            HarmonyMethod prefix = new HarmonyMethod(
-                typeof(BasicCheatsFeature),
-                nameof(AchievementPlatformPrefix));
-
-            Harmony.Patch(
-                progressMethod,
-                prefix: prefix);
-
-            Harmony.Patch(
-                unlockMethod,
-                prefix: prefix);
-
-            Logger.LogInfo(
-                "GK2+ achievement guard patched GK2's platform progress/unlock boundary.");
         }
 
         private static bool AchievementPlatformPrefix()
@@ -201,12 +215,20 @@ namespace GK2Plus.Features.Cheats
 
         private bool CanUseCheats()
         {
-            return _saveService.HasLoadedSave &&
+            return _achievementGuardReady &&
+                   _saveService.HasLoadedSave &&
                    !_saveService.IsSaveOperationInProgress;
         }
 
         private string BuildCheatNotice()
         {
+            if (!_achievementGuardReady)
+            {
+                return
+                    "CHEATS UNAVAILABLE - ACHIEVEMENT PROTECTION FAILED TO INITIALIZE\n" +
+                    "GK2+ will not allow cheat actions without the achievement guard.";
+            }
+
             if (!_saveService.HasLoadedSave)
             {
                 return
