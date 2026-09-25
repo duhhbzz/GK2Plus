@@ -118,9 +118,13 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
   - [ ] Exit confirmation / Last saved status
   - [ ] optional first-cheat warning
 - [ ] Merge the release-preparation PR.
-- [ ] Create/push tag `v0.1.0`.
-- [ ] Create GitHub Release **GK2+ v0.1.0 — First Gameplay Release**.
-- [ ] Attach `GK2Plus-0.1.0.zip` to the GitHub release.
+- [ ] From updated `main`, publish the GitHub tag/release/archive with:
+
+~~~powershell
+.\tools\release\Publish-GitHubRelease.ps1
+~~~
+
+- [ ] Confirm GitHub Release **GK2+ v0.1.0 — First Gameplay Release** exists and contains `GK2Plus-0.1.0.zip`.
 - [ ] Upload the exact same ZIP to Nexus Mods.
 - [ ] Use `docs/NEXUS_PAGE.md` for the restored Nexus description/file copy.
 - [ ] Add the final Nexus URL to `ProjectLinks.NexusUrl` in a follow-up release if the URL is not known before v0.1.0 ships.
