@@ -261,9 +261,13 @@ Nexus Mods is a player-facing discovery/download channel. The same release archi
 
 ### Thunderstore / R2ModMan
 
-A Graveyard Keeper II Thunderstore community is expected to provide launcher/package-manager support for BepInEx mods such as GK2+.
+The **Graveyard Keeper 2** Thunderstore community is live.
 
-Thunderstore packaging will be added once the community/package identifiers and required metadata are available. The gameplay DLL should remain the same release build; only distribution packaging should differ.
+GK2+ includes a dedicated Thunderstore package builder that wraps the same release DLL with Thunderstore's required manifest, README, icon, and BepInEx dependency metadata.
+
+The v0.1.0 manifest depends on `BepInEx-BepInExPack-5.4.2305`, which provides the BepInEx 5.4.23.5 runtime used by GK2+.
+
+See [docs/THUNDERSTORE.md](docs/THUNDERSTORE.md).
 
 ---
 
