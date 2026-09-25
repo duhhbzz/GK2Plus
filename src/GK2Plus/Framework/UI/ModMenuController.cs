@@ -729,6 +729,8 @@ Button close = closeButton.GetComponent<Button>();
 
                 for (int i = 0; i < count; i++)
                 {
+                    GK2MenuAction action = actions[i];
+
                     int row = i / maxPerRow;
                     int indexInRow = i % maxPerRow;
                     int rowStart = row * maxPerRow;
