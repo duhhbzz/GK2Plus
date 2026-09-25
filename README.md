@@ -12,123 +12,144 @@
   <a href="CONTRIBUTING.md">Contributing</a> •
   <a href="docs/PERFORMANCE.md">Performance</a> •
   <a href="docs/SAVE_SAFETY.md">Save Safety</a> •
+  <a href="docs/RELEASE_CHECKLIST.md">Release Checklist</a> •
+  <a href="docs/THUNDERSTORE.md">Thunderstore</a> •
   <a href="LICENSE">License</a>
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.0.1-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-blue">
   <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.5-purple">
   <img alt=".NET Standard" src="https://img.shields.io/badge/.NET%20Standard-2.1-blueviolet">
-  <img alt="Status" src="https://img.shields.io/badge/status-foundation%20preview-orange">
+  <img alt="Status" src="https://img.shields.io/badge/status-first%20gameplay%20release-brightgreen">
 </p>
 
 ---
 
-> **GK2+ is still in early development.**
->
-> The repository may contain unreleased work beyond the latest packaged build. Current development source includes a persistent F2 menu that works from both the main menu and active gameplay. Gameplay/QoL modules are still being implemented and validated.
-
 ## What is GK2+?
 
-**GK2+ (Graveyard Keeper Plus)** is a configurable, all-in-one enhancement suite for **Graveyard Keeper 2**.
+**GK2+ (Graveyard Keeper Plus)** is a configurable all-in-one enhancement suite for **Graveyard Keeper 2**.
 
-The goal is to bring quality-of-life improvements, gameplay tweaks, convenience features, optional cheats, and useful management tools into one modular mod without forcing every feature on every player.
+The project combines quality-of-life improvements, gameplay tweaks, management tools, and optional cheats behind one modular framework. The goal is to reduce the need for many tiny overlapping mods while still allowing players to disable individual GK2+ features when another mod provides an implementation they prefer.
 
-Major systems are being built as independent modules. Where technically practical, players will be able to disable a GK2+ feature and continue using another mod's implementation instead.
+**v0.1.0 is the first functional gameplay release.** It moves GK2+ beyond the original framework/menu preview with a tested Manual Save feature, functional Cheats tools, save-safety checkpoints, and per-save achievement protection for cheat use.
 
 ### Design goals
 
 - One primary mod instead of dozens of tiny tweaks
 - Independently configurable feature modules
 - Compatibility-first design
-- Sensible, vanilla-friendly defaults
-- Native-style in-game configuration UI
+- Native-style in-game UI
 - Save-safe persistent mutations
-- Low CPU, GPU, RAM, and disk overhead
-- Clear conflict warnings where possible
-- Open development and community contributions
-- Transparent changelogs and semantic versioning
+- Low CPU, GPU, RAM, GC, and disk overhead
+- Narrow Harmony patches and small blast radius
+- Clear conflict/safety behavior
+- Open development and semantic versioning
 
 ---
 
-## Current Development State
+## v0.1.0 Features
 
-The current source tree includes:
+### Manual Save
 
-- BepInEx plugin bootstrap
-- Harmony integration foundation
-- Modular feature registry and feature base classes
-- Master GK2+ enable/disable configuration
-- Compatibility scan for loaded BepInEx plugins
-- Shared framework services for:
-  - events
-  - saves
-  - world access
-  - inventory
-  - crafting
-  - farming
-  - zombies
-  - quests
-  - localization
-  - UI
-  - diagnostics
-- Native-style GK2+ badge on the Graveyard Keeper 2 main menu
-- Persistent F2 GK2+ menu shell from:
-  - the main menu
-  - active gameplay
-- Esc and Close-button handling
-- Dedicated overlay Canvas so GK2+ renders above native game windows while open
-- Category tabs for:
-  - General
-  - Inventory
-  - Crafting
-  - Farming
-  - Zombies
-  - Cheats
-  - More
-- GitHub and bug-report links from the More tab
-- Save-safety infrastructure for future persistent mutations
-- Public reconnaissance tooling under tools/recon/
+GK2+ adds a native-style **Save Game** button to the in-game pause menu.
 
-### Not included yet
+The feature delegates the actual save to Graveyard Keeper 2's own save system rather than implementing custom serialization.
 
-- Finished gameplay-changing QoL modules
-- Functional cheat actions
-- Final feature settings/toggles inside the custom menu
-- Automated backup restore
+Validated behavior includes:
 
-These are development targets, not missing dependencies.
+- manual mid-day saves;
+- no forced sleep/day transition;
+- player location persistence;
+- inventory/money persistence;
+- moved world-object persistence;
+- native saving indicator;
+- keyboard/mouse and controller navigation.
 
----
-
-## UI Lifecycle
-
-GK2+ uses a persistent UI controller and attaches the menu to the game's persistent GUI root rather than a main-menu-only hierarchy.
-
-The menu is built once, retained, and shown/hidden with **F2**.
-
-Current validated behavior:
+The native **Exit to Main Menu** confirmation is also extended with the save slot's real last-save time, for example:
 
 ~~~text
-Launch
-→ F2 on main menu
-→ load save
-→ F2 during gameplay
-→ Esc / Close
-→ open over native game windows
-→ return to main menu
-→ F2 again
+Last saved: 10 minutes ago (4:26 AM).
 ~~~
 
-The GK2+ overlay has its own Canvas/sorting order so vanilla windows and interaction prompts do not render over the mod menu.
+### Functional Cheats
+
+Press **F2** during gameplay and open the **Cheats** tab.
+
+Current actions:
+
+~~~text
+Silver
++1   +5   +10   +100
+
+Gold
++1   +5   +10   +100
+
+Heal Player
+Refill Energy
+~~~
+
+Money changes use GK2's native resource path, including the game's normal money-change feedback.
+
+**Refill Energy** targets the normal work/action energy resource and has been runtime validated.
+
+**Heal Player** uses GK2's native full-heal path, but still needs a hands-on damage-state validation pass before it is considered fully verified.
+
+### Cheat / Achievement Integrity
+
+Using the Cheats tab is intentionally not consequence-free.
+
+On the **first cheat used on a save**, GK2+ shows a confirmation explaining that platform achievements will be disabled for that save and its GK2+ backup lineage.
+
+If confirmed:
+
+- the active save receives a persistent GK2+ cheat-taint sidecar;
+- retained GK2+ backups for that slot are marked tainted;
+- future backups inherit the taint marker;
+- future cheat actions on that save do not ask again;
+- GK2+ blocks the game's platform achievement progress/unlock boundary while that tainted save is active.
+
+GK2+ does **not** modify Graveyard Keeper 2's serialized save schema to store this marker.
+
+The taint system is an integrity feature, not DRM. A user who deliberately removes GK2+, deletes metadata, or manually manipulates files can bypass a mod-level restriction.
+
+---
+
+## In-Game UI
+
+GK2+ uses a persistent UI controller attached to the game's persistent GUI root.
+
+Press:
+
+~~~text
+F2  Open / close GK2+
+ESC Close GK2+
+~~~
+
+The menu works from both:
+
+- the main menu;
+- active gameplay.
+
+Current top-level tabs:
+
+- General
+- Inventory
+- Crafting
+- Farming
+- Zombies
+- Cheats
+- More
+
+The overlay has its own sorting Canvas so native windows and prompts do not unexpectedly render over GK2+ while it is open.
 
 ---
 
 ## Save Safety
 
-Persistent cheats and progression tools should not directly mutate a live save without a safety gate.
+Persistent mutations should not directly change a live save without a safety gate.
 
-GK2+ uses a checkpoint model:
+GK2+ uses a generation/checkpoint model:
 
 ~~~text
 Normal launch/load/save
@@ -153,32 +174,34 @@ Backups are stored under:
 BepInEx/config/GK2Plus/SaveBackups/<slot>/
 ~~~
 
-The current retention target is **5 backups per save slot**.
+GK2+ currently retains **5 backup directories per save slot**.
 
-Save files are copied as streams rather than loaded into one large managed buffer, reducing unnecessary RAM pressure. GK2+ also avoids a second full-file checksum pass solely for backup verification.
+Money cheats are Moderate-risk persistent mutations and use this checkpoint system. Repeated money actions before another native save reuse the same checkpoint instead of repeatedly copying the save.
 
-See [docs/SAVE_SAFETY.md](docs/SAVE_SAFETY.md) for the full design.
+Cheat-tainted slots propagate their taint marker to GK2+ backups.
+
+See [docs/SAVE_SAFETY.md](docs/SAVE_SAFETY.md).
 
 ---
 
 ## Performance and Resource Use
 
-Performance is an architecture requirement for GK2+.
+Performance is an architecture requirement.
 
-The project follows these rules:
+GK2+ follows these rules:
 
 - no heavy work every frame;
 - prefer native game events over polling;
 - cache expensive lookups;
-- every event subscription must be unsubscribed;
-- persistent objects must have explicit ownership and cleanup;
-- hidden UI should not perform background work;
+- pair subscriptions with cleanup;
+- keep hidden UI idle;
 - avoid reflection/LINQ/large allocations in hot paths;
 - keep Harmony patches narrow and cheap;
-- no continuous recon/log writes in normal production use;
-- cap backup retention and deduplicate backup writes.
+- avoid production recon/log spam;
+- bound backup retention;
+- reuse save checkpoints instead of performing duplicate disk writes.
 
-The current menu is retained rather than rebuilt every time F2 is pressed.
+The F2 menu is retained rather than rebuilt on every open.
 
 See [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
@@ -191,11 +214,11 @@ See [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 - **Graveyard Keeper 2** on Windows
 - **BepInEx 5.4.23.5**
 
-### Install GK2+
+### Manual installation
 
 1. Install BepInEx for Graveyard Keeper 2.
 2. Download the GK2+ release archive.
-3. Extract the archive into your **Graveyard Keeper 2** installation directory.
+3. Extract it into the **Graveyard Keeper 2** installation directory.
 4. Confirm this file exists:
 
 ~~~text
@@ -203,10 +226,8 @@ Graveyard Keeper 2/BepInEx/plugins/GK2Plus/GK2Plus.dll
 ~~~
 
 5. Launch the game normally.
-6. Look for the **GK2+** status badge on the main menu.
-7. Press **F2** to open the GK2+ menu.
-
-Current development source supports F2 from both the main menu and active gameplay.
+6. Confirm the **GK2+** status badge appears on the main menu.
+7. Press **F2** to open GK2+.
 
 ### Uninstall
 
@@ -216,38 +237,37 @@ Delete:
 BepInEx/plugins/GK2Plus/
 ~~~
 
-Optional GK2+ configuration/backups live under:
+Optional GK2+ configuration and safety backups live under:
 
 ~~~text
 BepInEx/config/GK2Plus/
 ~~~
 
-Deleting the plugin does not automatically delete those user-created/configuration files.
+The per-save cheat-taint sidecar is stored beside the corresponding native GK2 save. Removing the plugin does not automatically remove GK2+ metadata or backups.
 
 ---
 
-## Planned Feature Areas
+## Distribution
 
-GK2+ is structured around several feature categories:
+GK2+ uses one version number across distribution channels.
 
-~~~text
-GK2+
-├── Inventory
-├── Storage
-├── Crafting
-├── Movement
-├── Farming
-├── Automation
-├── Economy
-├── Zombies
-├── Cheats
-├── UI
-└── Misc
-~~~
+### GitHub
 
-Planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, convenience options, and optional cheat utilities.
+GitHub Releases are the canonical release history, source/tag reference, changelog, and downloadable release archive.
 
-Planned items may change as the game is researched and tested.
+### Nexus Mods
+
+Nexus Mods is a player-facing discovery/download channel. The same release archive used for the GitHub release should be uploaded to Nexus.
+
+### Thunderstore / R2ModMan
+
+The **Graveyard Keeper 2** Thunderstore community is live.
+
+GK2+ includes a dedicated Thunderstore package builder that wraps the same release DLL with Thunderstore's required manifest, README, icon, and BepInEx dependency metadata.
+
+The v0.1.0 manifest depends on `BepInEx-BepInExPack-5.4.2305`, which provides the BepInEx 5.4.23.5 runtime used by GK2+.
+
+See [docs/THUNDERSTORE.md](docs/THUNDERSTORE.md).
 
 ---
 
@@ -255,33 +275,40 @@ Planned items may change as the game is researched and tested.
 
 GK2+ is not intended to force players into an all-or-nothing mod setup.
 
-Where technically practical, GK2+ will:
+Where practical, GK2+ will:
 
-- detect known overlapping mods,
-- warn players about possible conflicts,
-- allow conflicting GK2+ modules to be disabled,
-- avoid touching unrelated game systems,
-- use narrowly scoped Harmony patches,
+- detect known overlapping mods;
+- warn about possible conflicts;
+- allow conflicting GK2+ modules to be disabled;
+- avoid touching unrelated game systems;
+- use narrowly scoped Harmony patches;
 - document known incompatibilities.
 
 A feature toggle cannot guarantee compatibility with every third-party patch, but coexistence is a core project goal.
 
 ---
 
-## Configuration
+## Planned Feature Areas
 
-The base plugin currently exposes a master enable/disable option through BepInEx configuration.
+Current development direction includes:
 
-The custom GK2+ interface is being built to eventually provide:
+~~~text
+GK2+
+├── General / UI
+├── Inventory / Storage
+├── Crafting
+├── Farming
+├── Automation
+├── Economy
+├── Zombies
+├── Cheats
+├── Quest / Map tools
+└── Misc
+~~~
 
-- category navigation,
-- per-feature toggles,
-- configurable values,
-- compatibility notices,
-- restart-required indicators,
-- feature descriptions,
-- optional cheat tools,
-- backup/safety status.
+Near-term planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, and additional carefully gated convenience/cheat tools.
+
+Planned items may change as game systems are researched and tested.
 
 ---
 
@@ -316,11 +343,18 @@ Public reconnaissance helpers live under:
 tools/recon/
 ~~~
 
+Release tooling lives under:
+
+~~~text
+tools/release/
+~~~
+
 Development standards:
 
 - [Performance and Resource Standards](docs/PERFORMANCE.md)
 - [Save Safety](docs/SAVE_SAFETY.md)
 - [Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [Thunderstore / R2ModMan Plan](docs/THUNDERSTORE.md)
 - [Contributing](CONTRIBUTING.md)
 
 Game assemblies, decompiled source, extracted proprietary assets, private runtime reports, and local development paths are not distributed with the project.
@@ -339,22 +373,12 @@ The repository-root [VERSION](VERSION) file is the single source of truth.
 
 ~~~text
 0.0.x  Foundation / early development releases
-0.1.0  First meaningful gameplay/QoL release target
+0.1.0  First functional gameplay release
 0.x.0  Significant feature milestones
 1.0.0  Stable major release
 ~~~
 
-See [CHANGELOG.md](CHANGELOG.md) for release history and unreleased development changes.
-
----
-
-## Contributing
-
-GK2+ is open source and community contributions are welcome.
-
-Pull requests are reviewed for build correctness, in-game behavior, regression risk, compatibility, architecture, maintainability, licensing, attribution, and resource efficiency.
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
+See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -364,9 +388,34 @@ Use GitHub Issues:
 
 https://github.com/duhhbzz/GK2Plus/issues
 
-Please include the GK2+ version, game version, BepInEx version, other installed mods, reproduction steps, and relevant BepInEx log output.
+Please include:
 
-For performance issues, also include what you were doing when CPU/RAM/disk behavior changed and whether the issue grows over time.
+- GK2+ version;
+- Graveyard Keeper 2 version;
+- BepInEx version;
+- other installed mods;
+- reproduction steps;
+- relevant BepInEx log output.
+
+For performance problems, include what was happening when CPU/RAM/disk behavior changed and whether the issue grows over time.
+
+---
+
+## Contributing
+
+Community contributions are welcome.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
+
+---
+
+## Support Development
+
+If you enjoy GK2+ and want to support continued development, testing, and future features:
+
+[☕ Buy Me a Coffee](https://buymeacoffee.com/duhhbzz)
+
+GK2+ is free and open source. Donations are completely optional and do not gate features or support.
 
 ---
 
@@ -378,4 +427,4 @@ See [LICENSE](LICENSE).
 
 ## Credits
 
-Thanks to the Graveyard Keeper 2 modding community, the BepInEx contributors, the Harmony contributors, and everyone who tests builds, reports bugs, suggests features, or contributes code.
+Thanks to the Graveyard Keeper 2 modding community, the BepInEx and Harmony contributors, and everyone who tests builds, reports bugs, suggests features, or contributes code.
