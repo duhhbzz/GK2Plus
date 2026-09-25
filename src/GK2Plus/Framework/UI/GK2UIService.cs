@@ -84,6 +84,11 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RefreshMenu()
+        {
+            _modMenuController?.RefreshActiveTab();
+        }
+
         public override void Shutdown()
         {
             if (_modMenuController != null)
