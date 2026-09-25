@@ -13,17 +13,27 @@ namespace GK2Plus.Framework.Saves
     ///
     /// Feature modules should use this service before changing persistent
     /// player/progression/world state instead of touching save files directly.
-    /// Backups are strictly on-demand; normal game launches/saves do not create
-    /// GK2+ backup files.
+    ///
+    /// Automated safety backups use a checkpoint model:
+    /// - normal launch/load/save activity creates no GK2+ backup;
+    /// - the first Moderate/High mutation after a load/save creates one backup;
+    /// - later mutations reuse that checkpoint until GK2 writes/loads a save;
+    /// - only a small retained history is kept per slot.
     /// </summary>
     internal sealed class GK2SaveService : GK2ServiceBase
     {
         private const string SaveDataExtension = ".dat";
         private const string SaveInfoExtension = ".info";
+        private const int MaxBackupsPerSlot = 5;
 
         private bool _initialized;
         private bool _saveLoading;
         private bool _saveWriting;
+
+        private long _saveGeneration;
+        private long _checkpointGeneration = -1;
+        private string _checkpointSlotName;
+        private string _checkpointBackupDirectory;
 
         public GK2SaveService(ManualLogSource logger)
             : base(logger)
@@ -36,6 +46,8 @@ namespace GK2Plus.Framework.Saves
             Path.Combine(Paths.ConfigPath, "GK2Plus", "SaveBackups");
 
         public bool IsSaveOperationInProgress => _saveLoading || _saveWriting;
+
+        public int BackupRetentionPerSlot => MaxBackupsPerSlot;
 
         public bool HasLoadedSave
         {
@@ -74,8 +86,8 @@ namespace GK2Plus.Framework.Saves
             _initialized = true;
 
             Logger.LogInfo(
-                "GK2+ save safety ready. Persistent mutations can request " +
-                "on-demand backups before changing the active save.");
+                "GK2+ save safety ready. Persistent mutations use on-demand " +
+                $"checkpoints with a {MaxBackupsPerSlot}-backup per-slot retention cap.");
         }
 
         public override void Shutdown()
@@ -93,13 +105,14 @@ namespace GK2Plus.Framework.Saves
 
             _saveLoading = false;
             _saveWriting = false;
+            ClearCheckpoint();
 
             base.Shutdown();
         }
 
         /// <summary>
-        /// Checks the active-game/save state and creates a point-in-time backup
-        /// for Moderate/High risk mutations.
+        /// Checks active-game/save state and ensures a safety checkpoint exists
+        /// before Moderate/High risk mutations.
         /// </summary>
         public bool TryPrepareMutation(
             string operationName,
@@ -133,13 +146,14 @@ namespace GK2Plus.Framework.Saves
 
             if (risk >= SaveMutationRisk.Moderate)
             {
-                if (!TryCreateBackup(
+                if (!TryGetOrCreateCheckpoint(
                     operationName,
+                    slotData,
                     out SaveBackupResult backupResult))
                 {
                     Logger.LogError(
                         $"GK2+ save safety blocked '{operationName}' because " +
-                        $"the pre-mutation backup failed: {backupResult.Error}");
+                        $"the pre-mutation checkpoint failed: {backupResult.Error}");
                     return false;
                 }
 
@@ -212,8 +226,10 @@ namespace GK2Plus.Framework.Saves
         }
 
         /// <summary>
-        /// Creates a backup of the active slot's .dat and .info files.
-        /// No backup is created merely by initializing GK2+ or saving normally.
+        /// Explicitly creates a new backup of the active slot.
+        ///
+        /// Protected mutations do not call this directly; they use the checkpoint
+        /// cache so repeated actions do not repeatedly copy the same save files.
         /// </summary>
         public bool TryCreateBackup(
             string reason,
@@ -242,6 +258,54 @@ namespace GK2Plus.Framework.Saves
                 return false;
             }
 
+            return TryCreateBackupCore(reason, slotData, out result);
+        }
+
+        private bool TryGetOrCreateCheckpoint(
+            string reason,
+            SaveSlotData slotData,
+            out SaveBackupResult result)
+        {
+            if (_checkpointGeneration == _saveGeneration &&
+                string.Equals(
+                    _checkpointSlotName,
+                    slotData.slotName,
+                    StringComparison.Ordinal) &&
+                !string.IsNullOrEmpty(_checkpointBackupDirectory) &&
+                Directory.Exists(_checkpointBackupDirectory))
+            {
+                result = new SaveBackupResult(
+                    true,
+                    slotData.slotName,
+                    _checkpointBackupDirectory,
+                    null);
+
+                Logger.LogDebug(
+                    $"GK2+ save safety reused checkpoint for slot " +
+                    $"'{slotData.slotName}' generation {_saveGeneration}.");
+
+                return true;
+            }
+
+            if (!TryCreateBackupCore(reason, slotData, out result))
+            {
+                return false;
+            }
+
+            _checkpointGeneration = _saveGeneration;
+            _checkpointSlotName = slotData.slotName;
+            _checkpointBackupDirectory = result.BackupDirectory;
+
+            return true;
+        }
+
+        private bool TryCreateBackupCore(
+            string reason,
+            SaveSlotData slotData,
+            out SaveBackupResult result)
+        {
+            result = null;
+
             string saveFolder = SaveSystem.SaveFolder;
             string dataSource = Path.Combine(
                 saveFolder,
@@ -264,7 +328,7 @@ namespace GK2Plus.Framework.Saves
                             : null
                     }.Where(value => value != null));
 
-                error =
+                string error =
                     $"Required active-slot file(s) are missing: {missing}. " +
                     $"Save folder: {saveFolder}";
 
@@ -300,6 +364,8 @@ namespace GK2Plus.Framework.Saves
 
                 Directory.CreateDirectory(tempDirectory);
 
+                // Stream copies directly from disk to disk. GK2+ does not load
+                // the full save into a managed byte[] just to create a backup.
                 CopyStableFile(
                     dataSource,
                     Path.Combine(tempDirectory, Path.GetFileName(dataSource)));
@@ -320,6 +386,8 @@ namespace GK2Plus.Framework.Saves
 
                 Directory.Move(tempDirectory, finalDirectory);
 
+                PruneOldBackups(slotBackupRoot, finalDirectory);
+
                 result = new SaveBackupResult(
                     true,
                     slotData.slotName,
@@ -336,17 +404,43 @@ namespace GK2Plus.Framework.Saves
             {
                 TryDeleteDirectory(tempDirectory);
 
-                error = ex.Message;
                 result = new SaveBackupResult(
                     false,
                     slotData.slotName,
                     null,
-                    error);
+                    ex.Message);
 
                 Logger.LogError(
                     $"GK2+ failed to back up slot '{slotData.slotName}': {ex}");
 
                 return false;
+            }
+        }
+
+        private static void PruneOldBackups(
+            string slotBackupRoot,
+            string protectedDirectory)
+        {
+            DirectoryInfo root = new DirectoryInfo(slotBackupRoot);
+
+            DirectoryInfo[] backups = root
+                .GetDirectories()
+                .Where(directory =>
+                    !directory.Name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(directory => directory.Name, StringComparer.Ordinal)
+                .ToArray();
+
+            foreach (DirectoryInfo backup in backups.Skip(MaxBackupsPerSlot))
+            {
+                if (string.Equals(
+                    backup.FullName,
+                    protectedDirectory,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryDeleteDirectory(backup.FullName);
             }
         }
 
@@ -518,18 +612,38 @@ namespace GK2Plus.Framework.Saves
             }
             catch
             {
-                // Best-effort cleanup only; preserve the original backup error.
+                // Best-effort retention cleanup only. A failed prune must not
+                // invalidate a newly-created safety backup.
             }
+        }
+
+        private void AdvanceSaveGeneration(string reason)
+        {
+            _saveGeneration++;
+            ClearCheckpoint();
+
+            Logger.LogDebug(
+                $"GK2+ save checkpoint invalidated after {reason}; " +
+                $"generation={_saveGeneration}.");
+        }
+
+        private void ClearCheckpoint()
+        {
+            _checkpointGeneration = -1;
+            _checkpointSlotName = null;
+            _checkpointBackupDirectory = null;
         }
 
         private void OnSaveLoadingStarted()
         {
             _saveLoading = true;
+            ClearCheckpoint();
         }
 
         private void OnSaveLoadingEnded()
         {
             _saveLoading = false;
+            AdvanceSaveGeneration("save load");
         }
 
         private void OnSaveWriteStarted()
@@ -545,6 +659,7 @@ namespace GK2Plus.Framework.Saves
         private void OnSaveWriteEnded()
         {
             _saveWriting = false;
+            AdvanceSaveGeneration("save write");
         }
     }
 }
