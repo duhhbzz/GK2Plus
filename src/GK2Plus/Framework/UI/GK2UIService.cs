@@ -89,6 +89,16 @@ namespace GK2Plus.Framework.UI
             _modMenuController?.RefreshActiveTab();
         }
 
+        public void HideMenu()
+        {
+            _modMenuController?.HideMenu();
+        }
+
+        public void ShowMenu()
+        {
+            _modMenuController?.ShowMenu();
+        }
+
         public override void Shutdown()
         {
             if (_modMenuController != null)
