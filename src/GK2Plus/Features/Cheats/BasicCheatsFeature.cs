@@ -12,6 +12,7 @@ namespace GK2Plus.Features.Cheats
     internal sealed class BasicCheatsFeature : FeatureBase
     {
         private const string MoneyResource = "money";
+        private const string StaminaResource = "stamina";
 
         private readonly GK2SaveService _saveService;
         private readonly GK2UIService _uiService;
@@ -40,21 +41,45 @@ namespace GK2Plus.Features.Cheats
 
         protected override void OnEnabled()
         {
-            _uiService.RegisterMenuAction(
-                new GK2MenuAction(
-                    "cheats.give-silver",
-                    "Cheats",
-                    "Give 1 Silver",
-                    () => GiveMoney(100),
-                    CanUseCheats));
+            RegisterMoneyAction(
+                "cheats.give-1-silver",
+                "+1 Silver",
+                100);
 
-            _uiService.RegisterMenuAction(
-                new GK2MenuAction(
-                    "cheats.give-gold",
-                    "Cheats",
-                    "Give 1 Gold",
-                    () => GiveMoney(10000),
-                    CanUseCheats));
+            RegisterMoneyAction(
+                "cheats.give-5-silver",
+                "+5 Silver",
+                500);
+
+            RegisterMoneyAction(
+                "cheats.give-10-silver",
+                "+10 Silver",
+                1000);
+
+            RegisterMoneyAction(
+                "cheats.give-100-silver",
+                "+100 Silver",
+                10000);
+
+            RegisterMoneyAction(
+                "cheats.give-1-gold",
+                "+1 Gold",
+                10000);
+
+            RegisterMoneyAction(
+                "cheats.give-5-gold",
+                "+5 Gold",
+                50000);
+
+            RegisterMoneyAction(
+                "cheats.give-10-gold",
+                "+10 Gold",
+                100000);
+
+            RegisterMoneyAction(
+                "cheats.give-100-gold",
+                "+100 Gold",
+                1000000);
 
             _uiService.RegisterMenuAction(
                 new GK2MenuAction(
@@ -64,8 +89,30 @@ namespace GK2Plus.Features.Cheats
                     HealPlayer,
                     CanUseCheats));
 
+            _uiService.RegisterMenuAction(
+                new GK2MenuAction(
+                    "cheats.refill-stamina",
+                    "Cheats",
+                    "Refill Stamina",
+                    RefillStamina,
+                    CanUseCheats));
+
             Logger.LogInfo(
-                "Basic Cheats enabled: Give Money and Heal Player.");
+                "Basic Cheats enabled: Money increments, Heal Player, and Refill Stamina.");
+        }
+
+        private void RegisterMoneyAction(
+            string id,
+            string label,
+            int bronzeAmount)
+        {
+            _uiService.RegisterMenuAction(
+                new GK2MenuAction(
+                    id,
+                    "Cheats",
+                    label,
+                    () => GiveMoney(bronzeAmount),
+                    CanUseCheats));
         }
 
         private bool CanUseCheats()
@@ -145,6 +192,44 @@ namespace GK2Plus.Features.Cheats
 
             Logger.LogInfo(
                 $"Heal Player completed: {before} -> {hp.Hp}/{hp.MaxHpValue} HP.");
+        }
+
+        private void RefillStamina()
+        {
+            PlayerData playerData = MainGame.PlayerData;
+            PlayerStaminaGameResSystem staminaSystem =
+                PlayerStaminaGameResSystem.GetSystem();
+
+            if (playerData == null ||
+                playerData.staminaSystem == null ||
+                staminaSystem == null)
+            {
+                Logger.LogWarning(
+                    "Refill Stamina was blocked because the native stamina system is unavailable.");
+                return;
+            }
+
+            float before =
+                playerData.GetRes(StaminaResource);
+
+            bool success = _saveService.TryRunProtectedMutation(
+                "Refill Stamina",
+                SaveMutationRisk.Low,
+                playerData.staminaSystem.SetMax,
+                staminaSystem.HasMax);
+
+            if (!success)
+            {
+                Logger.LogWarning(
+                    "Refill Stamina did not complete.");
+                return;
+            }
+
+            float after =
+                playerData.GetRes(StaminaResource);
+
+            Logger.LogInfo(
+                $"Refill Stamina completed: {before:0.##} -> {after:0.##}/{staminaSystem.Max:0.##}.");
         }
     }
 }
