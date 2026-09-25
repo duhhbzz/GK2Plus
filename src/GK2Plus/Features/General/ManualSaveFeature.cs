@@ -1,9 +1,11 @@
 using System;
-using System.Collections;
+using System.Globalization;
 using System.Reflection;
 using GK2Plus.Core;
 using GK2Plus.Framework.Saves;
 using HarmonyLib;
+using LazyBearTechnology;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +14,8 @@ namespace GK2Plus.Features.General
     /// <summary>
     /// Adds a native-style Save Game button to GK2's pause menu and delegates
     /// persistence to the game's own SaveSystem through GK2SaveService.
+    /// Also augments the native Exit to Main Menu confirmation with the actual
+    /// native last-save age.
     /// </summary>
     internal sealed class ManualSaveFeature : FeatureBase
     {
@@ -48,16 +52,22 @@ namespace GK2Plus.Features.General
             {
                 Logger.LogWarning(
                     "Manual Save could not find UIGamePauseWindow; " +
-                    "the pause-menu button will not be added.");
+                    "the pause-menu integration will not be added.");
                 return;
             }
 
-            MethodInfo initMethod = AccessTools.Method(pauseWindowType, "Init");
-            if (initMethod == null)
+            MethodInfo initMethod = AccessTools.Method(
+                pauseWindowType,
+                "Init");
+
+            MethodInfo goToMenuMethod = AccessTools.Method(
+                pauseWindowType,
+                "OnPressedGoToMainMenu");
+
+            if (initMethod == null || goToMenuMethod == null)
             {
                 Logger.LogWarning(
-                    "Manual Save could not find UIGamePauseWindow.Init; " +
-                    "the pause-menu button will not be added.");
+                    "Manual Save could not resolve the required pause-menu methods.");
                 return;
             }
 
@@ -67,9 +77,15 @@ namespace GK2Plus.Features.General
                     typeof(ManualSaveFeature),
                     nameof(PauseWindowInitPostfix)));
 
+            Harmony.Patch(
+                goToMenuMethod,
+                prefix: new HarmonyMethod(
+                    typeof(ManualSaveFeature),
+                    nameof(PauseWindowGoToMenuPrefix)));
+
             // Usually the patch lands before LazyUI initializes this window.
-            // This one-time fallback also handles a window that was initialized
-            // earlier than expected without introducing per-frame polling.
+            // This one-time fallback also handles an already-created pause
+            // window without introducing per-frame polling.
             foreach (MonoBehaviour behaviour in
                 Resources.FindObjectsOfTypeAll<MonoBehaviour>())
             {
@@ -87,13 +103,31 @@ namespace GK2Plus.Features.General
 
         private static void PauseWindowInitPostfix(object __instance)
         {
+            _activeInstance?.TryInjectSaveButton(
+                __instance as MonoBehaviour);
+        }
+
+        private static bool PauseWindowGoToMenuPrefix(
+            object __instance)
+        {
             if (_activeInstance == null)
             {
-                return;
+                return true;
             }
 
-            _activeInstance.TryInjectSaveButton(
-                __instance as MonoBehaviour);
+            UIGamePauseWindow pauseWindow =
+                __instance as UIGamePauseWindow;
+
+            if (pauseWindow == null)
+            {
+                return true;
+            }
+
+            _activeInstance.OpenExitConfirmation(
+                pauseWindow);
+
+            // Suppress the original confirmation only after ours opens.
+            return false;
         }
 
         private void TryInjectSaveButton(MonoBehaviour pauseWindow)
@@ -115,8 +149,8 @@ namespace GK2Plus.Features.General
                 pauseWindow.GetType(),
                 "settingsBtn");
 
-            Component settingsButton =
-                settingsField?.GetValue(pauseWindow) as Component;
+            LazyButton settingsButton =
+                settingsField?.GetValue(pauseWindow) as LazyButton;
 
             if (settingsButton == null)
             {
@@ -133,11 +167,11 @@ namespace GK2Plus.Features.General
                 return;
             }
 
-            // Clone the real Settings button while it is temporarily inactive.
-            // That gives us GK2's native visuals/layout without allowing the
-            // cloned LazyButton to register the Settings button's UI element ID
-            // during Awake.
-            bool settingsWasActive = settingsButton.gameObject.activeSelf;
+            // Clone the native Settings button while inactive so its runtime
+            // LazyUI element ID cannot register a duplicate during Awake.
+            bool settingsWasActive =
+                settingsButton.gameObject.activeSelf;
+
             settingsButton.gameObject.SetActive(false);
 
             GameObject saveButtonObject = null;
@@ -151,40 +185,52 @@ namespace GK2Plus.Features.General
 
                 saveButtonObject.name = InjectedButtonName;
 
-                Component lazyButton = FindComponentByTypeName(
-                    saveButtonObject,
-                    "LazyButton");
+                LazyButton saveButton =
+                    saveButtonObject.GetComponent<LazyButton>();
 
-                ClearLazyUiElementId(lazyButton);
-
-                Button button = saveButtonObject.GetComponent<Button>();
-                if (button == null)
+                if (saveButton == null)
                 {
                     throw new InvalidOperationException(
-                        "Cloned pause-menu button has no Unity Button component.");
+                        "Cloned pause-menu button has no LazyButton component.");
                 }
 
-                // Do not inherit Settings' runtime/persistent click action.
-                button.onClick = new Button.ButtonClickedEvent();
-                button.onClick.AddListener(OnSaveButtonClicked);
+                saveButton.LazyUIElementId = string.Empty;
 
-                SetNativeButtonLabel(saveButtonObject, "Save Game");
+                // The clone may contain multiple TMP layers used by the native
+                // button visuals. Stop every cloned localization component from
+                // owning those labels, then update all text layers consistently.
+                foreach (LocalizedLabel localized in
+                    saveButtonObject.GetComponentsInChildren<LocalizedLabel>(true))
+                {
+                    localized.IgnoreLocalize = true;
+                    localized.enabled = false;
+                }
+
+                foreach (TextMeshProUGUI label in
+                    saveButtonObject.GetComponentsInChildren<TextMeshProUGUI>(true))
+                {
+                    label.text = "Save Game";
+                }
+
+                // Do not inherit Settings' runtime click action.
+                saveButton.onClick =
+                    new Button.ButtonClickedEvent();
+
+                saveButton.onClick.AddListener(
+                    OnSaveButtonClicked);
 
                 // Place Save Game immediately after Settings. The native
-                // VerticalLayoutGroup owns sizing/positioning from here.
+                // VerticalLayoutGroup owns positioning and spacing.
                 saveButtonObject.transform.SetSiblingIndex(
                     settingsButton.transform.GetSiblingIndex() + 1);
 
-                settingsButton.gameObject.SetActive(settingsWasActive);
-                saveButtonObject.SetActive(settingsWasActive);
+                settingsButton.gameObject.SetActive(
+                    settingsWasActive);
 
-                RebindGamepadCallbacks(lazyButton);
+                saveButtonObject.SetActive(
+                    settingsWasActive);
 
-                // Unity localization/UI callbacks can run after the clone is
-                // re-enabled. Re-assert our label on the next frame after the
-                // cloned localization components have been destroyed.
-                pauseWindow.StartCoroutine(
-                    FinalizeSaveButtonLabel(saveButtonObject));
+                saveButton.SetCallbacksIntoGamepadNavigationItem();
 
                 Logger.LogInfo(
                     "Manual Save injected native Save Game button into " +
@@ -192,11 +238,13 @@ namespace GK2Plus.Features.General
             }
             catch (Exception ex)
             {
-                settingsButton.gameObject.SetActive(settingsWasActive);
+                settingsButton.gameObject.SetActive(
+                    settingsWasActive);
 
                 if (saveButtonObject != null)
                 {
-                    UnityEngine.Object.Destroy(saveButtonObject);
+                    UnityEngine.Object.Destroy(
+                        saveButtonObject);
                 }
 
                 Logger.LogError(
@@ -206,7 +254,8 @@ namespace GK2Plus.Features.General
 
         private void OnSaveButtonClicked()
         {
-            if (_saveService.TryManualSave(out string error))
+            if (_saveService.TryManualSave(
+                out string error))
             {
                 Logger.LogInfo(
                     "Manual Save completed successfully.");
@@ -219,135 +268,104 @@ namespace GK2Plus.Features.General
             }
         }
 
-        private IEnumerator FinalizeSaveButtonLabel(
-            GameObject saveButtonObject)
+        private void OpenExitConfirmation(
+            UIGamePauseWindow pauseWindow)
         {
-            yield return null;
+            UIDialogWindow dialog =
+                LazyUI.GetWindow<UIDialogWindow>();
 
-            if (saveButtonObject != null)
+            if (dialog == null)
             {
-                SetNativeButtonLabel(
-                    saveButtonObject,
-                    "Save Game");
-            }
-        }
-
-        private static Component FindComponentByTypeName(
-            GameObject obj,
-            string typeName)
-        {
-            if (obj == null)
-            {
-                return null;
-            }
-
-            foreach (Component component in obj.GetComponents<Component>())
-            {
-                if (component != null &&
-                    component.GetType().Name == typeName)
-                {
-                    return component;
-                }
-            }
-
-            return null;
-        }
-
-        private static void ClearLazyUiElementId(Component lazyButton)
-        {
-            if (lazyButton == null)
-            {
+                Logger.LogWarning(
+                    "Manual Save could not open the native exit confirmation dialog.");
                 return;
             }
 
-            PropertyInfo property = lazyButton.GetType().GetProperty(
-                "LazyUIElementId",
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic);
+            string information =
+                "Unsaved progress since your last save will be lost.\n\n" +
+                BuildLastSavedStatus() +
+                "\n\nExit to main menu?";
 
-            if (property != null && property.CanWrite)
+            UIDialogWindowData data =
+                new UIDialogWindowData(
+                    LLBase.L("exit_menu_confirm"),
+                    information,
+                    Yes,
+                    () => dialog.Close())
+                {
+                    ShowCloseButton = true
+                };
+
+            dialog.Open(data);
+
+            void Yes()
             {
-                property.SetValue(lazyButton, string.Empty, null);
+                dialog.Close();
+                pauseWindow.Close();
+                MainGame.Instance.GoToMenu();
             }
         }
 
-        private static void RebindGamepadCallbacks(Component lazyButton)
+        private string BuildLastSavedStatus()
         {
-            if (lazyButton == null)
+            if (!_saveService.TryGetLastSaveDateTime(
+                out DateTime savedAt))
             {
-                return;
+                return "Last saved: unknown.";
             }
 
-            MethodInfo method = lazyButton.GetType().GetMethod(
-                "SetCallbacksIntoGamepadNavigationItem",
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic);
+            TimeSpan elapsed =
+                DateTime.Now - savedAt;
 
-            method?.Invoke(lazyButton, null);
-        }
-
-        private static void SetNativeButtonLabel(
-            GameObject buttonObject,
-            string text)
-        {
-            Transform label = buttonObject.transform.Find(
-                "Content/Back/Label");
-
-            if (label == null)
+            if (elapsed < TimeSpan.Zero)
             {
-                throw new InvalidOperationException(
-                    "Cloned pause-menu button label was not found.");
+                elapsed = TimeSpan.Zero;
             }
 
-            foreach (Component component in
-                buttonObject.GetComponentsInChildren<Component>(true))
+            string relative;
+
+            if (elapsed.TotalMinutes < 1d)
             {
-                if (component == null)
-                {
-                    continue;
-                }
-
-                string typeName = component.GetType().Name;
-                if (typeName == "LocalizedLabel" ||
-                    typeName == "LocalizedVerticalOffset")
-                {
-                    // Localization can exist above/below the visible TMP label.
-                    // Disable every cloned localization behaviour immediately;
-                    // Destroy() itself is deferred until end-of-frame.
-                    if (component is Behaviour behaviour)
-                    {
-                        behaviour.enabled = false;
-                    }
-
-                    UnityEngine.Object.Destroy(component);
-                }
+                relative = "just now";
+            }
+            else if (elapsed.TotalMinutes < 2d)
+            {
+                relative = "1 minute ago";
+            }
+            else if (elapsed.TotalHours < 1d)
+            {
+                relative =
+                    $"{(int)elapsed.TotalMinutes} minutes ago";
+            }
+            else if (elapsed.TotalHours < 2d)
+            {
+                relative = "1 hour ago";
+            }
+            else if (elapsed.TotalDays < 1d)
+            {
+                relative =
+                    $"{(int)elapsed.TotalHours} hours ago";
+            }
+            else if (elapsed.TotalDays < 2d)
+            {
+                relative = "1 day ago";
+            }
+            else
+            {
+                relative =
+                    $"{(int)elapsed.TotalDays} days ago";
             }
 
-            Component tmp = FindComponentByTypeName(
-                label.gameObject,
-                "TextMeshProUGUI");
+            string exact = elapsed.TotalDays >= 1d
+                ? savedAt.ToString(
+                    "g",
+                    CultureInfo.CurrentCulture)
+                : savedAt.ToString(
+                    "t",
+                    CultureInfo.CurrentCulture);
 
-            if (tmp == null)
-            {
-                throw new InvalidOperationException(
-                    "Cloned pause-menu button has no TextMeshProUGUI label.");
-            }
-
-            PropertyInfo textProperty = tmp.GetType().GetProperty(
-                "text",
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic);
-
-            if (textProperty == null || !textProperty.CanWrite)
-            {
-                throw new InvalidOperationException(
-                    "Unable to set cloned pause-menu button label.");
-            }
-
-            textProperty.SetValue(tmp, text, null);
+            return
+                $"Last saved: {relative} ({exact}).";
         }
     }
 }
