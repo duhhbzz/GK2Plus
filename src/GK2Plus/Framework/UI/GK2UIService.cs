@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BepInEx.Logging;
 
@@ -13,6 +14,9 @@ namespace GK2Plus.Framework.UI
     {
         private readonly List<GK2MenuAction> _menuActions =
             new List<GK2MenuAction>();
+
+        private readonly Dictionary<string, System.Func<string>> _tabNotices =
+            new Dictionary<string, System.Func<string>>();
 
         private ModMenuController _modMenuController;
 
@@ -34,6 +38,13 @@ namespace GK2Plus.Framework.UI
                 _modMenuController.RegisterMenuAction(action);
             }
 
+            foreach (var notice in _tabNotices)
+            {
+                _modMenuController.RegisterTabNotice(
+                    notice.Key,
+                    notice.Value);
+            }
+
             Logger.LogInfo(
                 "GK2+ UI service owns the persistent mod-menu controller.");
         }
@@ -53,6 +64,26 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterTabNotice(
+            string tab,
+            Func<string> noticeProvider)
+        {
+            if (string.IsNullOrWhiteSpace(tab) ||
+                noticeProvider == null)
+            {
+                return;
+            }
+
+            _tabNotices[tab] = noticeProvider;
+
+            if (_modMenuController != null)
+            {
+                _modMenuController.RegisterTabNotice(
+                    tab,
+                    noticeProvider);
+            }
+        }
+
         public override void Shutdown()
         {
             if (_modMenuController != null)
@@ -62,6 +93,7 @@ namespace GK2Plus.Framework.UI
 
             _modMenuController = null;
             _menuActions.Clear();
+            _tabNotices.Clear();
 
             base.Shutdown();
         }
