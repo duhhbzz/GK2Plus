@@ -1,14 +1,19 @@
-﻿using BepInEx.Logging;
+using System.Collections.Generic;
+using BepInEx.Logging;
 
 namespace GK2Plus.Framework.UI
 {
     /// <summary>
     /// GK2+ adapter boundary for UI.
     ///
-    /// Keep direct game-internal access inside this layer rather than feature modules.
+    /// Feature modules register player-facing menu actions here instead of
+    /// reaching into ModMenuController directly.
     /// </summary>
     internal sealed class GK2UIService : GK2ServiceBase
     {
+        private readonly List<GK2MenuAction> _menuActions =
+            new List<GK2MenuAction>();
+
         private ModMenuController _modMenuController;
 
         public GK2UIService(ManualLogSource logger)
@@ -23,19 +28,41 @@ namespace GK2Plus.Framework.UI
             base.Initialize();
 
             _modMenuController = ModMenuController.Create(Logger);
-            Logger.LogInfo("GK2+ UI service owns the persistent mod-menu controller.");
+
+            foreach (GK2MenuAction action in _menuActions)
+            {
+                _modMenuController.RegisterMenuAction(action);
+            }
+
+            Logger.LogInfo(
+                "GK2+ UI service owns the persistent mod-menu controller.");
+        }
+
+        public void RegisterMenuAction(GK2MenuAction action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            _menuActions.Add(action);
+
+            if (_modMenuController != null)
+            {
+                _modMenuController.RegisterMenuAction(action);
+            }
         }
 
         public override void Shutdown()
         {
-            // Unity objects can compare equal to null after native destruction
-            // even while the managed reference is still non-null.
             if (_modMenuController != null)
             {
                 _modMenuController.ShutdownController();
             }
 
             _modMenuController = null;
+            _menuActions.Clear();
+
             base.Shutdown();
         }
     }
