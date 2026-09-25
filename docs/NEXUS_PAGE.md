@@ -233,6 +233,11 @@ https://github.com/duhhbzz/GK2Plus
 Issues:
 https://github.com/duhhbzz/GK2Plus/issues
 
+Support development:
+https://buymeacoffee.com/duhhbzz
+
+GK2+ is free and open source. Donations are completely optional and do not gate features or support.
+
 ---
 
 ## Suggested Nexus Screenshot Order
