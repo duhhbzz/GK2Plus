@@ -4,6 +4,8 @@ Thanks for your interest in contributing to **GK2+ (Graveyard Keeper Plus)**.
 
 GK2+ is a modular, configurable quality-of-life and gameplay enhancement suite for **Graveyard Keeper 2**. Community pull requests are welcome, but changes are reviewed before merge to protect stability, compatibility, maintainability, licensing, and the project's modular design.
 
+Project ownership, maintainer responsibilities, release authority, and contributor boundaries are documented in [docs/GOVERNANCE.md](docs/GOVERNANCE.md).
+
 ---
 
 ## Core Contribution Principles
@@ -75,6 +77,8 @@ Major gameplay features should normally:
 6. Document known compatibility concerns.
 7. Fail safely when possible.
 8. Avoid assuming every other GK2+ feature is enabled.
+9. Add or update the feature's section in [docs/FEATURES.md](docs/FEATURES.md).
+10. State whether settings are main-menu-only, live-safe, or restart-required.
 
 Features should be designed with coexistence in mind.
 
@@ -223,27 +227,25 @@ MAJOR.MINOR.PATCH
 
 The repository-root `VERSION` file is the single source of truth. Do not independently hard-code release version strings elsewhere.
 
-Version bumps are normally handled by project maintainers during release preparation.
+Version bumps are maintainer-owned and handled during release preparation. Contributors should not change `VERSION` or `GAME_VERSION` unless the maintainer explicitly asks for it.
 
 ---
 
-## Changelog
+## Changelog and Release Metadata
 
-Player-facing changes belong under:
+`CHANGELOG.md`, version numbers, release notes, and official distribution metadata are **maintainer-owned**.
 
-```md
-## [Unreleased]
-```
+Contributors should **not** edit the following unless the maintainer explicitly requests it:
 
-Use the relevant sections:
+- `CHANGELOG.md`;
+- `VERSION`;
+- `GAME_VERSION`;
+- `docs/RELEASE_NOTES_*.md`;
+- official Nexus/Thunderstore/GitHub release metadata.
 
-- Added
-- Changed
-- Fixed
-- Compatibility
-- Known Issues
+Instead, clearly describe the player-facing change and actual validation in the pull request, and keep [docs/FEATURES.md](docs/FEATURES.md) current for the feature itself.
 
-Do not create or alter a numbered release section unless requested by a maintainer.
+The maintainer will update the changelog and release metadata during final PR approval/release preparation.
 
 ---
 
@@ -256,8 +258,8 @@ Please verify:
 - no new unexpected errors appear in `BepInEx/LogOutput.log`,
 - existing GK2+ behavior still loads,
 - your feature can be disabled if applicable,
-- the change is documented,
-- `CHANGELOG.md` is updated when appropriate,
+- player-facing behavior is documented in `docs/FEATURES.md` when applicable,
+- feature-specific documentation is current,
 - performance/resource impact has been considered,
 - persistent mutations use the save-safety service,
 - no new unexpected backup/log churn occurs during ordinary play,
@@ -282,6 +284,8 @@ private recon output
 
 ## Pull Requests
 
+All official merges are approved by the project maintainer. Community feature ideas and implementations are welcome, but an open PR is not approval to merge or release.
+
 Pull requests should include:
 
 - a clear title,
@@ -290,9 +294,24 @@ Pull requests should include:
 - which game systems are affected,
 - how the change was tested,
 - whether it may conflict with other mods,
-- screenshots for visible UI changes when applicable.
+- screenshots for visible UI changes when applicable;
+- concrete build/runtime validation that was actually performed;
+- an updated `docs/FEATURES.md` entry for player-facing behavior;
+- confirmation that the branch is current with `main` and contains only intended changes.
 
-Large features should preferably be discussed in an issue before implementation. Submission does not guarantee acceptance, and maintainers may request revisions before merge.
+The maintainer reviews feature PRs in this order:
+
+~~~text
+Does it work?
+    ↓
+Is the feature documentation accurate/current?
+    ↓
+Maintainer updates changelog/release metadata
+    ↓
+Maintainer approves and merges
+~~~
+
+Large features should preferably be discussed in an issue before implementation. Submission does not guarantee acceptance, and the maintainer may request revisions before merge.
 
 ---
 
