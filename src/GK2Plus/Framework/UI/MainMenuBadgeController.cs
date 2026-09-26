@@ -84,27 +84,33 @@ namespace GK2Plus.Framework.UI
                 UnityEngine.Object.Destroy(existing.gameObject);
             }
 
-            Sprite backgroundSprite = FindSprite("titlescreen-menu-bg");
+            Sprite stoneBodySprite = FindSprite("comm-content_bg_dark-side-small");
             Sprite frameSprite = FindSprite("comm-frame_1-border");
+            Sprite headerSprite = FindSprite("main_window-header_1");
+            Sprite headerDecorSprite = FindSprite("main_window-header_1-dec_side_3");
             Sprite dividerSprite = FindSprite("widget_perks-text_decor-drk_1");
-            Sprite skullSprite = FindSprite("wskull");
 
             if (frameSprite == null)
             {
                 throw new InvalidOperationException("Native frame sprite was not found.");
             }
 
+            if (headerSprite == null || headerDecorSprite == null)
+            {
+                throw new InvalidOperationException("Native pause-menu header sprites were not found.");
+            }
+
             GameObject bodyTemplate = FindBodyTextTemplate(mainMenuRoot);
-            GameObject titleButtonTemplate = FindTitleButtonTemplate(mainMenuRoot);
+            GameObject headerTextTemplate = FindNativeHeaderTextTemplate();
 
             if (bodyTemplate == null)
             {
                 throw new InvalidOperationException("Could not find a native body text template.");
             }
 
-            if (titleButtonTemplate == null)
+            if (headerTextTemplate == null)
             {
-                throw new InvalidOperationException("Could not find the native New Game button background/title template.");
+                throw new InvalidOperationException("Could not find a native window-header text template.");
             }
 
             GameObject badge = new GameObject(BadgeObjectName, typeof(RectTransform));
@@ -117,19 +123,20 @@ namespace GK2Plus.Framework.UI
             badgeRect.anchoredPosition = new Vector2(-14f, -12f);
             badgeRect.sizeDelta = new Vector2(176f, 84f);
 
-            // Keep the existing native-derived internal proportions while reducing
-            // the badge's effective on-screen footprint by 25 percent.
+            // Preserve the compact footprint established during the v0.1.0 UI pass.
             badgeRect.localScale = new Vector3(0.75f, 0.75f, 1f);
 
-            if (backgroundSprite != null)
+            // Match the native pause window's dark stone content area instead of
+            // using the translucent title-screen background.
+            if (stoneBodySprite != null)
             {
                 CreateStretchImage(
                     badge.transform,
-                    "Background",
-                    backgroundSprite,
-                    Image.Type.Sliced,
-                    new Vector2(-4f, -4f),
-                    new Vector2(4f, 4f)
+                    "StoneBody",
+                    stoneBodySprite,
+                    Image.Type.Tiled,
+                    new Vector2(9f, 9f),
+                    new Vector2(-9f, -28f)
                 );
             }
 
@@ -142,30 +149,58 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero
             );
 
-            // Instead of trying to imitate the button typography on a brown strip,
-            // clone the actual New Game button background + its native label as one unit.
-            GameObject titleBar = CreateNativeButtonTitle(
-                titleButtonTemplate,
-                badge.transform,
-                $"GK2+ v{ModInfo.Version}",
-                new Vector2(0f, -15f)
+            // Build a compact version of the native pause-window header. There is
+            // intentionally no close button, so the decorative side pieces are
+            // symmetrical around the centered GK2+ title.
+            GameObject headerGroup = new GameObject("HeaderGroup", typeof(RectTransform));
+            headerGroup.transform.SetParent(badge.transform, false);
+
+            RectTransform headerRect = (RectTransform)headerGroup.transform;
+            headerRect.anchorMin = new Vector2(0f, 1f);
+            headerRect.anchorMax = new Vector2(1f, 1f);
+            headerRect.pivot = new Vector2(0.5f, 1f);
+            headerRect.anchoredPosition = new Vector2(0f, -11f);
+            headerRect.sizeDelta = new Vector2(-22f, 26f);
+
+            CreateStretchImage(
+                headerGroup.transform,
+                "Background",
+                headerSprite,
+                Image.Type.Sliced,
+                Vector2.zero,
+                Vector2.zero
             );
 
-            // Skull now overlaps the title button/frame as an ornament.
-            if (skullSprite != null)
-            {
-                CreateFixedImage(
-                    badge.transform,
-                    "SkullTop",
-                    skullSprite,
-                    Image.Type.Simple,
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 0.5f),
-                    new Vector2(0f, -4f),
-                    new Vector2(14f, 11f)
-                );
-            }
+            CreateFixedImage(
+                headerGroup.transform,
+                "DecorCommonLeft",
+                headerDecorSprite,
+                Image.Type.Simple,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(14f, -13f),
+                new Vector2(28f, 26f)
+            );
+
+            GameObject rightDecor = CreateFixedImage(
+                headerGroup.transform,
+                "DecorCommonRight",
+                headerDecorSprite,
+                Image.Type.Simple,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(-14f, -13f),
+                new Vector2(28f, 26f)
+            );
+            rightDecor.transform.localScale = new Vector3(-1f, 1f, 1f);
+
+            CreateNativeHeaderTitle(
+                headerTextTemplate,
+                headerGroup.transform,
+                $"GK2+ v{ModInfo.Version}"
+            );
 
             CreateLabel(
                 bodyTemplate,
@@ -211,23 +246,31 @@ namespace GK2Plus.Framework.UI
                 2.5f
             );
 
-            titleBar.transform.SetAsLastSibling();
-            if (skullSprite != null)
+            headerGroup.transform.SetAsLastSibling();
+
+            logger.LogDebug(
+                "GK2+ badge uses the native pause-window stone body and symmetric header styling.");
+        }
+
+        private static GameObject FindNativeHeaderTextTemplate()
+        {
+            foreach (MonoBehaviour behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
             {
-                Transform skull = badge.transform.Find("SkullTop");
-                if (skull != null)
+                if (behaviour == null)
                 {
-                    skull.SetAsLastSibling();
+                    continue;
+                }
+
+                Transform header = behaviour.transform.Find(
+                    "GenericWIndowLayout/Frame/HeaderGroup/Header");
+
+                if (header != null && FindTmp(header.gameObject) != null)
+                {
+                    return header.gameObject;
                 }
             }
 
-            logger.LogDebug("GK2+ badge now uses a cloned native main-menu button as the title bar.");
-        }
-
-        private static GameObject FindTitleButtonTemplate(Transform root)
-        {
-            Transform back = root.Find("Bg/Vertical Group/NewGame/Content/Back");
-            return back != null ? back.gameObject : null;
+            return null;
         }
 
         private static GameObject FindBodyTextTemplate(Transform root)
@@ -243,28 +286,15 @@ namespace GK2Plus.Framework.UI
             return fallback != null ? fallback.gameObject : null;
         }
 
-        private static GameObject CreateNativeButtonTitle(
+        private static GameObject CreateNativeHeaderTitle(
             GameObject template,
             Transform parent,
-            string text,
-            Vector2 anchoredPosition)
+            string text)
         {
             GameObject clone = UnityEngine.Object.Instantiate(template, parent, false);
-            clone.name = "TitleButton";
+            clone.name = "Header";
             clone.SetActive(true);
 
-            RectTransform rect = clone.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 1f);
-            rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = anchoredPosition;
-
-            // Preserve the button's native 142x26 dimensions and visual rendering.
-            rect.sizeDelta = new Vector2(142f, 26f);
-            rect.localScale = Vector3.one;
-
-            // This object was cloned from the Back section, so remove layout behavior
-            // that belonged to the main-menu vertical group.
             foreach (Component component in clone.GetComponents<Component>())
             {
                 if (component == null)
@@ -274,63 +304,40 @@ namespace GK2Plus.Framework.UI
 
                 string typeName = component.GetType().Name;
 
-                if (typeName == "HorizontalLayoutGroup")
-                {
-                    UnityEngine.Object.Destroy(component);
-                }
-            }
-
-            Transform labelTransform = clone.transform.Find("Label");
-
-            if (labelTransform == null)
-            {
-                throw new InvalidOperationException("Cloned native button did not contain its Label child.");
-            }
-
-            GameObject label = labelTransform.gameObject;
-
-            foreach (Component component in label.GetComponents<Component>())
-            {
-                if (component == null)
-                {
-                    continue;
-                }
-
-                string typeName = component.GetType().Name;
-
                 if (typeName == "LocalizedLabel" ||
-                    typeName == "LocalizedVerticalOffset")
+                    typeName == "LanguageRtlLabelState")
                 {
+                    if (component is Behaviour behaviour)
+                    {
+                        behaviour.enabled = false;
+                    }
+
                     UnityEngine.Object.Destroy(component);
                 }
             }
 
-            RectTransform labelRect = label.GetComponent<RectTransform>();
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.pivot = new Vector2(0.5f, 0.5f);
-            labelRect.anchoredPosition = Vector2.zero;
-            labelRect.offsetMin = new Vector2(8f, 1f);
-            labelRect.offsetMax = new Vector2(-8f, -1f);
+            RectTransform rect = clone.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.offsetMin = new Vector2(28f, 0f);
+            rect.offsetMax = new Vector2(-28f, 0f);
+            rect.localScale = Vector3.one;
 
-            Component tmp = FindTmp(label);
+            Component tmp = FindTmp(clone);
 
             if (tmp == null)
             {
-                throw new InvalidOperationException("Native title button label has no TextMeshProUGUI.");
+                throw new InvalidOperationException(
+                    "Native window-header template has no TextMeshProUGUI.");
             }
 
-            // Only change the text. Do NOT touch font size, font material,
-            // face color, outline, style, or weight.
+            // Preserve the game's native header font, material, face color, outline,
+            // style, and weight; only replace the localized text and alignment.
             SetProperty(tmp, "text", text);
+            SetProperty(tmp, "raycastTarget", false);
             TrySetEnumProperty(tmp, "alignment", "Center");
-
-            // Make this a decorative title, not an interactive control.
-            Image image = clone.GetComponent<Image>();
-            if (image != null)
-            {
-                image.raycastTarget = false;
-            }
 
             return clone;
         }
