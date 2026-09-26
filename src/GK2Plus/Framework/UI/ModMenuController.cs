@@ -1738,6 +1738,26 @@ Button close = closeButton.GetComponent<Button>();
             _featureOptionPickerPage = 0;
         }
 
+        private void SetButtonText(
+            GameObject button,
+            string text)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Transform label =
+                button.transform.Find("Label");
+
+            if (label != null)
+            {
+                SetText(
+                    label.gameObject,
+                    text);
+            }
+        }
+
         private GameObject CreateActionButton(
             GameObject textTemplate,
             Transform parent,
