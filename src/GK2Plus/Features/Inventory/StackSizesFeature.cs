@@ -19,6 +19,7 @@ namespace GK2Plus.Features.Inventory
     {
         private const int DefaultMultiplier = 2;
         private const int MaxInspectedItems = 8;
+        private const int MaxMergeSamples = 40;
 
         private static readonly string[] InterestingTerms =
         {
@@ -37,6 +38,7 @@ namespace GK2Plus.Features.Inventory
 
         private ConfigEntry<int> _multiplier;
         private int _inspectedItemCount;
+        private int _mergeSampleCount;
 
         internal StackSizesFeature(ConfigFile config)
         {
@@ -103,6 +105,32 @@ namespace GK2Plus.Features.Inventory
                 )
             );
 
+            MethodInfo canAddCountMethod = AccessTools.Method(
+                typeof(global::Item),
+                "CanAddItemCount",
+                new[]
+                {
+                    typeof(global::Item),
+                    typeof(int)
+                }
+            );
+
+            if (canAddCountMethod != null)
+            {
+                Harmony.Patch(
+                    canAddCountMethod,
+                    postfix: new HarmonyMethod(
+                        typeof(StackSizesFeature),
+                        nameof(CanAddItemCountPostfix)
+                    )
+                );
+            }
+            else
+            {
+                Logger.LogWarning(
+                    "Stack Sizes recon could not resolve Item.CanAddItemCount(Item, int).");
+            }
+
             Logger.LogInfo(
                 $"Stack Sizes recon enabled. Configured multiplier: {_multiplier.Value}x. " +
                 "No stack limits are being changed yet.");
@@ -121,6 +149,55 @@ namespace GK2Plus.Features.Inventory
             }
 
             feature.InspectRuntimeItem(__args[0]);
+        }
+
+        private static void CanAddItemCountPostfix(
+            global::Item __instance,
+            global::Item sourceItem,
+            int countToAdd,
+            int __result)
+        {
+            StackSizesFeature feature = _activeInstance;
+
+            if (feature == null ||
+                feature._mergeSampleCount >= MaxMergeSamples ||
+                __instance == null ||
+                sourceItem == null)
+            {
+                return;
+            }
+
+            feature._mergeSampleCount++;
+
+            string destinationId =
+                TryReadNamedValue(__instance, "id")?.ToString() ??
+                TryReadNamedValue(__instance, "Id")?.ToString() ??
+                "<unknown>";
+
+            string sourceId =
+                TryReadNamedValue(sourceItem, "id")?.ToString() ??
+                TryReadNamedValue(sourceItem, "Id")?.ToString() ??
+                "<unknown>";
+
+            object destinationDef =
+                TryReadNamedValue(__instance, "Definition") ??
+                TryReadNamedValue(__instance, "Def");
+
+            object sourceDef =
+                TryReadNamedValue(sourceItem, "Definition") ??
+                TryReadNamedValue(sourceItem, "Def");
+
+            object destinationStackCount =
+                TryReadNamedValue(destinationDef, "stackCount");
+
+            object sourceStackCount =
+                TryReadNamedValue(sourceDef, "stackCount");
+
+            feature.Logger.LogInfo(
+                "[StackSizes Merge] " +
+                $"dest='{destinationId}' count={__instance.Count} stackCount={FormatValue(destinationStackCount)}; " +
+                $"src='{sourceId}' count={sourceItem.Count} stackCount={FormatValue(sourceStackCount)}; " +
+                $"requested={countToAdd}; allowed={__result}");
         }
 
         private void InspectRuntimeItem(object item)
