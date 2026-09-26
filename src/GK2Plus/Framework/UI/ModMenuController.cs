@@ -1143,15 +1143,9 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
-                        new Vector2(
-                            string.IsNullOrWhiteSpace(control.ParentFeatureId)
-                                ? -60f
-                                : -48f,
-                            0f),
+                        new Vector2(-60f, 0f),
                         new Vector2(210f, 20f),
-                        string.IsNullOrWhiteSpace(control.ParentFeatureId)
-                            ? 9f
-                            : 8.5f,
+                        9f,
                         "Left");
 
                     GameObject toggleButton =
@@ -1377,9 +1371,15 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
-                        new Vector2(-60f, 0f),
+                        new Vector2(
+                            string.IsNullOrWhiteSpace(control.ParentFeatureId)
+                                ? -60f
+                                : -48f,
+                            0f),
                         new Vector2(210f, 20f),
-                        9f,
+                        string.IsNullOrWhiteSpace(control.ParentFeatureId)
+                            ? 9f
+                            : 8.5f,
                         "Left");
 
                     GameObject optionButton =
