@@ -218,16 +218,29 @@ namespace GK2Plus.Framework.UI
 
             if (dividerSprite != null)
             {
-                CreateFixedImage(
+                GameObject dividerLeft = CreateFixedImage(
                     badge.transform,
-                    "Divider",
+                    "DividerLeft",
                     dividerSprite,
                     Image.Type.Sliced,
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
-                    new Vector2(0f, -55f),
-                    new Vector2(124f, 6f)
+                    new Vector2(-31f, -55f),
+                    new Vector2(62f, 6f)
+                );
+                dividerLeft.transform.localScale = new Vector3(-1f, 1f, 1f);
+
+                CreateFixedImage(
+                    badge.transform,
+                    "DividerRight",
+                    dividerSprite,
+                    Image.Type.Sliced,
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(31f, -55f),
+                    new Vector2(62f, 6f)
                 );
             }
 
@@ -344,8 +357,8 @@ namespace GK2Plus.Framework.UI
             rect.anchorMax = Vector2.one;
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
-            rect.offsetMin = new Vector2(28f, 0f);
-            rect.offsetMax = new Vector2(-28f, 0f);
+            rect.offsetMin = new Vector2(20f, 0f);
+            rect.offsetMax = new Vector2(-20f, 0f);
             rect.localScale = Vector3.one;
 
             Component tmp = FindTmp(clone);
@@ -360,6 +373,11 @@ namespace GK2Plus.Framework.UI
             // style, and weight; only replace the localized text and alignment.
             SetProperty(tmp, "text", text);
             SetProperty(tmp, "raycastTarget", false);
+            SetProperty(tmp, "fontSize", 16f);
+            SetProperty(tmp, "enableAutoSizing", true);
+            SetProperty(tmp, "fontSizeMin", 12f);
+            SetProperty(tmp, "fontSizeMax", 16f);
+            SetProperty(tmp, "enableWordWrapping", false);
             TrySetEnumProperty(tmp, "alignment", "Center");
 
             return clone;
