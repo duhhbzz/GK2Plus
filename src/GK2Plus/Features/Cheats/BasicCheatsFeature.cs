@@ -441,16 +441,13 @@ namespace GK2Plus.Features.Cheats
             }
 
             PlayerData playerData = MainGame.PlayerData;
-            global::Inventory inventory = playerData?.inventory;
             GameBalance balance = GameBalance.Me;
 
-            if (inventory == null ||
-                inventory.Data == null ||
+            if (playerData == null ||
                 balance == null)
             {
                 Logger.LogWarning(
-                    "Spawn Item was blocked because the native player inventory " +
-                    "or game balance is unavailable.");
+                    "Spawn Item was blocked because PlayerData or game balance is unavailable.");
                 return;
             }
 
@@ -463,24 +460,49 @@ namespace GK2Plus.Features.Cheats
                 return;
             }
 
-            if (!inventory.CanAddItemToInventory(
-                itemId,
-                count))
+            global::Inventory playerInventory =
+                playerData.Inventory;
+
+            if (playerInventory == null)
             {
                 Logger.LogWarning(
-                    $"Spawn Item was blocked because the player inventory cannot " +
-                    $"accept {count}x '{itemId}'.");
+                    "Spawn Item was blocked because PlayerData.Inventory is unavailable.");
                 return;
             }
 
-            Item item =
-                new Item(itemId)
-                {
-                    Count = count
-                };
+            List<Item> items =
+                new ItemCount(itemId, count).CreateItems();
 
-            List<Item> addedItems = null;
-            int addedCount = 0;
+            if (items == null ||
+                items.Count == 0)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because GK2 could not materialize " +
+                    $"{count}x '{itemId}' through ItemCount.CreateItems().");
+                return;
+            }
+
+            int materializedCount = 0;
+
+            foreach (Item createdItem in items)
+            {
+                if (createdItem != null &&
+                    string.Equals(
+                        createdItem.id,
+                        itemId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    materializedCount += createdItem.Count;
+                }
+            }
+
+            if (materializedCount != count)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because GK2 materialized " +
+                    $"{materializedCount}x '{itemId}' instead of {count}.");
+                return;
+            }
 
             bool success =
                 _saveService.TryRunProtectedMutation(
@@ -488,48 +510,14 @@ namespace GK2Plus.Features.Cheats
                     SaveMutationRisk.Moderate,
                     () =>
                     {
-                        // Spawn directly into the visible player inventory for
-                        // deterministic cheat/test behavior. Do not route the
-                        // item into nested bags.
-                        if (!inventory.TryAddItemToInventory(
-                            item,
-                            out addedItems,
-                            ignoredBag: null,
-                            ignoreAllBags: true))
+                        if (!playerInventory.AddItemsToInventory(items))
                         {
                             throw new InvalidOperationException(
-                                $"GK2 rejected {count}x '{itemId}' while adding it to the player inventory.");
+                                $"GK2 rejected the native item list for " +
+                                $"{count}x '{itemId}'.");
                         }
-
-                        addedCount = 0;
-
-                        if (addedItems != null)
-                        {
-                            foreach (Item addedItem in addedItems)
-                            {
-                                if (addedItem != null &&
-                                    string.Equals(
-                                        addedItem.id,
-                                        itemId,
-                                        StringComparison.OrdinalIgnoreCase))
-                                {
-                                    addedCount += addedItem.Count;
-                                }
-                            }
-                        }
-
-                        if (addedCount <= 0)
-                        {
-                            throw new InvalidOperationException(
-                                $"GK2 reported success but returned no concrete '{itemId}' items.");
-                        }
-
-                        // TryAddItemToInventory mutates the inventory and returns
-                        // the concrete changed/added items. Notify the native
-                        // inventory listeners so CharacterWindow/HUD views redraw.
-                        inventory.NotifyItemsAdded(addedItems);
                     },
-                    () => addedCount == count
+                    () => true
                 );
 
             if (!success)
@@ -540,9 +528,9 @@ namespace GK2Plus.Features.Cheats
             }
 
             Logger.LogInfo(
-                $"Spawn Item completed: '{itemId}' added={addedCount} " +
-                $"across {addedItems?.Count ?? 0} concrete item change(s). " +
-                $"Native stack limit={itemDef.stackCount}.");
+                $"Spawn Item completed through GK2's native ItemCount pipeline: " +
+                $"'{itemId}' materialized={materializedCount} across " +
+                $"{items.Count} item object(s). Native stack limit={itemDef.stackCount}.");
         }
 
         private void HealPlayer()
