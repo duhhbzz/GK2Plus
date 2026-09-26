@@ -33,7 +33,10 @@ namespace GK2Plus.Framework.UI
             string label,
             Func<string> valueProvider,
             Func<IReadOnlyList<GK2FeatureOption>> optionsProvider,
-            Action<string> valueChanged)
+            Action<string> valueChanged,
+            string parentFeatureId = null,
+            int order = 0,
+            Func<bool> enabledProvider = null)
         {
             Id = string.IsNullOrWhiteSpace(id)
                 ? throw new ArgumentException(
@@ -57,6 +60,10 @@ namespace GK2Plus.Framework.UI
 
             ValueChanged = valueChanged ??
                 throw new ArgumentNullException(nameof(valueChanged));
+
+            ParentFeatureId = parentFeatureId ?? string.Empty;
+            Order = order;
+            EnabledProvider = enabledProvider ?? (() => true);
         }
 
         public string Id { get; }
@@ -70,5 +77,11 @@ namespace GK2Plus.Framework.UI
         public Func<IReadOnlyList<GK2FeatureOption>> OptionsProvider { get; }
 
         public Action<string> ValueChanged { get; }
+
+        public string ParentFeatureId { get; }
+
+        public int Order { get; }
+
+        public Func<bool> EnabledProvider { get; }
     }
 }
