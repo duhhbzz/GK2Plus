@@ -19,6 +19,8 @@ The maintainer is responsible for:
 - preparing release notes;
 - preparing official GitHub/Nexus/Thunderstore release metadata;
 - producing and publishing official builds/releases;
+- keeping release branches and pull requests orderly and cleaning up merged/superseded work;
+- deciding which open branches/PRs belong to the current release versus a future release;
 - deciding when experimental work becomes generally supported.
 
 Contributors should not interpret an accepted idea, open PR, or successful local test as approval to merge or release it.
@@ -76,6 +78,24 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for implementation expectations and [R
 AI-assisted contributions are welcome.
 
 They are held to exactly the same requirements as human-written work. The contributor remains responsible for verifying the code, testing the actual game behavior, describing what was really tested, and ensuring the PR does not contain invented APIs, fabricated validation, copied incompatible code, or unrelated changes.
+
+## Branch and pull request hygiene
+
+Branches and pull requests are working state, not permanent project history.
+
+Before an official release, the maintainer reviews all open PRs and active branches and classifies each as:
+
+- part of the current release;
+- intentionally deferred to a future release;
+- obsolete/superseded and safe to remove.
+
+Current-release work must not be left stranded on an unmerged branch when a release is published.
+
+Merged, superseded, temporary integration, and test branches should be deleted once their useful commits are safely preserved. Future-release branches may remain, but they should be intentionally retained rather than forgotten.
+
+The detailed cleanup gate is maintained in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+
+---
 
 ## Official builds
 
