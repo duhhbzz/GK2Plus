@@ -105,6 +105,15 @@ namespace GK2Plus.Features.Inventory
                     () => Enabled?.Value ?? DefaultEnabled,
                     BuildUiStatus,
                     SetEnabledFromMainMenu));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.multiplier",
+                    Category,
+                    "Stack Size Multiplier",
+                    () => (_multiplier?.Value ?? DefaultMultiplier).ToString(),
+                    BuildMultiplierOptions,
+                    SetMultiplierFromMainMenu));
         }
 
         protected override void OnEnabled()
@@ -130,6 +139,75 @@ namespace GK2Plus.Features.Inventory
             return Enabled?.Value == true
                 ? $"ON ({_multiplier?.Value ?? DefaultMultiplier}x)"
                 : "OFF";
+        }
+
+        private IReadOnlyList<GK2FeatureOption> BuildMultiplierOptions()
+        {
+            List<GK2FeatureOption> options =
+                new List<GK2FeatureOption>();
+
+            for (int multiplier = 2; multiplier <= 20; multiplier++)
+            {
+                options.Add(
+                    new GK2FeatureOption(
+                        multiplier.ToString(),
+                        $"{multiplier}x"));
+            }
+
+            return options;
+        }
+
+        private void SetMultiplierFromMainMenu(
+            string value)
+        {
+            if (_multiplier == null ||
+                !int.TryParse(
+                    value,
+                    out int multiplier))
+            {
+                return;
+            }
+
+            multiplier =
+                Math.Max(
+                    2,
+                    Math.Min(
+                        20,
+                        multiplier));
+
+            if (_multiplier.Value == multiplier)
+            {
+                _uiService.RefreshMenu();
+                return;
+            }
+
+            bool enabled =
+                Enabled?.Value == true;
+
+            if (enabled)
+            {
+                RestoreCurrentGameBalance(
+                    "main-menu multiplier change");
+            }
+
+            int previous =
+                _multiplier.Value;
+
+            _multiplier.Value =
+                multiplier;
+
+            _config.Save();
+
+            if (enabled)
+            {
+                ApplyToCurrentGameBalance(
+                    "main-menu multiplier change");
+            }
+
+            Logger.LogInfo(
+                $"Stack Size Multiplier changed from {previous}x to {multiplier}x from the main menu.");
+
+            _uiService.RefreshMenu();
         }
 
         private void SetEnabledFromMainMenu(
