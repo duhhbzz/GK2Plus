@@ -254,7 +254,30 @@ namespace GK2Plus.Framework.UI
 
         private static GameObject FindNativeHeaderTextTemplate()
         {
-            foreach (MonoBehaviour behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
+            MonoBehaviour[] behaviours = Resources.FindObjectsOfTypeAll<MonoBehaviour>();
+
+            // Prefer the exact pause-window header the badge is visually matching.
+            foreach (MonoBehaviour behaviour in behaviours)
+            {
+                if (behaviour == null ||
+                    behaviour.GetType().Name != "UIGamePauseWindow")
+                {
+                    continue;
+                }
+
+                Transform pauseHeader = behaviour.transform.Find(
+                    "GenericWIndowLayout/Frame/HeaderGroup/Header");
+
+                if (pauseHeader != null &&
+                    FindTmp(pauseHeader.gameObject) != null)
+                {
+                    return pauseHeader.gameObject;
+                }
+            }
+
+            // Fall back to another native GenericWindowLayout header if the pause
+            // window has not been materialized yet during main-menu startup.
+            foreach (MonoBehaviour behaviour in behaviours)
             {
                 if (behaviour == null)
                 {
