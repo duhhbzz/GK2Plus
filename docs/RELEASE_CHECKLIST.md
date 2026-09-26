@@ -104,7 +104,7 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
 ### Release preparation
 
 - [ ] Confirm `VERSION` is `0.1.0`.
-- [ ] Confirm `GAME_VERSION` is `1.005`.
+- [ ] Confirm `GAME_VERSION` is `1.006`.
 - [ ] Confirm `CHANGELOG.md` contains the dated `0.1.0` section.
 - [ ] Confirm README describes current functional features instead of the foundation preview.
 - [ ] Confirm `docs/NEXUS_PAGE.md` reflects v0.1.0.
