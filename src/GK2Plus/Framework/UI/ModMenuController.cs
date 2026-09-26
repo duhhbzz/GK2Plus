@@ -389,65 +389,6 @@ namespace GK2Plus.Framework.UI
             return true;
         }
 
-        private bool TryGetReadyContext(
-            out Component mainMenu,
-            out RectTransform uiRoot,
-            out GameObject bodyTemplate,
-            out GameObject buttonLabelTemplate)
-        {
-            mainMenu = null;
-            uiRoot = null;
-            bodyTemplate = null;
-            buttonLabelTemplate = null;
-
-            foreach (var behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
-            {
-                if (behaviour == null ||
-                    behaviour.GetType().Name != "UIMainMenuWindow" ||
-                    !behaviour.gameObject.activeInHierarchy)
-                {
-                    continue;
-                }
-
-                mainMenu = behaviour;
-                break;
-            }
-
-            if (mainMenu == null)
-            {
-                return false;
-            }
-
-            GUIElements guiElements = GUIElements.Instance;
-            if (guiElements == null ||
-                guiElements.Root == null ||
-                !guiElements.gameObject.activeInHierarchy)
-            {
-                return false;
-            }
-
-            uiRoot = guiElements.Root;
-
-            Transform root = mainMenu.transform;
-            Transform hint = root.Find("Bg/Vertical Group/ButtonTipsStr");
-            Transform buttonLabel = root.Find("Bg/Vertical Group/NewGame/Content/Back/Label");
-
-            if (hint == null || buttonLabel == null)
-            {
-                return false;
-            }
-
-            if (FindTmp(hint.gameObject) == null ||
-                FindTmp(buttonLabel.gameObject) == null)
-            {
-                return false;
-            }
-
-            bodyTemplate = hint.gameObject;
-            buttonLabelTemplate = buttonLabel.gameObject;
-            return true;
-        }
-
         private void BuildMenu(
             Transform uiRoot,
             GameObject bodyTemplate,
