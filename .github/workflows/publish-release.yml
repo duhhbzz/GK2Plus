@@ -1,0 +1,110 @@
+name: Publish release to mod platforms
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  nexus:
+    name: Publish to Nexus Mods
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release version
+        shell: bash
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Download Nexus release package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "GK2Plus-${VERSION}.zip"
+
+      - name: Upload to Nexus Mods
+        uses: Nexus-Mods/upload-action@c96019556046053aa26044b44396cd38929daf23
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_id: ${{ vars.NEXUSMODS_FILE_ID }}
+          mod_id: ${{ vars.NEXUSMODS_MOD_ID }}
+          filename: GK2Plus-${{ env.VERSION }}.zip
+          version: ${{ env.VERSION }}
+          display_name: GK2+ v${{ env.VERSION }}
+          description: GK2+ v${{ env.VERSION }}
+          category: main
+          archive_existing_version: true
+          primary_mod_manager_download: true
+          allow_mod_manager_download: true
+          update_mod_version: true
+
+  thunderstore:
+    name: Publish to Thunderstore
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release version
+        shell: bash
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Download Thunderstore release package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "GK2Plus-${VERSION}-Thunderstore.zip"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Thunderstore CLI
+        shell: bash
+        run: dotnet tool install -g tcli
+
+      - name: Create Thunderstore publish config
+        shell: bash
+        run: |
+          cat > thunderstore-ci.toml <<EOF
+          [config]
+          schemaVersion = "0.0.1"
+
+          [package]
+          namespace = "${{ vars.THUNDERSTORE_NAMESPACE }}"
+          name = "GK2Plus"
+          versionNumber = "${VERSION}"
+          description = "Modular Graveyard Keeper 2 QoL and gameplay enhancement suite."
+          websiteUrl = "https://github.com/${{ github.repository }}"
+          containsNsfwContent = false
+
+          [package.dependencies]
+          "BepInEx-BepInExPack" = "5.4.2305"
+
+          [build]
+          outdir = "./build"
+
+          [publish]
+          repository = "https://thunderstore.io"
+          communities = ["${{ vars.THUNDERSTORE_COMMUNITY }}"]
+          categories = ["mods"]
+          EOF
+
+      - name: Publish to Thunderstore
+        env:
+          TCLI_AUTH_TOKEN: ${{ secrets.THUNDERSTORE_TOKEN }}
+        shell: bash
+        run: |
+          tcli publish \
+            --config-path ./thunderstore-ci.toml \
+            --file "GK2Plus-${VERSION}-Thunderstore.zip"
