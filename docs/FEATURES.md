@@ -137,10 +137,13 @@ With **Shared Chests OFF**, the remote inventories return to their vanilla greye
 From the **main menu → Inventory** tab:
 
 ~~~text
-Shared Chests    [ ON / OFF ]
+Shared Chests                              [ ON / OFF ]
+    Character Inventory Access              [ ON / OFF ]
 ~~~
 
-During active gameplay, the same row is shown as read-only status.
+**Character Inventory Access** is a child setting and defaults to ON. Turning it OFF keeps normal chest-window Shared Chests behavior while restoring the character inventory's remote storage to vanilla read-only behavior.
+
+During active gameplay, feature settings are shown as read-only status.
 
 The underlying enable/disable value is a normal BepInEx configuration entry, so advanced users may also manage it through the generated GK2+ `.cfg` file or a compatible mod-manager config editor. External config edits should be treated as next-launch changes.
 
@@ -172,24 +175,24 @@ If another mod should own overlapping chest behavior, disable Shared Chests from
 
 Shared Chests is intentionally narrow for the current release, but the longer-term feature family is expected to evolve toward **Shared Storage** with independent child settings instead of one all-or-nothing "god mode" switch.
 
-Planned shape:
+Current/future shape:
 
 ~~~text
 Shared Storage                              [ ON ]
-    Storage Scope                   [ Current Zone ▼ ]
-    Character Inventory Access              [ ON ]
-    Use Items From Storage                  [ OFF ]
-    Craft From Storage                      [ OFF ]
+    Storage Scope                   [ Current Zone ▼ ]  (future)
+    Character Inventory Access              [ ON ]      (implemented)
+    Use Items From Storage                  [ OFF ]     (future)
+    Craft From Storage                      [ OFF ]     (future)
 ~~~
 
 The key design rule is that **scope** and **capability** remain separate:
 
-- **Storage Scope** decides whether eligible storage is limited to the current zone or can span the world.
-- **Character Inventory Access** controls whether remote storage appears in the character inventory.
+- **Character Inventory Access** is already implemented and independently configurable.
+- **Storage Scope** would decide whether eligible storage is limited to the current zone or can span the world.
 - **Use Items From Storage** would allow selected player-only item actions directly from eligible storage.
 - **Craft From Storage** would allow workstations to source ingredients from eligible storage while preserving the workstation's own crafting rules.
 
-These are planned capabilities, not part of the current release, and each should be investigated/tested independently before implementation.
+Future-only controls are intentionally not rendered in the live menu until their behavior exists and has been tested.
 
 
 ---
