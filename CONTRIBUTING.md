@@ -177,7 +177,10 @@ UI contributions should:
 - remain usable at common resolutions,
 - avoid blocking normal game controls when closed,
 - group settings by feature/category,
-- clearly identify restart-required settings,
+- give every feature/settings group a deterministic menu order instead of relying on registration order,
+- keep child/sub-settings directly beneath their parent feature with tighter spacing than the gap between separate features,
+- keep child settings visible but disabled/greyed when their parent feature is OFF unless there is a documented reason to hide them,
+- clearly identify main-menu-only, live-safe, and restart-required settings,
 - reuse game-native UI patterns/assets at runtime when appropriate without redistributing proprietary assets.
 
 The current menu controller is persistent and hosted under the game's persistent GUI root. Avoid coupling feature UI to scene-specific/main-menu-only hierarchies, and avoid creating duplicate persistent UI roots.
@@ -207,13 +210,20 @@ Game internals may be referenced by name where necessary for legitimate mod inte
 
 ## Configuration
 
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+
 Player-facing settings should:
 
-- use clear names,
-- include useful descriptions,
-- have sensible defaults,
-- be exposed through the GK2+ UI when practical,
-- document restart requirements.
+- use BepInEx `ConfigEntry` values as the single source of truth;
+- use clear names and stable section/key names;
+- include useful descriptions for direct `.cfg` and mod-manager users;
+- have sensible defaults and acceptable ranges/lists when practical;
+- be exposed through the GK2+ UI when practical;
+- preserve child option values when a parent feature is disabled;
+- declare deterministic menu order and parent/child relationships;
+- document whether changes are main-menu-only, live-safe, or restart-required.
+
+Do not create a second independent settings store just for the in-game menu unless there is a documented technical reason.
 
 ---
 
