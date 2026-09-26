@@ -96,9 +96,16 @@ namespace GK2Plus
             registry.Register(
                 new BasicCheatsFeature(
                     _services.Saves,
-                    _services.UI)
+                    _services.UI,
+                    Config)
             );
 
+
+            registry.Register(
+                new StackSizesFeature(
+                    Config,
+                    _services.UI)
+            );
 
             registry.Register(
                 new SharedChestsFeature(
