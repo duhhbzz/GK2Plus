@@ -167,6 +167,8 @@ namespace GK2Plus.Framework.UI
                 _menuButtonSprite != null)
             {
                 BuildFeatureToggleRows();
+                BuildFeatureToggleRows();
+                BuildFeatureOptionRows();
                 SetActiveTab(_activeTab);
             }
         }
@@ -985,6 +987,86 @@ Button close = closeButton.GetComponent<Button>();
             }
         }
 
+        private Dictionary<string, float> BuildFeatureControlLayout(
+            string tab)
+        {
+            const float firstRowY = -88f;
+            const float childStep = 23f;
+            const float featureGapStep = 34f;
+
+            Dictionary<string, float> positions =
+                new Dictionary<string, float>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            List<GK2FeatureToggleControl> toggles =
+                _featureToggleControls
+                    .Where(control =>
+                        string.Equals(
+                            control.Tab,
+                            tab,
+                            StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(control => control.Order)
+                    .ThenBy(
+                        control => control.Label,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            HashSet<GK2FeatureOptionControl> attachedOptions =
+                new HashSet<GK2FeatureOptionControl>();
+
+            float y = firstRowY;
+
+            foreach (GK2FeatureToggleControl toggle in toggles)
+            {
+                positions[toggle.Id] = y;
+
+                List<GK2FeatureOptionControl> children =
+                    _featureOptionControls
+                        .Where(option =>
+                            string.Equals(
+                                option.Tab,
+                                tab,
+                                StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(
+                                option.ParentFeatureId,
+                                toggle.Id,
+                                StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(option => option.Order)
+                        .ThenBy(
+                            option => option.Label,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                foreach (GK2FeatureOptionControl child in children)
+                {
+                    y -= childStep;
+                    positions[child.Id] = y;
+                    attachedOptions.Add(child);
+                }
+
+                y -= featureGapStep;
+            }
+
+            foreach (GK2FeatureOptionControl option in
+                _featureOptionControls
+                    .Where(option =>
+                        string.Equals(
+                            option.Tab,
+                            tab,
+                            StringComparison.OrdinalIgnoreCase) &&
+                        !attachedOptions.Contains(option))
+                    .OrderBy(option => option.Order)
+                    .ThenBy(
+                        option => option.Label,
+                        StringComparer.OrdinalIgnoreCase))
+            {
+                positions[option.Id] = y;
+                y -= featureGapStep;
+            }
+
+            return positions;
+        }
+
         private void BuildFeatureToggleRows()
         {
             foreach (GameObject existing in _featureToggleRows.Values)
@@ -1008,8 +1090,16 @@ Button close = closeButton.GetComponent<Button>();
             foreach (IGrouping<string, GK2FeatureToggleControl> group in
                 _featureToggleControls.GroupBy(control => control.Tab))
             {
+                Dictionary<string, float> positions =
+                    BuildFeatureControlLayout(group.Key);
+
                 List<GK2FeatureToggleControl> controls =
-                    group.ToList();
+                    group
+                        .OrderBy(control => control.Order)
+                        .ThenBy(
+                            control => control.Label,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
 
                 for (int i = 0; i < controls.Count; i++)
                 {
@@ -1033,8 +1123,15 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f);
                     rowRect.pivot =
                         new Vector2(0.5f, 1f);
+                    float rowY =
+                        positions.TryGetValue(
+                            control.Id,
+                            out float resolvedY)
+                            ? resolvedY
+                            : -88f;
+
                     rowRect.anchoredPosition =
-                        new Vector2(0f, -88f - (i * 27f));
+                        new Vector2(0f, rowY);
                     rowRect.sizeDelta =
                         new Vector2(350f, 20f);
 
@@ -1046,9 +1143,15 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
-                        new Vector2(-60f, 0f),
+                        new Vector2(
+                            string.IsNullOrWhiteSpace(control.ParentFeatureId)
+                                ? -60f
+                                : -48f,
+                            0f),
                         new Vector2(210f, 20f),
-                        9f,
+                        string.IsNullOrWhiteSpace(control.ParentFeatureId)
+                            ? 9f
+                            : 8.5f,
                         "Left");
 
                     GameObject toggleButton =
@@ -1094,6 +1197,7 @@ Button close = closeButton.GetComponent<Button>();
                             }
 
                             RefreshFeatureToggleRows();
+                            RefreshFeatureOptionRows();
                         });
 
                     _featureToggleRows[control] =
@@ -1213,15 +1317,21 @@ Button close = closeButton.GetComponent<Button>();
             foreach (IGrouping<string, GK2FeatureOptionControl> group in
                 _featureOptionControls.GroupBy(control => control.Tab))
             {
-                List<GK2FeatureOptionControl> controls =
-                    group.ToList();
+                Dictionary<string, float> positions =
+                    BuildFeatureControlLayout(group.Key);
 
-                int toggleCount =
-                    _featureToggleControls.Count(control =>
-                        string.Equals(
-                            control.Tab,
-                            group.Key,
-                            StringComparison.OrdinalIgnoreCase));
+                List<GK2FeatureOptionControl> controls =
+                    group
+                        .OrderByDescending(control =>
+                            positions.TryGetValue(
+                                control.Id,
+                                out float rowY)
+                                ? rowY
+                                : float.MinValue)
+                        .ThenBy(
+                            control => control.Label,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToList();
 
                 for (int i = 0; i < controls.Count; i++)
                 {
@@ -1245,10 +1355,17 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f);
                     rowRect.pivot =
                         new Vector2(0.5f, 1f);
+                    float rowY =
+                        positions.TryGetValue(
+                            control.Id,
+                            out float resolvedY)
+                            ? resolvedY
+                            : -88f;
+
                     rowRect.anchoredPosition =
                         new Vector2(
                             0f,
-                            -88f - ((toggleCount + i) * 27f));
+                            rowY);
                     rowRect.sizeDelta =
                         new Vector2(350f, 20f);
 
@@ -1372,7 +1489,27 @@ Button close = closeButton.GetComponent<Button>();
                         ? "Select"
                         : label) + "  ▼");
 
-                button.interactable = true;
+                bool enabled =
+                    control.EnabledProvider();
+
+                button.interactable =
+                    enabled;
+
+                Transform labelTransform =
+                    row.transform.Find(
+                        "FeatureOptionLabel");
+
+                Component labelText =
+                    labelTransform == null
+                        ? null
+                        : FindTmp(labelTransform.gameObject);
+
+                SetProperty(
+                    labelText,
+                    "color",
+                    enabled
+                        ? new Color(1f, 0.84f, 0.48f, 1f)
+                        : new Color(0.56f, 0.56f, 0.60f, 0.68f));
             }
         }
 
@@ -1380,6 +1517,7 @@ Button close = closeButton.GetComponent<Button>();
             GK2FeatureOptionControl control)
         {
             if (control == null ||
+                !control.EnabledProvider() ||
                 _menuRoot == null ||
                 _menuButtonLabelTemplate == null ||
                 _menuButtonSprite == null ||
