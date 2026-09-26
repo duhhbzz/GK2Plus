@@ -99,7 +99,8 @@ namespace GK2Plus.Features.Inventory
                     "Shared Chests",
                     () => Enabled?.Value ?? DefaultEnabled,
                     BuildUiStatus,
-                    SetEnabledFromMainMenu));
+                    SetEnabledFromMainMenu,
+                    order: 200));
         }
 
         protected override void OnEnabled()
