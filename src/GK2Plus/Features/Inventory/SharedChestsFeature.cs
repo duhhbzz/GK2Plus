@@ -26,6 +26,8 @@ namespace GK2Plus.Features.Inventory
         private readonly ConfigFile _config;
         private readonly GK2UIService _uiService;
 
+        private ConfigEntry<bool> _characterInventoryAccess;
+
         private bool _loggedRuntimeSuccess;
         private bool _loggedCharacterInventorySuccess;
         private bool _loggedMissingShape;
@@ -55,6 +57,17 @@ namespace GK2Plus.Features.Inventory
         protected override void OnInitialize()
         {
             _activeInstance = this;
+
+            _characterInventoryAccess = _config.Bind(
+                Category,
+                $"{Id}.CharacterInventoryAccess",
+                true,
+                new ConfigDescription(
+                    "Allow Shared Chests access from the character inventory. " +
+                    "This affects current-zone storage only. " +
+                    "Player-only actions such as Use/Equip still require moving the item into the carried inventory first. " +
+                    "Recommended: configure from the GK2+ main-menu Inventory tab; external config edits apply on next launch.")
+            );
 
             List<ConstructorInfo> constructors =
                 typeof(global::UIBaseChestWindowData)
@@ -133,6 +146,20 @@ namespace GK2Plus.Features.Inventory
                     BuildUiStatus,
                     SetEnabledFromMainMenu,
                     order: 200));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.character-inventory-access",
+                    Category,
+                    "Character Inventory Access",
+                    () => (_characterInventoryAccess?.Value ?? true)
+                        ? "ON"
+                        : "OFF",
+                    BuildCharacterInventoryOptions,
+                    SetCharacterInventoryAccessFromMainMenu,
+                    parentFeatureId: Id,
+                    order: 10,
+                    enabledProvider: () => Enabled?.Value ?? DefaultEnabled));
         }
 
         protected override void OnEnabled()
@@ -146,6 +173,41 @@ namespace GK2Plus.Features.Inventory
             return Enabled?.Value == true
                 ? "ON"
                 : "OFF";
+        }
+
+        private IReadOnlyList<GK2FeatureOption> BuildCharacterInventoryOptions()
+        {
+            return new[]
+            {
+                new GK2FeatureOption("true", "ON"),
+                new GK2FeatureOption("false", "OFF")
+            };
+        }
+
+        private void SetCharacterInventoryAccessFromMainMenu(
+            string value)
+        {
+            if (_characterInventoryAccess == null ||
+                !bool.TryParse(
+                    value,
+                    out bool enabled))
+            {
+                return;
+            }
+
+            if (_characterInventoryAccess.Value == enabled)
+            {
+                _uiService.RefreshMenu();
+                return;
+            }
+
+            _characterInventoryAccess.Value = enabled;
+            _config.Save();
+
+            Logger.LogInfo(
+                $"Shared Chests Character Inventory Access {(enabled ? "enabled" : "disabled")} from the main menu.");
+
+            _uiService.RefreshMenu();
         }
 
         private void SetEnabledFromMainMenu(
@@ -185,7 +247,16 @@ namespace GK2Plus.Features.Inventory
         private static void CharacterWindowDataPostfix(
             object __instance)
         {
-            _activeInstance?.ApplyToCharacterInventoryData(
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                feature._characterInventoryAccess?.Value == false)
+            {
+                return;
+            }
+
+            feature.ApplyToCharacterInventoryData(
                 __instance);
         }
 

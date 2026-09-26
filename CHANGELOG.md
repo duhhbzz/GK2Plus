@@ -8,7 +8,11 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
+- **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and, optionally, the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
+- **Character Inventory Access** child setting for Shared Chests, allowing that UI path to be disabled independently while keeping normal chest-window sharing enabled.
+- **Bigger Item Stacks**: scale live native stack limits from 2x through 20x, with a grouped main-menu multiplier control.
+- **Spawn Item** cheat: searchable/paged native item picker, configurable quantity, and native item creation/inventory insertion through GK2's own item pipeline.
+
 ### Changed
 
 - Feature-setting rows now use deterministic ordering instead of registration order.
@@ -18,9 +22,20 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Cheats-tab layout now keeps the Spawn Item row separated from Heal Player / Refill Energy instead of overlapping the third action row.
+
+### Validation
+
+- Bigger Item Stacks validated at 2x and 3x, including a 150-item stack from a native 50-item limit.
+- Save/reload downgrade test confirmed existing over-cap stacks are preserved and GK2 normalizes them when later moved/adjusted.
+- Spawn Item validated with native item materialization and player-inventory insertion.
+- Stack multiplier parent/child ordering and disabled-child UI behavior validated in runtime testing.
+
 ### Compatibility
 
 - Shared Chests creates no custom shared-storage save data and can be disabled independently when another mod should own overlapping storage behavior.
+- Bigger Item Stacks restores only stack-limit values that still match GK2+'s last applied value, preserving later third-party changes.
+
 ### Known Issues
 
 ---

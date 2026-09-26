@@ -34,6 +34,9 @@ namespace GK2Plus.Framework.UI
         private GameObject _nexusButton;
         private GameObject _bugButton;
         private GameObject _contentRoot;
+        private RectTransform _bodyContentRect;
+        private ScrollRect _bodyScrollRect;
+        private Scrollbar _bodyScrollbar;
         private GameObject _bodyTextTemplate;
         private GameObject _menuButtonLabelTemplate;
         private Sprite _menuButtonSprite;
@@ -58,6 +61,25 @@ namespace GK2Plus.Framework.UI
         private int _featureOptionPickerPage;
 
         private const int FeatureOptionPickerPageSize = 6;
+
+        private GK2SpawnItemControl _spawnItemControl;
+        private GameObject _spawnItemRow;
+        private GameObject _spawnItemButton;
+        private Component _spawnQuantityInput;
+        private string _lastSpawnQuantityText = string.Empty;
+
+        private GameObject _itemPickerRoot;
+        private Component _itemPickerSearchInput;
+        private GameObject _itemPickerPageText;
+        private readonly List<GameObject> _itemPickerResultButtons =
+            new List<GameObject>();
+        private string _lastItemPickerSearch = string.Empty;
+        private int _itemPickerPage;
+
+        private const int ItemPickerPageSize = 6;
+
+        private const float BodyViewportTopOffset = 33f;
+        private const float BodyViewportHeight = 143f;
 
         private readonly Dictionary<string, GameObject> _tabButtons =
             new Dictionary<string, GameObject>();
@@ -189,6 +211,21 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterSpawnItemControl(
+            GK2SpawnItemControl control)
+        {
+            _spawnItemControl = control;
+
+            if (_built &&
+                _contentRoot != null &&
+                _menuButtonLabelTemplate != null &&
+                _menuButtonSprite != null)
+            {
+                BuildSpawnItemRow();
+                SetActiveTab(_activeTab);
+            }
+        }
+
         public void RegisterTabNotice(
             string tab,
             Func<string> noticeProvider)
@@ -280,10 +317,22 @@ namespace GK2Plus.Framework.UI
                 {
                     CloseFeatureOptionPicker();
                 }
+                else if (_itemPickerRoot != null)
+                {
+                    CloseItemPicker();
+                }
                 else
                 {
                     HideMenu();
                 }
+
+                return;
+            }
+
+            if (_menuRoot.activeSelf)
+            {
+                UpdateSpawnQuantityFromInput();
+                UpdateItemPickerSearch();
             }
         }
 
@@ -632,7 +681,154 @@ namespace GK2Plus.Framework.UI
             contentBg.color = new Color(0.12f, 0.02f, 0.07f, 0.86f);
             contentBg.raycastTarget = false;
 
-            _contentRoot = content;
+            GameObject bodyViewport = new GameObject(
+                "BodyViewport",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(RectMask2D)
+            );
+            bodyViewport.transform.SetParent(content.transform, false);
+
+            RectTransform bodyViewportRect =
+                bodyViewport.GetComponent<RectTransform>();
+
+            bodyViewportRect.anchorMin = new Vector2(0.5f, 1f);
+            bodyViewportRect.anchorMax = new Vector2(0.5f, 1f);
+            bodyViewportRect.pivot = new Vector2(0.5f, 1f);
+            bodyViewportRect.anchoredPosition =
+                new Vector2(0f, -BodyViewportTopOffset);
+            bodyViewportRect.sizeDelta =
+                new Vector2(388f, BodyViewportHeight);
+
+            Image bodyViewportImage =
+                bodyViewport.GetComponent<Image>();
+            bodyViewportImage.color =
+                new Color(0f, 0f, 0f, 0.001f);
+            bodyViewportImage.raycastTarget = true;
+
+            GameObject bodyContent = new GameObject(
+                "BodyScrollContent",
+                typeof(RectTransform)
+            );
+            bodyContent.transform.SetParent(
+                bodyViewport.transform,
+                false);
+
+            RectTransform bodyContentRect =
+                bodyContent.GetComponent<RectTransform>();
+
+            bodyContentRect.anchorMin =
+                new Vector2(0f, 1f);
+            bodyContentRect.anchorMax =
+                new Vector2(1f, 1f);
+            bodyContentRect.pivot =
+                new Vector2(0.5f, 1f);
+            bodyContentRect.anchoredPosition =
+                Vector2.zero;
+            bodyContentRect.sizeDelta =
+                new Vector2(0f, BodyViewportHeight);
+
+            ScrollRect bodyScroll =
+                content.AddComponent<ScrollRect>();
+            bodyScroll.viewport =
+                bodyViewportRect;
+            bodyScroll.content =
+                bodyContentRect;
+            bodyScroll.horizontal = false;
+            bodyScroll.vertical = true;
+            bodyScroll.movementType =
+                ScrollRect.MovementType.Clamped;
+            bodyScroll.inertia = false;
+            bodyScroll.scrollSensitivity = 18f;
+            bodyScroll.verticalNormalizedPosition = 1f;
+
+            GameObject scrollbarObject = new GameObject(
+                "BodyScrollbar",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Scrollbar)
+            );
+            scrollbarObject.transform.SetParent(
+                content.transform,
+                false);
+
+            RectTransform scrollbarRect =
+                scrollbarObject.GetComponent<RectTransform>();
+            scrollbarRect.anchorMin =
+                new Vector2(1f, 1f);
+            scrollbarRect.anchorMax =
+                new Vector2(1f, 1f);
+            scrollbarRect.pivot =
+                new Vector2(1f, 1f);
+            scrollbarRect.anchoredPosition =
+                new Vector2(-4f, -BodyViewportTopOffset);
+            scrollbarRect.sizeDelta =
+                new Vector2(5f, BodyViewportHeight);
+
+            Image scrollbarTrack =
+                scrollbarObject.GetComponent<Image>();
+            scrollbarTrack.color =
+                new Color(0.08f, 0.01f, 0.04f, 0.72f);
+            scrollbarTrack.raycastTarget = true;
+
+            GameObject handle = new GameObject(
+                "Handle",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image)
+            );
+            handle.transform.SetParent(
+                scrollbarObject.transform,
+                false);
+
+            RectTransform handleRect =
+                handle.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.offsetMin = Vector2.zero;
+            handleRect.offsetMax = Vector2.zero;
+
+            Image handleImage =
+                handle.GetComponent<Image>();
+            handleImage.sprite =
+                redButtonSprite;
+            handleImage.type =
+                Image.Type.Sliced;
+            handleImage.color =
+                new Color(0.88f, 0.88f, 0.92f, 0.92f);
+            handleImage.raycastTarget = true;
+
+            Scrollbar bodyScrollbar =
+                scrollbarObject.GetComponent<Scrollbar>();
+            bodyScrollbar.handleRect =
+                handleRect;
+            bodyScrollbar.targetGraphic =
+                handleImage;
+            bodyScrollbar.direction =
+                Scrollbar.Direction.BottomToTop;
+            bodyScrollbar.transition =
+                Selectable.Transition.ColorTint;
+
+            Navigation scrollbarNavigation =
+                bodyScrollbar.navigation;
+            scrollbarNavigation.mode =
+                Navigation.Mode.None;
+            bodyScrollbar.navigation =
+                scrollbarNavigation;
+
+            bodyScroll.verticalScrollbar =
+                bodyScrollbar;
+            bodyScroll.verticalScrollbarVisibility =
+                ScrollRect.ScrollbarVisibility.Permanent;
+
+            scrollbarObject.SetActive(false);
+
+            _contentRoot = bodyContent;
+            _bodyContentRect = bodyContentRect;
+            _bodyScrollRect = bodyScroll;
+            _bodyScrollbar = bodyScrollbar;
             _bodyTextTemplate = bodyTemplate;
             _menuButtonLabelTemplate = buttonLabelTemplate;
             _menuButtonSprite = redButtonSprite;
@@ -648,13 +844,13 @@ namespace GK2Plus.Framework.UI
 
             _pageText = CreateBodyText(
                 bodyTemplate,
-                content.transform,
+                _contentRoot.transform,
                 "PageText",
                 "",
                 new Vector2(0f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -40f),
+                new Vector2(0f, BodyY(-40f)),
                 new Vector2(350f, 102f),
                 10f,
                 "Center"
@@ -668,13 +864,13 @@ namespace GK2Plus.Framework.UI
 
             _featureSettingsNote = CreateBodyText(
                 bodyTemplate,
-                content.transform,
+                _contentRoot.transform,
                 "FeatureSettingsNote",
                 "Return to the main menu to change feature settings safely.",
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -157f),
+                new Vector2(0f, BodyY(-157f)),
                 new Vector2(340f, 12f),
                 7f,
                 "Center"
@@ -683,10 +879,10 @@ namespace GK2Plus.Framework.UI
 
             _githubButton = CreateActionButton(
                 buttonLabelTemplate,
-                content.transform,
+                _contentRoot.transform,
                 redButtonSprite,
                 "GitHub",
-                new Vector2(-92f, -142f),
+                new Vector2(-92f, BodyY(-142f)),
                 new Vector2(78f, 20f)
             );
             _githubButton.GetComponent<Button>().onClick.AddListener(
@@ -694,10 +890,10 @@ namespace GK2Plus.Framework.UI
 
             _nexusButton = CreateActionButton(
                 buttonLabelTemplate,
-                content.transform,
+                _contentRoot.transform,
                 redButtonSprite,
                 ProjectLinks.HasNexusUrl ? "Nexus Mods" : "Nexus Soon",
-                new Vector2(0f, -142f),
+                new Vector2(0f, BodyY(-142f)),
                 new Vector2(92f, 20f)
             );
             Button nexus = _nexusButton.GetComponent<Button>();
@@ -711,10 +907,10 @@ namespace GK2Plus.Framework.UI
 
             _bugButton = CreateActionButton(
                 buttonLabelTemplate,
-                content.transform,
+                _contentRoot.transform,
                 redButtonSprite,
                 "Report Bug",
-                new Vector2(100f, -142f),
+                new Vector2(100f, BodyY(-142f)),
                 new Vector2(92f, 20f)
             );
             _bugButton.GetComponent<Button>().onClick.AddListener(
@@ -723,6 +919,7 @@ namespace GK2Plus.Framework.UI
             BuildRegisteredActionButtons();
             BuildFeatureToggleRows();
             BuildFeatureOptionRows();
+            BuildSpawnItemRow();
 
             if (dividerSprite != null)
             {
@@ -839,8 +1036,8 @@ Button close = closeButton.GetComponent<Button>();
                 const int maxPerRow = 4;
                 const float maxRowWidth = 350f;
                 const float gap = 6f;
-                const float firstRowY = -92f;
-                const float rowGap = 27f;
+                const float firstRowY = -82f;
+                const float rowGap = 24f;
 
                 for (int i = 0; i < count; i++)
                 {
@@ -878,7 +1075,7 @@ Button close = closeButton.GetComponent<Button>();
                         _contentRoot.transform,
                         _menuButtonSprite,
                         action.Label,
-                        new Vector2(x, y),
+                        new Vector2(x, BodyY(y)),
                         new Vector2(buttonWidth, 20f));
 
                     Button button = buttonObject.GetComponent<Button>();
@@ -1086,7 +1283,7 @@ Button close = closeButton.GetComponent<Button>();
                             : -88f;
 
                     rowRect.anchoredPosition =
-                        new Vector2(0f, rowY);
+                        new Vector2(0f, BodyY(rowY));
                     rowRect.sizeDelta =
                         new Vector2(350f, 20f);
 
@@ -1224,6 +1421,39 @@ Button close = closeButton.GetComponent<Button>();
                 _featureSettingsNote.SetActive(
                     hasFeatureControls &&
                     !mainMenu);
+
+                UpdateFeatureSettingsNotePosition();
+            }
+        }
+
+        private void UpdateFeatureSettingsNotePosition()
+        {
+            if (_featureSettingsNote == null ||
+                !HasFeatureControlsForTab(_activeTab))
+            {
+                return;
+            }
+
+            Dictionary<string, float> positions =
+                BuildFeatureControlLayout(_activeTab);
+
+            if (positions.Count == 0)
+            {
+                return;
+            }
+
+            float lowestRowY =
+                positions.Values.Min();
+
+            RectTransform noteRect =
+                _featureSettingsNote.GetComponent<RectTransform>();
+
+            if (noteRect != null)
+            {
+                noteRect.anchoredPosition =
+                    new Vector2(
+                        0f,
+                        BodyY(lowestRowY - 24f));
             }
         }
 
@@ -1314,7 +1544,7 @@ Button close = closeButton.GetComponent<Button>();
                     rowRect.anchoredPosition =
                         new Vector2(
                             0f,
-                            rowY);
+                            BodyY(rowY));
                     rowRect.sizeDelta =
                         new Vector2(350f, 20f);
 
@@ -1396,7 +1626,6 @@ Button close = closeButton.GetComponent<Button>();
                 }
 
                 bool visible =
-                    mainMenu &&
                     string.Equals(
                         control.Tab,
                         _activeTab,
@@ -1438,16 +1667,25 @@ Button close = closeButton.GetComponent<Button>();
                         ? selected.Label
                         : currentValue;
 
+                string buttonText =
+                    string.IsNullOrWhiteSpace(label)
+                        ? "Select"
+                        : label;
+
+                if (mainMenu)
+                {
+                    buttonText += "  ▼";
+                }
+
                 SetButtonText(
                     button.gameObject,
-                    (string.IsNullOrWhiteSpace(label)
-                        ? "Select"
-                        : label) + "  ▼");
+                    buttonText);
 
                 bool enabled =
                     control.EnabledProvider();
 
                 button.interactable =
+                    mainMenu &&
                     enabled;
 
                 Transform labelTransform =
@@ -1738,6 +1976,771 @@ Button close = closeButton.GetComponent<Button>();
             _featureOptionPickerPage = 0;
         }
 
+        private void BuildSpawnItemRow()
+        {
+            if (_spawnItemRow != null)
+            {
+                Destroy(_spawnItemRow);
+                _spawnItemRow = null;
+                _spawnItemButton = null;
+                _spawnQuantityInput = null;
+            }
+
+            if (_spawnItemControl == null ||
+                _contentRoot == null ||
+                _menuButtonLabelTemplate == null ||
+                _menuButtonSprite == null)
+            {
+                return;
+            }
+
+            _spawnItemRow = new GameObject(
+                "SpawnItemRow",
+                typeof(RectTransform));
+
+            _spawnItemRow.transform.SetParent(
+                _contentRoot.transform,
+                false);
+
+            RectTransform rowRect =
+                _spawnItemRow.GetComponent<RectTransform>();
+
+            rowRect.anchorMin = new Vector2(0.5f, 1f);
+            rowRect.anchorMax = new Vector2(0.5f, 1f);
+            rowRect.pivot = new Vector2(0.5f, 1f);
+            rowRect.anchoredPosition = new Vector2(0f, BodyY(-154f));
+            rowRect.sizeDelta = new Vector2(350f, 20f);
+
+            GameObject spawnButton = CreateActionButton(
+                _menuButtonLabelTemplate,
+                _spawnItemRow.transform,
+                _menuButtonSprite,
+                "Spawn",
+                new Vector2(-140f, 0f),
+                new Vector2(64f, 20f));
+
+            spawnButton.GetComponent<RectTransform>().anchorMin =
+                new Vector2(0.5f, 1f);
+            spawnButton.GetComponent<RectTransform>().anchorMax =
+                new Vector2(0.5f, 1f);
+
+            spawnButton.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                if (!_spawnItemControl.CanSpawn())
+                {
+                    _logger?.LogWarning(
+                        "GK2+ Spawn Item is currently unavailable.");
+                    return;
+                }
+
+                try
+                {
+                    _spawnItemControl.Spawn();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(
+                        $"GK2+ Spawn Item action failed: {ex}");
+                }
+
+                RefreshSpawnItemRow();
+            });
+
+            _spawnItemButton = CreateActionButton(
+                _menuButtonLabelTemplate,
+                _spawnItemRow.transform,
+                _menuButtonSprite,
+                "Item",
+                new Vector2(-20f, 0f),
+                new Vector2(164f, 20f));
+
+            _spawnItemButton.GetComponent<Button>().onClick.AddListener(
+                OpenItemPicker);
+
+            _spawnQuantityInput = CreateTmpInputField(
+                _menuButtonLabelTemplate,
+                _spawnItemRow.transform,
+                "SpawnQuantity",
+                Math.Max(1, _spawnItemControl.QuantityProvider()).ToString(),
+                new Vector2(110f, 0f),
+                new Vector2(56f, 20f),
+                numericOnly: true,
+                placeholder: "Qty");
+
+            RefreshSpawnItemRow();
+        }
+
+        private void RefreshSpawnItemRow()
+        {
+            if (_spawnItemRow == null ||
+                _spawnItemControl == null)
+            {
+                return;
+            }
+
+            bool visible = string.Equals(
+                _activeTab,
+                _spawnItemControl.Tab,
+                StringComparison.OrdinalIgnoreCase);
+
+            _spawnItemRow.SetActive(visible);
+
+            if (!visible)
+            {
+                return;
+            }
+
+            string selectedId =
+                _spawnItemControl.SelectedItemIdProvider() ?? string.Empty;
+
+            IReadOnlyList<GK2ItemOption> options =
+                _spawnItemControl.ItemOptionsProvider() ??
+                Array.Empty<GK2ItemOption>();
+
+            GK2ItemOption selected = options.FirstOrDefault(option =>
+                string.Equals(
+                    option.Id,
+                    selectedId,
+                    StringComparison.OrdinalIgnoreCase));
+
+            string displayName =
+                selected != null
+                    ? selected.DisplayName
+                    : (string.IsNullOrWhiteSpace(selectedId)
+                        ? "Select Item"
+                        : selectedId);
+
+            if (_spawnItemButton != null)
+            {
+                SetButtonText(
+                    _spawnItemButton,
+                    displayName + "  ▼");
+            }
+
+            int quantity = Math.Max(
+                1,
+                _spawnItemControl.QuantityProvider());
+
+            string quantityText = quantity.ToString();
+
+            if (_spawnQuantityInput != null &&
+                !string.Equals(
+                    GetStringProperty(
+                        _spawnQuantityInput,
+                        "text"),
+                    quantityText,
+                    StringComparison.Ordinal))
+            {
+                SetProperty(
+                    _spawnQuantityInput,
+                    "text",
+                    quantityText);
+            }
+
+            _lastSpawnQuantityText = quantityText;
+
+            Button spawnButton =
+                _spawnItemRow.transform
+                    .Find("SpawnButton")
+                    ?.GetComponent<Button>();
+
+            if (spawnButton != null)
+            {
+                spawnButton.interactable =
+                    _spawnItemControl.CanSpawn();
+            }
+        }
+
+        private void UpdateSpawnQuantityFromInput()
+        {
+            if (_spawnQuantityInput == null ||
+                _spawnItemControl == null ||
+                _spawnItemRow == null ||
+                !_spawnItemRow.activeInHierarchy)
+            {
+                return;
+            }
+
+            string text =
+                GetStringProperty(
+                    _spawnQuantityInput,
+                    "text") ?? string.Empty;
+
+            if (string.Equals(
+                text,
+                _lastSpawnQuantityText,
+                StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _lastSpawnQuantityText = text;
+
+            if (!int.TryParse(text, out int quantity))
+            {
+                return;
+            }
+
+            quantity = Mathf.Clamp(
+                quantity,
+                1,
+                10000);
+
+            _spawnItemControl.QuantityChanged(
+                quantity);
+        }
+
+        private void OpenItemPicker()
+        {
+            if (_spawnItemControl == null ||
+                _menuRoot == null ||
+                _menuButtonLabelTemplate == null ||
+                _menuButtonSprite == null)
+            {
+                return;
+            }
+
+            CloseItemPicker();
+
+            _itemPickerRoot = new GameObject(
+                "GK2PlusItemPicker",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            _itemPickerRoot.transform.SetParent(
+                _menuRoot.transform,
+                false);
+            _itemPickerRoot.transform.SetAsLastSibling();
+
+            RectTransform overlayRect =
+                _itemPickerRoot.GetComponent<RectTransform>();
+
+            overlayRect.anchorMin = Vector2.zero;
+            overlayRect.anchorMax = Vector2.one;
+            overlayRect.offsetMin = Vector2.zero;
+            overlayRect.offsetMax = Vector2.zero;
+
+            Image dimmer =
+                _itemPickerRoot.GetComponent<Image>();
+
+            dimmer.color =
+                new Color(0.02f, 0.01f, 0.02f, 0.82f);
+            dimmer.raycastTarget = true;
+
+            GameObject panel = new GameObject(
+                "Panel",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            panel.transform.SetParent(
+                _itemPickerRoot.transform,
+                false);
+
+            RectTransform panelRect =
+                panel.GetComponent<RectTransform>();
+
+            panelRect.anchorMin =
+                new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax =
+                new Vector2(0.5f, 0.5f);
+            panelRect.pivot =
+                new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition =
+                Vector2.zero;
+            panelRect.sizeDelta =
+                new Vector2(360f, 232f);
+
+            Image panelImage =
+                panel.GetComponent<Image>();
+
+            panelImage.color =
+                new Color(0.20f, 0.035f, 0.09f, 0.99f);
+            panelImage.raycastTarget = true;
+
+            CreateNativeTitleText(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                "Select Item",
+                new Vector2(0f, -14f),
+                new Vector2(180f, 20f),
+                0.64f);
+
+            _itemPickerSearchInput = CreateTmpInputField(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                "ItemSearch",
+                string.Empty,
+                new Vector2(0f, -42f),
+                new Vector2(310f, 20f),
+                numericOnly: false,
+                placeholder: "Search item name or id");
+
+            _lastItemPickerSearch = string.Empty;
+            _itemPickerPage = 0;
+
+            _itemPickerPageText = CreateBodyText(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                "PickerPage",
+                "",
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 13f),
+                new Vector2(90f, 16f),
+                8f,
+                "Center");
+
+            GameObject prev = CreateActionButton(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                _menuButtonSprite,
+                "Prev",
+                new Vector2(-118f, -202f),
+                new Vector2(62f, 18f));
+
+            prev.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                _itemPickerPage =
+                    Math.Max(0, _itemPickerPage - 1);
+                RebuildItemPickerResults();
+            });
+
+            GameObject next = CreateActionButton(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                _menuButtonSprite,
+                "Next",
+                new Vector2(118f, -202f),
+                new Vector2(62f, 18f));
+
+            next.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                _itemPickerPage++;
+                RebuildItemPickerResults();
+            });
+
+            GameObject cancel = CreateActionButton(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                _menuButtonSprite,
+                "Cancel",
+                new Vector2(0f, -202f),
+                new Vector2(72f, 18f));
+
+            cancel.GetComponent<Button>().onClick.AddListener(
+                CloseItemPicker);
+
+            RebuildItemPickerResults();
+        }
+
+        private void UpdateItemPickerSearch()
+        {
+            if (_itemPickerRoot == null ||
+                _itemPickerSearchInput == null)
+            {
+                return;
+            }
+
+            string search =
+                GetStringProperty(
+                    _itemPickerSearchInput,
+                    "text") ?? string.Empty;
+
+            if (string.Equals(
+                search,
+                _lastItemPickerSearch,
+                StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _lastItemPickerSearch = search;
+            _itemPickerPage = 0;
+            RebuildItemPickerResults();
+        }
+
+        private void RebuildItemPickerResults()
+        {
+            if (_itemPickerRoot == null ||
+                _spawnItemControl == null)
+            {
+                return;
+            }
+
+            foreach (GameObject result in
+                _itemPickerResultButtons)
+            {
+                if (result != null)
+                {
+                    Destroy(result);
+                }
+            }
+
+            _itemPickerResultButtons.Clear();
+
+            Transform panel =
+                _itemPickerRoot.transform.Find("Panel");
+
+            if (panel == null)
+            {
+                return;
+            }
+
+            string search =
+                (_lastItemPickerSearch ?? string.Empty)
+                    .Trim();
+
+            IEnumerable<GK2ItemOption> query =
+                _spawnItemControl.ItemOptionsProvider() ??
+                Array.Empty<GK2ItemOption>();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(option =>
+                    (option.DisplayName ?? string.Empty)
+                        .IndexOf(
+                            search,
+                            StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (option.Id ?? string.Empty)
+                        .IndexOf(
+                            search,
+                            StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            List<GK2ItemOption> filtered =
+                query
+                    .OrderBy(option =>
+                        option.DisplayName,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(option =>
+                        option.Id,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            int pageCount =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        filtered.Count /
+                        (double)ItemPickerPageSize));
+
+            _itemPickerPage =
+                Mathf.Clamp(
+                    _itemPickerPage,
+                    0,
+                    pageCount - 1);
+
+            int start =
+                _itemPickerPage *
+                ItemPickerPageSize;
+
+            List<GK2ItemOption> page =
+                filtered
+                    .Skip(start)
+                    .Take(ItemPickerPageSize)
+                    .ToList();
+
+            for (int i = 0; i < page.Count; i++)
+            {
+                GK2ItemOption option = page[i];
+
+                string label =
+                    string.Equals(
+                        option.DisplayName,
+                        option.Id,
+                        StringComparison.OrdinalIgnoreCase)
+                        ? option.DisplayName
+                        : $"{option.DisplayName}  ({option.Id})";
+
+                GameObject button = CreateActionButton(
+                    _menuButtonLabelTemplate,
+                    panel,
+                    _menuButtonSprite,
+                    label,
+                    new Vector2(
+                        0f,
+                        -72f - (i * 21f)),
+                    new Vector2(310f, 18f));
+
+                button.GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    _spawnItemControl.ItemSelected(
+                        option.Id);
+                    CloseItemPicker();
+                    RefreshSpawnItemRow();
+                });
+
+                _itemPickerResultButtons.Add(
+                    button);
+            }
+
+            if (_itemPickerPageText != null)
+            {
+                SetText(
+                    _itemPickerPageText,
+                    $"{_itemPickerPage + 1}/{pageCount}  •  {filtered.Count} items");
+            }
+        }
+
+        private void CloseItemPicker()
+        {
+            if (_itemPickerRoot != null)
+            {
+                Destroy(_itemPickerRoot);
+                _itemPickerRoot = null;
+            }
+
+            _itemPickerSearchInput = null;
+            _itemPickerPageText = null;
+            _itemPickerResultButtons.Clear();
+            _lastItemPickerSearch = string.Empty;
+            _itemPickerPage = 0;
+        }
+
+        private Component CreateTmpInputField(
+            GameObject textTemplate,
+            Transform parent,
+            string name,
+            string text,
+            Vector2 anchoredPosition,
+            Vector2 size,
+            bool numericOnly,
+            string placeholder)
+        {
+            Type inputType = AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(assembly =>
+                    assembly.GetType(
+                        "TMPro.TMP_InputField",
+                        false))
+                .FirstOrDefault(type =>
+                    type != null);
+
+            if (inputType == null)
+            {
+                throw new InvalidOperationException(
+                    "TMPro.TMP_InputField is unavailable.");
+            }
+
+            GameObject root = new GameObject(
+                name,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            root.transform.SetParent(
+                parent,
+                false);
+
+            RectTransform rect =
+                root.GetComponent<RectTransform>();
+
+            rect.anchorMin =
+                new Vector2(0.5f, 1f);
+            rect.anchorMax =
+                new Vector2(0.5f, 1f);
+            rect.pivot =
+                new Vector2(0.5f, 1f);
+            rect.anchoredPosition =
+                anchoredPosition;
+            rect.sizeDelta =
+                size;
+
+            Image background =
+                root.GetComponent<Image>();
+
+            background.sprite =
+                _menuButtonSprite;
+            background.type =
+                Image.Type.Sliced;
+            background.color =
+                new Color(
+                    0.62f,
+                    0.62f,
+                    0.66f,
+                    0.92f);
+            background.raycastTarget = true;
+
+            GameObject viewport = new GameObject(
+                "Viewport",
+                typeof(RectTransform),
+                typeof(RectMask2D));
+
+            viewport.transform.SetParent(
+                root.transform,
+                false);
+
+            RectTransform viewportRect =
+                viewport.GetComponent<RectTransform>();
+
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin =
+                new Vector2(5f, 2f);
+            viewportRect.offsetMax =
+                new Vector2(-5f, -2f);
+
+            GameObject textObject =
+                Instantiate(
+                    textTemplate,
+                    viewport.transform,
+                    false);
+
+            textObject.name = "Text";
+            textObject.SetActive(true);
+            StripLocalization(textObject);
+
+            RectTransform textRect =
+                textObject.GetComponent<RectTransform>();
+
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            textRect.localScale =
+                new Vector3(0.55f, 0.55f, 1f);
+
+            Component textTmp =
+                FindTmp(textObject);
+
+            SetProperty(
+                textTmp,
+                "text",
+                text ?? string.Empty);
+            SetProperty(
+                textTmp,
+                "enableAutoSizing",
+                false);
+            TrySetEnumProperty(
+                textTmp,
+                "alignment",
+                "Center");
+
+            GameObject placeholderObject =
+                Instantiate(
+                    textTemplate,
+                    viewport.transform,
+                    false);
+
+            placeholderObject.name =
+                "Placeholder";
+            placeholderObject.SetActive(true);
+            StripLocalization(
+                placeholderObject);
+
+            RectTransform placeholderRect =
+                placeholderObject.GetComponent<RectTransform>();
+
+            placeholderRect.anchorMin = Vector2.zero;
+            placeholderRect.anchorMax = Vector2.one;
+            placeholderRect.offsetMin = Vector2.zero;
+            placeholderRect.offsetMax = Vector2.zero;
+            placeholderRect.localScale =
+                new Vector3(0.48f, 0.48f, 1f);
+
+            Component placeholderTmp =
+                FindTmp(
+                    placeholderObject);
+
+            SetProperty(
+                placeholderTmp,
+                "text",
+                placeholder ?? string.Empty);
+            SetProperty(
+                placeholderTmp,
+                "color",
+                new Color(
+                    1f,
+                    0.84f,
+                    0.48f,
+                    0.55f));
+            TrySetEnumProperty(
+                placeholderTmp,
+                "alignment",
+                "Center");
+
+            Component input =
+                root.AddComponent(inputType);
+
+            SetProperty(
+                input,
+                "textViewport",
+                viewportRect);
+            SetProperty(
+                input,
+                "textComponent",
+                textTmp);
+            SetProperty(
+                input,
+                "placeholder",
+                placeholderTmp);
+            SetProperty(
+                input,
+                "targetGraphic",
+                background);
+            SetProperty(
+                input,
+                "text",
+                text ?? string.Empty);
+            SetProperty(
+                input,
+                "characterLimit",
+                numericOnly ? 5 : 64);
+            SetProperty(
+                input,
+                "customCaretColor",
+                true);
+            SetProperty(
+                input,
+                "caretColor",
+                Color.white);
+            SetProperty(
+                input,
+                "caretWidth",
+                2);
+
+            TrySetEnumProperty(
+                input,
+                "lineType",
+                "SingleLine");
+
+            if (numericOnly)
+            {
+                TrySetEnumProperty(
+                    input,
+                    "contentType",
+                    "IntegerNumber");
+            }
+
+            return input;
+        }
+
+        private static string GetStringProperty(
+            Component component,
+            string propertyName)
+        {
+            if (component == null)
+            {
+                return null;
+            }
+
+            PropertyInfo property =
+                component.GetType().GetProperty(
+                    propertyName,
+                    BindingFlags.Instance |
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic);
+
+            return property?.CanRead == true
+                ? property.GetValue(
+                    component,
+                    null) as string
+                : null;
+        }
+
         private void SetButtonText(
             GameObject button,
             string text)
@@ -1864,6 +2867,12 @@ Button close = closeButton.GetComponent<Button>();
         }
         private void SetActiveTab(string tabName)
         {
+            bool tabChanged =
+                !string.Equals(
+                    _activeTab,
+                    tabName,
+                    StringComparison.OrdinalIgnoreCase);
+
             _activeTab = tabName;
 
             foreach (var kvp in _tabButtons)
@@ -1892,6 +2901,85 @@ Button close = closeButton.GetComponent<Button>();
             RefreshRegisteredActionButtons();
             RefreshFeatureToggleRows();
             RefreshFeatureOptionRows();
+            RefreshSpawnItemRow();
+            RefreshBodyScrollBounds(tabChanged);
+        }
+
+        private static float BodyY(float legacyY)
+        {
+            return legacyY + BodyViewportTopOffset;
+        }
+
+        private void RefreshBodyScrollBounds(
+            bool resetToTop)
+        {
+            if (_contentRoot == null ||
+                _bodyContentRect == null ||
+                _bodyScrollRect == null)
+            {
+                return;
+            }
+
+            float requiredHeight =
+                BodyViewportHeight;
+
+            foreach (Transform child in
+                _contentRoot.transform)
+            {
+                if (child == null ||
+                    !child.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                RectTransform childRect =
+                    child as RectTransform;
+
+                if (childRect == null)
+                {
+                    continue;
+                }
+
+                float bottomDepth =
+                    -childRect.anchoredPosition.y +
+                    (childRect.rect.height *
+                     childRect.pivot.y);
+
+                requiredHeight =
+                    Mathf.Max(
+                        requiredHeight,
+                        bottomDepth);
+            }
+
+            _bodyContentRect.sizeDelta =
+                new Vector2(
+                    _bodyContentRect.sizeDelta.x,
+                    requiredHeight);
+
+            bool overflow =
+                requiredHeight >
+                BodyViewportHeight + 0.5f;
+
+            if (_bodyScrollbar != null)
+            {
+                _bodyScrollbar.gameObject.SetActive(
+                    overflow);
+
+                if (overflow)
+                {
+                    _bodyScrollbar.size =
+                        Mathf.Clamp01(
+                            BodyViewportHeight /
+                            requiredHeight);
+                }
+            }
+
+            if (resetToTop ||
+                !overflow)
+            {
+                _bodyScrollRect.verticalNormalizedPosition =
+                    1f;
+            }
         }
 
         private void LayoutPageTextForTab(string tab)
@@ -1917,7 +3005,7 @@ Button close = closeButton.GetComponent<Button>();
                 HasFeatureControlsForTab(tab);
 
             rect.anchoredPosition =
-                new Vector2(0f, -40f);
+                new Vector2(0f, BodyY(-40f));
 
             rect.sizeDelta = compact
                 ? new Vector2(350f, 36f)
@@ -1927,7 +3015,7 @@ Button close = closeButton.GetComponent<Button>();
         private string GetPlaceholderText(string tab)
         {
             string followText = ProjectLinks.HasNexusUrl
-                ? "Follow development on GitHub or visit the GK2+ page on Nexus Mods."
+                ? "Follow development on GitHub or download GK2+ from Nexus Mods."
                 : "Follow development on GitHub. The Nexus Mods page is coming soon.";
 
             if (HasFeatureControlsForTab(tab))
@@ -1989,12 +3077,12 @@ Button close = closeButton.GetComponent<Button>();
                 case "More":
                     return
                         "GK2+ Project Links\n\n" +
-                        "GitHub: source, development progress, and releases.\n" +
+                        "GitHub: source code, development progress, and releases.\n" +
                         (ProjectLinks.HasNexusUrl
-                            ? "Nexus Mods: public mod page and downloads.\n"
+                            ? "Nexus Mods: downloads, screenshots, posts, and public updates.\n"
                             : "Nexus Mods: public mod page coming soon.\n") +
                         "Report Bug: opens a new GitHub issue for GK2+.\n\n" +
-                        "Quest/map tools, compatibility, diagnostics, and About will live here.";
+                        "More tools, compatibility information, diagnostics, and About are planned here.";
                 default:
                     return tab;
             }
@@ -2047,6 +3135,7 @@ Button close = closeButton.GetComponent<Button>();
         public void HideMenu()
         {
             CloseFeatureOptionPicker();
+            CloseItemPicker();
 
             if (_menuRoot != null)
             {
@@ -2104,9 +3193,19 @@ Button close = closeButton.GetComponent<Button>();
             _nexusButton = null;
             _bugButton = null;
             _contentRoot = null;
+            _bodyContentRect = null;
+            _bodyScrollRect = null;
+            _bodyScrollbar = null;
             _bodyTextTemplate = null;
             _menuButtonLabelTemplate = null;
             _menuButtonSprite = null;
+            _spawnItemRow = null;
+            _spawnItemButton = null;
+            _spawnQuantityInput = null;
+            _itemPickerRoot = null;
+            _itemPickerSearchInput = null;
+            _itemPickerPageText = null;
+            _itemPickerResultButtons.Clear();
             _built = false;
         }
 
