@@ -2225,6 +2225,14 @@ Button close = closeButton.GetComponent<Button>();
 
         private static string DetectContext()
         {
+            // Prefer live player state over window visibility. GK2 can keep
+            // LazyWindow objects alive while they are no longer the active
+            // gameplay context.
+            if (MainGame.PlayerData != null)
+            {
+                return "Gameplay";
+            }
+
             foreach (var behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
             {
                 if (behaviour != null &&
