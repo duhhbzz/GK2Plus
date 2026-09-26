@@ -24,6 +24,7 @@ namespace GK2Plus.Framework.UI
         private readonly List<GK2FeatureOptionControl> _featureOptionControls =
             new List<GK2FeatureOptionControl>();
 
+        private GK2SpawnItemControl _spawnItemControl;
         private ModMenuController _modMenuController;
 
         public GK2UIService(ManualLogSource logger)
@@ -59,6 +60,12 @@ namespace GK2Plus.Framework.UI
             foreach (GK2FeatureOptionControl control in _featureOptionControls)
             {
                 _modMenuController.RegisterFeatureOptionControl(control);
+            }
+
+            if (_spawnItemControl != null)
+            {
+                _modMenuController.RegisterSpawnItemControl(
+                    _spawnItemControl);
             }
 
             Logger.LogInfo(
@@ -146,6 +153,19 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterSpawnItemControl(
+            GK2SpawnItemControl control)
+        {
+            _spawnItemControl = control;
+
+            if (_modMenuController != null &&
+                control != null)
+            {
+                _modMenuController.RegisterSpawnItemControl(
+                    control);
+            }
+        }
+
         public void RefreshMenu()
         {
             _modMenuController?.RefreshActiveTab();
@@ -173,6 +193,7 @@ namespace GK2Plus.Framework.UI
             _tabNotices.Clear();
             _featureToggleControls.Clear();
             _featureOptionControls.Clear();
+            _spawnItemControl = null;
 
             base.Shutdown();
         }
