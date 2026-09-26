@@ -440,7 +440,7 @@ namespace GK2Plus.Features.Cheats
             }
 
             PlayerData playerData = MainGame.PlayerData;
-            Inventory inventory = playerData?.inventory;
+            global::Inventory inventory = playerData?.inventory;
             GameBalance balance = GameBalance.Me;
 
             if (inventory == null ||
