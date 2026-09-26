@@ -5,6 +5,8 @@ This is the canonical player-facing feature catalog for **GK2+ (Graveyard Keeper
 The README and mod-platform landing pages intentionally stay concise. Detailed feature behavior belongs here so public descriptions do not become an ever-growing laundry list.
 
 > Availability is release-specific. Use the [Changelog](../CHANGELOG.md) and GitHub Releases to determine which cataloged features exist in a published version.
+>
+> Looking for planned work rather than implemented behavior? See the **[GK2+ Roadmap](ROADMAP.md)**.
 
 ## Feature Index
 
@@ -205,6 +207,8 @@ See [SAVE_SAFETY.md](SAVE_SAFETY.md) for the detailed safety architecture.
 ## Adding or Changing a Feature
 
 A feature PR should update this catalog when player-facing behavior is added, removed, renamed, or materially changed.
+
+If the work also changes the status or scope of a planned roadmap item, update [ROADMAP.md](ROADMAP.md) as well. Keep planned behavior in the roadmap and implemented/released behavior in this catalog.
 
 The entry should explain:
 
