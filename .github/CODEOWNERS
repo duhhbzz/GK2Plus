@@ -1,0 +1,14 @@
+# GK2+ is maintainer-led. Community contributions are welcome, but all official
+# merges require review by the project maintainer.
+/* @duhhbzz
+
+# Release/history surfaces remain maintainer-owned even when a feature PR comes
+# from another contributor.
+/CHANGELOG.md @duhhbzz
+/VERSION @duhhbzz
+/GAME_VERSION @duhhbzz
+/docs/RELEASE_NOTES_*.md @duhhbzz
+/docs/NEXUS_PAGE.md @duhhbzz
+/packaging/thunderstore/ @duhhbzz
+/tools/release/ @duhhbzz
+/.github/workflows/ @duhhbzz
