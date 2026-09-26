@@ -8,7 +8,8 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
+- **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and, optionally, the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
+- **Character Inventory Access** child setting for Shared Chests, allowing that UI path to be disabled independently while keeping normal chest-window sharing enabled.
 - **Bigger Item Stacks**: scale live native stack limits from 2x through 20x, with a grouped main-menu multiplier control.
 - **Spawn Item** cheat: searchable/paged native item picker, configurable quantity, and native item creation/inventory insertion through GK2's own item pipeline.
 
@@ -20,6 +21,8 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - Generated BepInEx setting descriptions now point normal users toward the GK2+ menu while explicitly supporting advanced direct/mod-manager config editing as a next-launch workflow.
 
 ### Fixed
+
+- Cheats-tab layout now keeps the Spawn Item row separated from Heal Player / Refill Energy instead of overlapping the third action row.
 
 ### Validation
 
