@@ -79,6 +79,8 @@ AI-assisted contributions are welcome.
 
 They are held to exactly the same requirements as human-written work. The contributor remains responsible for verifying the code, testing the actual game behavior, describing what was really tested, and ensuring the PR does not contain invented APIs, fabricated validation, copied incompatible code, or unrelated changes.
 
+AI coding assistants should be pointed to [../AGENTS.md](../AGENTS.md), [ROADMAP.md](ROADMAP.md), [FEATURES.md](FEATURES.md), [../CONTRIBUTING.md](../CONTRIBUTING.md), and the [documentation index](README.md) before substantial implementation work.
+
 ## Branch and pull request hygiene
 
 Branches and pull requests are working state, not permanent project history.

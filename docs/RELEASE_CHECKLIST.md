@@ -20,6 +20,7 @@ Use this before approving every player-facing feature PR.
 ### 2. Is feature documentation current?
 
 - [ ] `docs/FEATURES.md` documents the player-facing behavior.
+- [ ] `docs/ROADMAP.md` is updated if the feature changed roadmap status/scope.
 - [ ] Feature-specific docs are current.
 - [ ] README navigation/high-level copy is still accurate.
 - [ ] Screenshots are captured when useful for visible UI changes.
@@ -79,6 +80,8 @@ After the release is published:
 - [ ] Use the same version/build artifact for GitHub Releases and Nexus Mods.
 - [ ] Confirm `docs/FEATURES.md` reflects the final released feature set.
 - [ ] Confirm the maintainer has finalized `CHANGELOG.md`, release notes, and public release metadata.
+- [ ] Confirm `docs/ROADMAP.md` reflects features that shipped, moved, or were dropped.
+- [ ] Confirm `README.md`, `docs/README.md`, `AGENTS.md`, and `CONTRIBUTING.md` still point contributors to the current documentation.
 - [ ] Confirm any public page that cannot be fully automated has an explicit manual update step.
 
 ### Launch / UI Lifecycle
