@@ -1,5 +1,42 @@
 # GK2+ Release Checklist
 
+## Feature PR Approval Gate
+
+Use this before approving every player-facing feature PR.
+
+### 1. Does it work?
+
+- [ ] Branch is current with `main`.
+- [ ] PR contains only the intended feature/fix and required support changes.
+- [ ] Project builds successfully.
+- [ ] Game launches with the branch DLL and no new unexpected errors.
+- [ ] Primary feature behavior is tested in-game.
+- [ ] Relevant edge cases are tested.
+- [ ] Save/reload behavior is tested when persistence is involved.
+- [ ] Enable/disable behavior is tested when applicable.
+- [ ] Main-menu controls and in-game status are tested when applicable.
+- [ ] Compatibility/overlap behavior is tested when applicable.
+
+### 2. Is feature documentation current?
+
+- [ ] `docs/FEATURES.md` documents the player-facing behavior.
+- [ ] Feature-specific docs are current.
+- [ ] README navigation/high-level copy is still accurate.
+- [ ] Screenshots are captured when useful for visible UI changes.
+
+### 3. Maintainer-owned integration bookkeeping
+
+Before merge, the maintainer:
+
+- [ ] reviews/updates `CHANGELOG.md` under `[Unreleased]`;
+- [ ] decides whether any release/public metadata needs a corresponding update;
+- [ ] confirms no contributor-owned version/release metadata drift was introduced;
+- [ ] performs final PR approval.
+
+Only the maintainer merges official feature PRs.
+
+---
+
 ## Every Release — Core Quality Gates
 
 ### Repository / Packaging
@@ -13,6 +50,9 @@
 - [ ] Confirm only intended GK2+ files are included.
 - [ ] Record the release ZIP SHA256 printed by the packaging script.
 - [ ] Use the same version/build artifact for GitHub Releases and Nexus Mods.
+- [ ] Confirm `docs/FEATURES.md` reflects the final released feature set.
+- [ ] Confirm the maintainer has finalized `CHANGELOG.md`, release notes, and public release metadata.
+- [ ] Confirm any public page that cannot be fully automated has an explicit manual update step.
 
 ### Launch / UI Lifecycle
 
