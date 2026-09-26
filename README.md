@@ -10,6 +10,7 @@
 <p align="center">
   <a href="CHANGELOG.md">Changelog</a> •
   <a href="docs/ROADMAP.md">Roadmap</a> •
+  <a href="docs/README.md">Docs</a> •
   <a href="CONTRIBUTING.md">Contributing</a> •
   <a href="docs/PERFORMANCE.md">Performance</a> •
   <a href="docs/SAVE_SAFETY.md">Save Safety</a> •
@@ -309,6 +310,8 @@ GK2+
 
 Near-term planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, and additional carefully gated convenience/cheat tools.
 
+For the maintained list of high-confidence feature targets, intended behavior, and suggested development waves, see [docs/ROADMAP.md](docs/ROADMAP.md).
+
 Planned items may change as game systems are researched and tested.
 
 ---
@@ -352,6 +355,8 @@ tools/release/
 
 Development standards:
 
+- [Documentation Index](docs/README.md)
+- [AI / Contributor Guide](AGENTS.md)
 - [Feature Roadmap](docs/ROADMAP.md)
 - [Performance and Resource Standards](docs/PERFORMANCE.md)
 - [Save Safety](docs/SAVE_SAFETY.md)
