@@ -13,8 +13,10 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
+| Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
 | Inventory | [Shared Chests](#shared-chests) |
 | Cheats | [Functional Cheats](#functional-cheats) |
+| Cheats | [Spawn Item](#spawn-item) |
 | Cheats / Safety | [Cheat & Achievement Integrity](#cheat--achievement-integrity) |
 | Safety | [Save Safety Checkpoints](#save-safety-checkpoints) |
 
@@ -55,6 +57,53 @@ Last saved: 10 minutes ago (4:26 AM).
 ~~~
 
 The value comes from native save metadata and updates after a successful save.
+
+---
+
+## Bigger Item Stacks
+
+**Category:** Inventory  
+**Setting mode:** Main-menu enable/disable + multiplier selection; read-only status during gameplay.
+
+Bigger Item Stacks scales GK2's live native stack limits for stackable items while leaving items with a native stack limit of 1 unchanged.
+
+### Configuration
+
+From the **main menu → Inventory** tab:
+
+~~~text
+Bigger Item Stacks                 [ ON ]
+    Stack Size Multiplier           [ 3x ]
+~~~
+
+The multiplier picker exposes **2x through 20x** for normal menu use. The underlying BepInEx value remains the single source of truth.
+
+When the parent feature is OFF, the multiplier remains visible but greyed/non-interactive and keeps its saved value.
+
+### Native behavior and compatibility
+
+GK2+ modifies the live `ItemDef.stackCount` value after game balance loads and leaves inventory transfer/merge behavior to GK2.
+
+The feature records the live value it scaled. When disabling or changing the multiplier, GK2+ only restores values that still match the value GK2+ applied. If another mod changed a stack limit afterward, GK2+ preserves that newer live value instead of overwriting it.
+
+### Save behavior
+
+No custom stack data is written to the save.
+
+Testing confirmed that an already-saved over-cap stack remains present after Bigger Item Stacks is disabled. GK2 then normalizes/splits that stack through its normal inventory behavior when the stack is moved or otherwise adjusted.
+
+### Validation completed
+
+Runtime validation covered:
+
+- 2x → 3x multiplier changes;
+- a native 50-stack item reaching 150 at 3x;
+- main-menu enable/disable behavior;
+- parent/child menu grouping and disabled-child presentation;
+- saving with an over-cap stack;
+- disabling the feature before reload;
+- loading the existing over-cap stack without loss;
+- GK2 lazily splitting/normalizing that stack when it is moved.
 
 ---
 
@@ -149,11 +198,40 @@ These are planned capabilities, not part of the current release, and each should
 
 The Cheats tab currently provides money and player-recovery actions.
 
-Released actions include Silver/Gold increments, **Heal Player**, and **Refill Energy**.
+Released actions include Silver/Gold increments, **Heal Player**, **Refill Energy**, and **Spawn Item**.
 
 Money changes use GK2's native resource path and normal feedback. Refill Energy targets the normal work/action energy resource.
 
 Cheat actions use the integrity and save-safety systems described below.
+
+---
+
+## Spawn Item
+
+**Category:** Cheats  
+**Setting mode:** Item/quantity selection in the GK2+ Cheats menu; cheat execution requires a loaded save.
+
+Spawn Item creates a selected native GK2 item and adds it to the player's inventory through GK2's normal item materialization and inventory-add paths.
+
+### Player behavior
+
+The Cheats tab provides:
+
+- a searchable/paged native item picker;
+- a quantity field;
+- a Spawn action.
+
+The selected item id and quantity are normal BepInEx configuration values. Quantity is limited to **1–10,000**.
+
+### Safety
+
+Spawn Item is a cheat action. It uses the same first-cheat confirmation, save checkpoint/taint flow, and achievement-integrity protection as the other GK2+ cheats.
+
+GK2+ asks GK2 to materialize the requested item through `ItemCount.CreateItems()` and add it through the player's native inventory API rather than constructing a separate inventory representation.
+
+### Validation completed
+
+Runtime validation confirmed item selection, quantity control, native item creation, and insertion into the player's inventory.
 
 ---
 
