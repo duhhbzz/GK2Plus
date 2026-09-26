@@ -12,12 +12,16 @@ jobs:
     name: Publish to Nexus Mods
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve release version
+      - name: Resolve release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
+          GAME_VERSION="$(gh api "repos/${{ github.repository }}/contents/GAME_VERSION?ref=${{ github.event.release.tag_name }}" --jq '.content' | base64 --decode | tr -d '\r\n')"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "GAME_VERSION=${GAME_VERSION}" >> "$GITHUB_ENV"
 
       - name: Download Nexus release package
         env:
@@ -37,7 +41,7 @@ jobs:
           filename: GK2Plus-${{ env.VERSION }}.zip
           version: ${{ env.VERSION }}
           display_name: GK2+ v${{ env.VERSION }}
-          description: GK2+ v${{ env.VERSION }}
+          description: GK2+ v${{ env.VERSION }} - tested with Graveyard Keeper 2 v${{ env.GAME_VERSION }}
           category: main
           archive_existing_version: true
           primary_mod_manager_download: true
@@ -48,12 +52,16 @@ jobs:
     name: Publish to Thunderstore
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve release version
+      - name: Resolve release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
+          GAME_VERSION="$(gh api "repos/${{ github.repository }}/contents/GAME_VERSION?ref=${{ github.event.release.tag_name }}" --jq '.content' | base64 --decode | tr -d '\r\n')"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "GAME_VERSION=${GAME_VERSION}" >> "$GITHUB_ENV"
 
       - name: Download Thunderstore release package
         env:
@@ -84,7 +92,7 @@ jobs:
           namespace = "${{ vars.THUNDERSTORE_NAMESPACE }}"
           name = "GK2Plus"
           versionNumber = "${VERSION}"
-          description = "Modular Graveyard Keeper 2 QoL and gameplay enhancement suite."
+          description = "Modular Graveyard Keeper 2 QoL and gameplay enhancement suite. Tested with GK2 v${GAME_VERSION}."
           websiteUrl = "https://github.com/${{ github.repository }}"
           containsNsfwContent = false
 
