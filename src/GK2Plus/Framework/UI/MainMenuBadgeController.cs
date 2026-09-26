@@ -176,8 +176,8 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -39f),
-                new Vector2(152f, 16f),
-                9f,
+                new Vector2(152f, 18f),
+                11f,
                 new Color(0.93f, 0.78f, 0.50f, 1f)
             );
 
@@ -205,8 +205,8 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -63f),
-                new Vector2(146f, 14f),
-                8.5f,
+                new Vector2(146f, 16f),
+                10.5f,
                 new Color(0.87f, 0.80f, 0.62f, 1f)
             );
 
