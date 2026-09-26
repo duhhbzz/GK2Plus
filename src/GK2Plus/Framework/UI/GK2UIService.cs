@@ -21,6 +21,9 @@ namespace GK2Plus.Framework.UI
         private readonly List<GK2FeatureToggleControl> _featureToggleControls =
             new List<GK2FeatureToggleControl>();
 
+        private readonly List<GK2FeatureOptionControl> _featureOptionControls =
+            new List<GK2FeatureOptionControl>();
+
         private GK2SpawnItemControl _spawnItemControl;
         private ModMenuController _modMenuController;
 
@@ -52,6 +55,11 @@ namespace GK2Plus.Framework.UI
             foreach (GK2FeatureToggleControl control in _featureToggleControls)
             {
                 _modMenuController.RegisterFeatureToggleControl(control);
+            }
+
+            foreach (GK2FeatureOptionControl control in _featureOptionControls)
+            {
+                _modMenuController.RegisterFeatureOptionControl(control);
             }
 
             if (_spawnItemControl != null)
@@ -122,6 +130,29 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterFeatureOptionControl(
+            GK2FeatureOptionControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            _featureOptionControls.RemoveAll(existing =>
+                string.Equals(
+                    existing.Id,
+                    control.Id,
+                    StringComparison.OrdinalIgnoreCase));
+
+            _featureOptionControls.Add(control);
+
+            if (_modMenuController != null)
+            {
+                _modMenuController.RegisterFeatureOptionControl(
+                    control);
+            }
+        }
+
         public void RegisterSpawnItemControl(
             GK2SpawnItemControl control)
         {
@@ -161,6 +192,7 @@ namespace GK2Plus.Framework.UI
             _menuActions.Clear();
             _tabNotices.Clear();
             _featureToggleControls.Clear();
+            _featureOptionControls.Clear();
             _spawnItemControl = null;
 
             base.Shutdown();
