@@ -65,7 +65,9 @@ namespace GK2Plus.Features.Inventory
                 DefaultMultiplier,
                 new ConfigDescription(
                     "Multiplier applied to GK2's live native stack limits. " +
-                    "Items with a stack limit of 1 remain unchanged.",
+                    "Items with a stack limit of 1 remain unchanged. " +
+                    "Recommended: configure from the GK2+ main-menu Inventory tab. " +
+                    "Advanced users may edit this value through BepInEx/r2modman; external edits apply on next launch.",
                     new AcceptableValueRange<int>(1, 20)
                 )
             );
@@ -104,7 +106,8 @@ namespace GK2Plus.Features.Inventory
                     "Bigger Item Stacks",
                     () => Enabled?.Value ?? DefaultEnabled,
                     BuildUiStatus,
-                    SetEnabledFromMainMenu));
+                    SetEnabledFromMainMenu,
+                    order: 100));
 
             _uiService.RegisterFeatureOptionControl(
                 new GK2FeatureOptionControl(
@@ -113,7 +116,10 @@ namespace GK2Plus.Features.Inventory
                     "Stack Size Multiplier",
                     () => (_multiplier?.Value ?? DefaultMultiplier).ToString(),
                     BuildMultiplierOptions,
-                    SetMultiplierFromMainMenu));
+                    SetMultiplierFromMainMenu,
+                    parentFeatureId: Id,
+                    order: 10,
+                    enabledProvider: () => Enabled?.Value ?? DefaultEnabled));
         }
 
         protected override void OnEnabled()
