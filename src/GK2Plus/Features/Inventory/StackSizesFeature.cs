@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using BepInEx.Configuration;
@@ -8,23 +9,25 @@ using HarmonyLib;
 namespace GK2Plus.Features.Inventory
 {
     /// <summary>
-    /// Increases GK2's native per-item stack limits by scaling ItemDef.stackCount.
+    /// Increases GK2's native per-item stack limits by scaling the live
+    /// ItemDef.stackCount values after game balance data has loaded.
     ///
-    /// The feature patches the native item-capacity paths and lazily scales each
-    /// ItemDef the first time GK2 uses it. Non-stackable definitions (stackCount
-    /// <= 1) are intentionally left unchanged.
+    /// Inventory transfer logic remains entirely vanilla. GK2+ changes only the
+    /// live definition value that vanilla already consults when merging stacks.
     /// </summary>
     internal sealed class StackSizesFeature : FeatureBase
     {
         private const int DefaultMultiplier = 2;
+        private const int MaxLoggedSamples = 8;
 
         private static StackSizesFeature _activeInstance;
 
         private readonly ConfigFile _config;
-        private readonly Dictionary<global::ItemDef, int> _originalStackCounts =
+        private readonly Dictionary<global::ItemDef, int> _lastAppliedValues =
             new Dictionary<global::ItemDef, int>();
 
         private ConfigEntry<int> _multiplier;
+        private bool _loggedMissingItemDefs;
 
         internal StackSizesFeature(ConfigFile config)
         {
@@ -50,8 +53,8 @@ namespace GK2Plus.Features.Inventory
                 $"{Id}.Multiplier",
                 DefaultMultiplier,
                 new ConfigDescription(
-                    "Multiplier applied to GK2's native stack limits. " +
-                    "Items with a native stack limit of 1 are left unchanged.",
+                    "Multiplier applied to GK2's live native stack limits. " +
+                    "Items with a stack limit of 1 remain unchanged.",
                     new AcceptableValueRange<int>(1, 20)
                 )
             );
@@ -61,218 +64,166 @@ namespace GK2Plus.Features.Inventory
         {
             _activeInstance = this;
 
-            PatchItemMethod(
-                "CanAddItemCount",
-                new[]
-                {
-                    typeof(global::Item),
-                    typeof(int)
-                }
+            MethodInfo loadGameBalance = AccessTools.Method(
+                typeof(global::GameBalance),
+                "LoadGameBalance"
             );
 
-            PatchItemMethod(
-                "CanAddItemCount",
-                new[]
-                {
-                    typeof(global::Item)
-                }
-            );
-
-            PatchItemMethod(
-                "CanAddItemCountToInventory",
-                new[]
-                {
-                    typeof(global::Item),
-                    typeof(int),
-                    typeof(bool),
-                    typeof(global::Item),
-                    typeof(bool)
-                }
-            );
-
-            PatchItemMethod(
-                "CanAddItemCountToInventory",
-                new[]
-                {
-                    typeof(global::ItemDef),
-                    typeof(int),
-                    typeof(bool),
-                    typeof(global::Item),
-                    typeof(bool)
-                }
-            );
-
-            PatchItemMethod(
-                "CanAddItemCountToInventory",
-                new[]
-                {
-                    typeof(global::Item),
-                    typeof(bool),
-                    typeof(global::Item),
-                    typeof(bool)
-                }
-            );
-
-            MethodInfo addItemMethod = AccessTools.Method(
-                typeof(global::Inventory),
-                "AddItemToInventory",
-                new[]
-                {
-                    typeof(global::Item),
-                    typeof(global::Item),
-                    typeof(bool)
-                }
-            );
-
-            if (addItemMethod != null)
+            if (loadGameBalance == null)
             {
-                Harmony.Patch(
-                    addItemMethod,
-                    prefix: new HarmonyMethod(
-                        typeof(StackSizesFeature),
-                        nameof(InventoryAddPrefix)
-                    )
-                );
-            }
-            else
-            {
-                Logger.LogWarning(
-                    "Stack Sizes could not resolve " +
-                    "Inventory.AddItemToInventory(Item, Item, bool).");
-            }
-
-            Logger.LogInfo(
-                $"Configurable Stack Sizes enabled at {_multiplier.Value}x native limits. " +
-                "Native stackCount=1 items remain unchanged.");
-        }
-
-        private void PatchItemMethod(
-            string methodName,
-            Type[] parameterTypes)
-        {
-            MethodInfo method = AccessTools.Method(
-                typeof(global::Item),
-                methodName,
-                parameterTypes
-            );
-
-            if (method == null)
-            {
-                Logger.LogWarning(
-                    $"Stack Sizes could not resolve Item.{methodName}(" +
-                    $"{FormatParameterTypes(parameterTypes)}).");
+                Logger.LogError(
+                    "Configurable Stack Sizes could not resolve " +
+                    "GameBalance.LoadGameBalance. The feature will not modify stacks.");
                 return;
             }
 
             Harmony.Patch(
-                method,
-                prefix: new HarmonyMethod(
+                loadGameBalance,
+                postfix: new HarmonyMethod(
                     typeof(StackSizesFeature),
-                    nameof(ItemStackOperationPrefix)
+                    nameof(GameBalanceLoadedPostfix)
                 )
+            );
+
+            // Normally the game balance loads after BepInEx plugins initialize,
+            // but applying here as well makes the feature resilient if that
+            // lifecycle order changes in a future build.
+            ApplyToCurrentGameBalance("feature initialization");
+
+            Logger.LogInfo(
+                $"Configurable Stack Sizes ready at {_multiplier.Value}x live native limits.");
+        }
+
+        private static void GameBalanceLoadedPostfix()
+        {
+            _activeInstance?.ApplyToCurrentGameBalance(
+                "GameBalance.LoadGameBalance"
             );
         }
 
-        private static void InventoryAddPrefix(object[] __args)
+        private void ApplyToCurrentGameBalance(string source)
         {
-            StackSizesFeature feature = _activeInstance;
+            global::GameBalance balance = global::GameBalance.Me;
 
-            if (feature == null ||
-                __args == null)
+            if (balance == null)
             {
+                Logger.LogDebug(
+                    $"Stack Sizes: game balance is not available during {source}; " +
+                    "waiting for LoadGameBalance.");
                 return;
             }
 
-            feature.ScaleArguments(__args);
-        }
+            IEnumerable itemDefs = ResolveItemDefs(balance);
 
-        private static void ItemStackOperationPrefix(
-            global::Item __instance,
-            object[] __args)
-        {
-            StackSizesFeature feature = _activeInstance;
-
-            if (feature == null)
+            if (itemDefs == null)
             {
-                return;
-            }
-
-            feature.EnsureScaled(__instance?.Definition);
-
-            if (__args != null)
-            {
-                feature.ScaleArguments(__args);
-            }
-        }
-
-        private void ScaleArguments(object[] args)
-        {
-            foreach (object arg in args)
-            {
-                if (arg is global::Item item)
+                if (!_loggedMissingItemDefs)
                 {
-                    EnsureScaled(item.Definition);
+                    _loggedMissingItemDefs = true;
+                    Logger.LogError(
+                        "Stack Sizes could not resolve GameBalance.itemDefs. " +
+                        "No stack limits were changed.");
                 }
-                else if (arg is global::ItemDef itemDef)
+
+                return;
+            }
+
+            int changed = 0;
+            int unchanged = 0;
+            int nonStackable = 0;
+            List<string> samples = new List<string>();
+
+            foreach (object value in itemDefs)
+            {
+                if (!(value is global::ItemDef itemDef))
                 {
-                    EnsureScaled(itemDef);
+                    continue;
+                }
+
+                int current = itemDef.stackCount;
+
+                if (current <= 1)
+                {
+                    nonStackable++;
+                    continue;
+                }
+
+                if (_multiplier.Value <= 1)
+                {
+                    unchanged++;
+                    continue;
+                }
+
+                if (_lastAppliedValues.TryGetValue(
+                        itemDef,
+                        out int lastApplied) &&
+                    current == lastApplied)
+                {
+                    unchanged++;
+                    continue;
+                }
+
+                // Use the value that is live right now rather than a GK2+
+                // hard-coded baseline. This preserves changes made by the game
+                // or another mod before this patch runs.
+                int liveBase = current;
+                long scaledLong =
+                    (long)liveBase * _multiplier.Value;
+
+                int scaled = scaledLong > int.MaxValue
+                    ? int.MaxValue
+                    : (int)scaledLong;
+
+                itemDef.stackCount = scaled;
+                _lastAppliedValues[itemDef] = scaled;
+                changed++;
+
+                if (samples.Count < MaxLoggedSamples)
+                {
+                    samples.Add(
+                        $"{itemDef.id}: {liveBase}->{scaled}"
+                    );
                 }
             }
-        }
 
-        private void EnsureScaled(global::ItemDef itemDef)
-        {
-            if (itemDef == null ||
-                _originalStackCounts.ContainsKey(itemDef))
-            {
-                return;
-            }
-
-            int original = itemDef.stackCount;
-            _originalStackCounts[itemDef] = original;
-
-            // stackCount <= 1 represents items that should not gain normal
-            // inventory stacking behavior (tools, equipment, overhead items, etc.).
-            if (original <= 1 ||
-                _multiplier.Value <= 1)
-            {
-                return;
-            }
-
-            long scaledLong =
-                (long)original * _multiplier.Value;
-
-            int scaled = scaledLong > int.MaxValue
-                ? int.MaxValue
-                : (int)scaledLong;
-
-            itemDef.stackCount = scaled;
+            string sampleText = samples.Count > 0
+                ? $" Samples: {string.Join(", ", samples)}."
+                : string.Empty;
 
             Logger.LogInfo(
-                $"Stack Sizes: '{itemDef.id}' native limit {original} -> {scaled} " +
-                $"({_multiplier.Value}x).");
+                $"Stack Sizes applied after {source}: " +
+                $"changed={changed}, unchanged={unchanged}, " +
+                $"nonStackable={nonStackable}, multiplier={_multiplier.Value}x." +
+                sampleText
+            );
         }
 
-        private static string FormatParameterTypes(Type[] parameterTypes)
+        private static IEnumerable ResolveItemDefs(
+            global::GameBalance balance)
         {
-            if (parameterTypes == null ||
-                parameterTypes.Length == 0)
+            Type type = balance.GetType();
+
+            FieldInfo field = AccessTools.Field(
+                type,
+                "itemDefs"
+            );
+
+            if (field?.GetValue(balance) is IEnumerable fieldValues)
             {
-                return string.Empty;
+                return fieldValues;
             }
 
-            string[] names =
-                new string[parameterTypes.Length];
+            PropertyInfo property = AccessTools.Property(
+                type,
+                "itemDefs"
+            );
 
-            for (int i = 0;
-                 i < parameterTypes.Length;
-                 i++)
+            if (property?.GetValue(balance, null) is IEnumerable propertyValues)
             {
-                names[i] =
-                    parameterTypes[i].Name;
+                return propertyValues;
             }
 
-            return string.Join(", ", names);
+            return null;
         }
     }
 }
