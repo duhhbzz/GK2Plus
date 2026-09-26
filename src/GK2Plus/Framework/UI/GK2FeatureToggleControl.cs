@@ -14,7 +14,8 @@ namespace GK2Plus.Framework.UI
             string label,
             Func<bool> enabledProvider,
             Func<string> statusProvider,
-            Action<bool> enabledChanged)
+            Action<bool> enabledChanged,
+            int order = 0)
         {
             Id = string.IsNullOrWhiteSpace(id)
                 ? throw new ArgumentException("A feature toggle id is required.", nameof(id))
@@ -36,6 +37,8 @@ namespace GK2Plus.Framework.UI
 
             EnabledChanged = enabledChanged ??
                 throw new ArgumentNullException(nameof(enabledChanged));
+
+            Order = order;
         }
 
         public string Id { get; }
@@ -49,5 +52,7 @@ namespace GK2Plus.Framework.UI
         public Func<string> StatusProvider { get; }
 
         public Action<bool> EnabledChanged { get; }
+
+        public int Order { get; }
     }
 }
