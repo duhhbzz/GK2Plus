@@ -883,8 +883,8 @@ Button close = closeButton.GetComponent<Button>();
                 const int maxPerRow = 4;
                 const float maxRowWidth = 350f;
                 const float gap = 6f;
-                const float firstRowY = -92f;
-                const float rowGap = 27f;
+                const float firstRowY = -82f;
+                const float rowGap = 24f;
 
                 for (int i = 0; i < count; i++)
                 {
