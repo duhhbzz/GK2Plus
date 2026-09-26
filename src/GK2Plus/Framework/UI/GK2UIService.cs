@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using BepInEx.Configuration;
 using BepInEx.Logging;
+using UnityEngine;
 
 namespace GK2Plus.Framework.UI
 {
@@ -18,11 +20,16 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<string, System.Func<string>> _tabNotices =
             new Dictionary<string, System.Func<string>>();
 
+        private readonly ConfigEntry<KeyCode> _menuHotkey;
         private ModMenuController _modMenuController;
 
-        public GK2UIService(ManualLogSource logger)
+        public GK2UIService(
+            ManualLogSource logger,
+            ConfigEntry<KeyCode> menuHotkey)
             : base(logger)
         {
+            _menuHotkey = menuHotkey ??
+                throw new ArgumentNullException(nameof(menuHotkey));
         }
 
         public override string Name => "UI";
@@ -31,7 +38,7 @@ namespace GK2Plus.Framework.UI
         {
             base.Initialize();
 
-            _modMenuController = ModMenuController.Create(Logger);
+            _modMenuController = ModMenuController.Create(Logger, _menuHotkey);
 
             foreach (GK2MenuAction action in _menuActions)
             {
