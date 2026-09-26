@@ -18,6 +18,8 @@ Check only what was actually tested.
 - [ ] Save/reload behavior was tested where persistence is involved.
 - [ ] Enable/disable behavior was tested where applicable.
 - [ ] Main-menu controls and in-game status were tested where applicable.
+- [ ] Parent/child setting order and disabled-state behavior were tested where applicable.
+- [ ] Direct BepInEx/r2modman config values map to the same settings used by the in-game UI.
 - [ ] Compatibility/overlap behavior was tested where applicable.
 
 ### What I actually tested
@@ -47,6 +49,7 @@ Check only what was actually tested.
 - [ ] Performance/resource impact was considered.
 - [ ] New Harmony patches are as narrow as practical.
 - [ ] Experimental behavior is clearly labeled in both UI and documentation.
+- [ ] Feature/settings ordering is deterministic and does not depend on registration order.
 
 ## Maintainer-owned release metadata
 
