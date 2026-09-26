@@ -18,6 +18,9 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<string, System.Func<string>> _tabNotices =
             new Dictionary<string, System.Func<string>>();
 
+        private readonly List<GK2FeatureToggleControl> _featureToggleControls =
+            new List<GK2FeatureToggleControl>();
+
         private GK2SpawnItemControl _spawnItemControl;
         private ModMenuController _modMenuController;
 
@@ -44,6 +47,11 @@ namespace GK2Plus.Framework.UI
                 _modMenuController.RegisterTabNotice(
                     notice.Key,
                     notice.Value);
+            }
+
+            foreach (GK2FeatureToggleControl control in _featureToggleControls)
+            {
+                _modMenuController.RegisterFeatureToggleControl(control);
             }
 
             if (_spawnItemControl != null)
@@ -91,6 +99,29 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterFeatureToggleControl(
+            GK2FeatureToggleControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            _featureToggleControls.RemoveAll(existing =>
+                string.Equals(
+                    existing.Id,
+                    control.Id,
+                    StringComparison.OrdinalIgnoreCase));
+
+            _featureToggleControls.Add(control);
+
+            if (_modMenuController != null)
+            {
+                _modMenuController.RegisterFeatureToggleControl(
+                    control);
+            }
+        }
+
         public void RegisterSpawnItemControl(
             GK2SpawnItemControl control)
         {
@@ -129,6 +160,7 @@ namespace GK2Plus.Framework.UI
             _modMenuController = null;
             _menuActions.Clear();
             _tabNotices.Clear();
+            _featureToggleControls.Clear();
             _spawnItemControl = null;
 
             base.Shutdown();
