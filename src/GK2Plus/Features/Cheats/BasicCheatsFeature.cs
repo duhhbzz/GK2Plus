@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using BepInEx.Configuration;
 using GK2Plus.Core;
@@ -472,14 +473,14 @@ namespace GK2Plus.Features.Cheats
                 return;
             }
 
-            int before =
-                inventory.Data.GetTotalCountInInventory(itemId);
-
             Item item =
                 new Item(itemId)
                 {
                     Count = count
                 };
+
+            List<Item> addedItems = null;
+            int addedCount = 0;
 
             bool success =
                 _saveService.TryRunProtectedMutation(
@@ -487,15 +488,48 @@ namespace GK2Plus.Features.Cheats
                     SaveMutationRisk.Moderate,
                     () =>
                     {
-                        if (!inventory.AddItemToInventory(item))
+                        // Spawn directly into the visible player inventory for
+                        // deterministic cheat/test behavior. Do not route the
+                        // item into nested bags.
+                        if (!inventory.TryAddItemToInventory(
+                            item,
+                            out addedItems,
+                            ignoredBag: null,
+                            ignoreAllBags: true))
                         {
                             throw new InvalidOperationException(
                                 $"GK2 rejected {count}x '{itemId}' while adding it to the player inventory.");
                         }
+
+                        addedCount = 0;
+
+                        if (addedItems != null)
+                        {
+                            foreach (Item addedItem in addedItems)
+                            {
+                                if (addedItem != null &&
+                                    string.Equals(
+                                        addedItem.id,
+                                        itemId,
+                                        StringComparison.OrdinalIgnoreCase))
+                                {
+                                    addedCount += addedItem.Count;
+                                }
+                            }
+                        }
+
+                        if (addedCount <= 0)
+                        {
+                            throw new InvalidOperationException(
+                                $"GK2 reported success but returned no concrete '{itemId}' items.");
+                        }
+
+                        // TryAddItemToInventory mutates the inventory and returns
+                        // the concrete changed/added items. Notify the native
+                        // inventory listeners so CharacterWindow/HUD views redraw.
+                        inventory.NotifyItemsAdded(addedItems);
                     },
-                    () =>
-                        inventory.Data.GetTotalCountInInventory(itemId) >=
-                        before + count
+                    () => addedCount == count
                 );
 
             if (!success)
@@ -505,12 +539,10 @@ namespace GK2Plus.Features.Cheats
                 return;
             }
 
-            int after =
-                inventory.Data.GetTotalCountInInventory(itemId);
-
             Logger.LogInfo(
-                $"Spawn Item completed: '{itemId}' {before} -> {after} total " +
-                $"(+{count}). Native stack limit={itemDef.stackCount}.");
+                $"Spawn Item completed: '{itemId}' added={addedCount} " +
+                $"across {addedItems?.Count ?? 0} concrete item change(s). " +
+                $"Native stack limit={itemDef.stackCount}.");
         }
 
         private void HealPlayer()
