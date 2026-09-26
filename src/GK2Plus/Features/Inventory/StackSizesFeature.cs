@@ -8,37 +8,23 @@ using HarmonyLib;
 namespace GK2Plus.Features.Inventory
 {
     /// <summary>
-    /// Recon-first implementation for configurable item stack sizes.
+    /// Increases GK2's native per-item stack limits by scaling ItemDef.stackCount.
     ///
-    /// The initial slice intentionally does not mutate inventory state. It probes
-    /// GK2's native Item/ItemDef/Inventory stack-related surface and samples real
-    /// item values as they enter an inventory so the final feature can patch the
-    /// game's own stack boundary instead of reimplementing inventory merging.
+    /// The feature patches the native item-capacity paths and lazily scales each
+    /// ItemDef the first time GK2 uses it. Non-stackable definitions (stackCount
+    /// <= 1) are intentionally left unchanged.
     /// </summary>
     internal sealed class StackSizesFeature : FeatureBase
     {
         private const int DefaultMultiplier = 2;
-        private const int MaxInspectedItems = 8;
-        private const int MaxMergeSamples = 40;
-
-        private static readonly string[] InterestingTerms =
-        {
-            "stack",
-            "count",
-            "max",
-            "limit",
-            "capacity"
-        };
 
         private static StackSizesFeature _activeInstance;
 
         private readonly ConfigFile _config;
-        private readonly HashSet<string> _inspectedItemIds =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<global::ItemDef, int> _originalStackCounts =
+            new Dictionary<global::ItemDef, int>();
 
         private ConfigEntry<int> _multiplier;
-        private int _inspectedItemCount;
-        private int _mergeSampleCount;
 
         internal StackSizesFeature(ConfigFile config)
         {
@@ -53,7 +39,7 @@ namespace GK2Plus.Features.Inventory
         public override string Category => "Inventory";
 
         public override string Description =>
-            "Increase native item stack limits while preserving GK2 item and inventory semantics.";
+            "Increase native stack limits for stackable inventory items.";
 
         protected override bool DefaultEnabled => true;
 
@@ -64,7 +50,8 @@ namespace GK2Plus.Features.Inventory
                 $"{Id}.Multiplier",
                 DefaultMultiplier,
                 new ConfigDescription(
-                    "Multiplier to apply to native stack limits once the native stack boundary is validated.",
+                    "Multiplier applied to GK2's native stack limits. " +
+                    "Items with a native stack limit of 1 are left unchanged.",
                     new AcceptableValueRange<int>(1, 20)
                 )
             );
@@ -74,10 +61,57 @@ namespace GK2Plus.Features.Inventory
         {
             _activeInstance = this;
 
-            LogTypeSurface(typeof(global::Item));
-            LogTypeSurface(typeof(global::ItemDef));
-            LogTypeSurface(typeof(global::Inventory));
-            LogTypeSurface(typeof(global::MultiInventory));
+            PatchItemMethod(
+                "CanAddItemCount",
+                new[]
+                {
+                    typeof(global::Item),
+                    typeof(int)
+                }
+            );
+
+            PatchItemMethod(
+                "CanAddItemCount",
+                new[]
+                {
+                    typeof(global::Item)
+                }
+            );
+
+            PatchItemMethod(
+                "CanAddItemCountToInventory",
+                new[]
+                {
+                    typeof(global::Item),
+                    typeof(int),
+                    typeof(bool),
+                    typeof(global::Item),
+                    typeof(bool)
+                }
+            );
+
+            PatchItemMethod(
+                "CanAddItemCountToInventory",
+                new[]
+                {
+                    typeof(global::ItemDef),
+                    typeof(int),
+                    typeof(bool),
+                    typeof(global::Item),
+                    typeof(bool)
+                }
+            );
+
+            PatchItemMethod(
+                "CanAddItemCountToInventory",
+                new[]
+                {
+                    typeof(global::Item),
+                    typeof(bool),
+                    typeof(global::Item),
+                    typeof(bool)
+                }
+            );
 
             MethodInfo addItemMethod = AccessTools.Method(
                 typeof(global::Inventory),
@@ -90,50 +124,53 @@ namespace GK2Plus.Features.Inventory
                 }
             );
 
-            if (addItemMethod == null)
-            {
-                Logger.LogWarning(
-                    "Stack Sizes recon could not resolve Inventory.AddItemToInventory(Item, Item, bool).");
-                return;
-            }
-
-            Harmony.Patch(
-                addItemMethod,
-                prefix: new HarmonyMethod(
-                    typeof(StackSizesFeature),
-                    nameof(InventoryAddPrefix)
-                )
-            );
-
-            MethodInfo canAddCountMethod = AccessTools.Method(
-                typeof(global::Item),
-                "CanAddItemCount",
-                new[]
-                {
-                    typeof(global::Item),
-                    typeof(int)
-                }
-            );
-
-            if (canAddCountMethod != null)
+            if (addItemMethod != null)
             {
                 Harmony.Patch(
-                    canAddCountMethod,
-                    postfix: new HarmonyMethod(
+                    addItemMethod,
+                    prefix: new HarmonyMethod(
                         typeof(StackSizesFeature),
-                        nameof(CanAddItemCountPostfix)
+                        nameof(InventoryAddPrefix)
                     )
                 );
             }
             else
             {
                 Logger.LogWarning(
-                    "Stack Sizes recon could not resolve Item.CanAddItemCount(Item, int).");
+                    "Stack Sizes could not resolve " +
+                    "Inventory.AddItemToInventory(Item, Item, bool).");
             }
 
             Logger.LogInfo(
-                $"Stack Sizes recon enabled. Configured multiplier: {_multiplier.Value}x. " +
-                "No stack limits are being changed yet.");
+                $"Configurable Stack Sizes enabled at {_multiplier.Value}x native limits. " +
+                "Native stackCount=1 items remain unchanged.");
+        }
+
+        private void PatchItemMethod(
+            string methodName,
+            Type[] parameterTypes)
+        {
+            MethodInfo method = AccessTools.Method(
+                typeof(global::Item),
+                methodName,
+                parameterTypes
+            );
+
+            if (method == null)
+            {
+                Logger.LogWarning(
+                    $"Stack Sizes could not resolve Item.{methodName}(" +
+                    $"{FormatParameterTypes(parameterTypes)}).");
+                return;
+            }
+
+            Harmony.Patch(
+                method,
+                prefix: new HarmonyMethod(
+                    typeof(StackSizesFeature),
+                    nameof(ItemStackOperationPrefix)
+                )
+            );
         }
 
         private static void InventoryAddPrefix(object[] __args)
@@ -141,332 +178,101 @@ namespace GK2Plus.Features.Inventory
             StackSizesFeature feature = _activeInstance;
 
             if (feature == null ||
-                __args == null ||
-                __args.Length == 0 ||
-                __args[0] == null)
+                __args == null)
             {
                 return;
             }
 
-            feature.InspectRuntimeItem(__args[0]);
+            feature.ScaleArguments(__args);
         }
 
-        private static void CanAddItemCountPostfix(
+        private static void ItemStackOperationPrefix(
             global::Item __instance,
-            global::Item sourceItem,
-            int countToAdd,
-            int __result)
+            object[] __args)
         {
             StackSizesFeature feature = _activeInstance;
 
-            if (feature == null ||
-                feature._mergeSampleCount >= MaxMergeSamples ||
-                __instance == null ||
-                sourceItem == null)
+            if (feature == null)
             {
                 return;
             }
 
-            feature._mergeSampleCount++;
+            feature.EnsureScaled(__instance?.Definition);
 
-            string destinationId =
-                TryReadNamedValue(__instance, "id")?.ToString() ??
-                TryReadNamedValue(__instance, "Id")?.ToString() ??
-                "<unknown>";
-
-            string sourceId =
-                TryReadNamedValue(sourceItem, "id")?.ToString() ??
-                TryReadNamedValue(sourceItem, "Id")?.ToString() ??
-                "<unknown>";
-
-            object destinationDef =
-                TryReadNamedValue(__instance, "Definition") ??
-                TryReadNamedValue(__instance, "Def");
-
-            object sourceDef =
-                TryReadNamedValue(sourceItem, "Definition") ??
-                TryReadNamedValue(sourceItem, "Def");
-
-            object destinationStackCount =
-                TryReadNamedValue(destinationDef, "stackCount");
-
-            object sourceStackCount =
-                TryReadNamedValue(sourceDef, "stackCount");
-
-            feature.Logger.LogInfo(
-                "[StackSizes Merge] " +
-                $"dest='{destinationId}' count={__instance.Count} stackCount={FormatValue(destinationStackCount)}; " +
-                $"src='{sourceId}' count={sourceItem.Count} stackCount={FormatValue(sourceStackCount)}; " +
-                $"requested={countToAdd}; allowed={__result}");
+            if (__args != null)
+            {
+                feature.ScaleArguments(__args);
+            }
         }
 
-        private void InspectRuntimeItem(object item)
+        private void ScaleArguments(object[] args)
         {
-            if (_inspectedItemCount >= MaxInspectedItems)
+            foreach (object arg in args)
+            {
+                if (arg is global::Item item)
+                {
+                    EnsureScaled(item.Definition);
+                }
+                else if (arg is global::ItemDef itemDef)
+                {
+                    EnsureScaled(itemDef);
+                }
+            }
+        }
+
+        private void EnsureScaled(global::ItemDef itemDef)
+        {
+            if (itemDef == null ||
+                _originalStackCounts.ContainsKey(itemDef))
             {
                 return;
             }
 
-            string itemId =
-                TryReadNamedValue(item, "id")?.ToString() ??
-                TryReadNamedValue(item, "Id")?.ToString() ??
-                "<unknown>";
+            int original = itemDef.stackCount;
+            _originalStackCounts[itemDef] = original;
 
-            if (!_inspectedItemIds.Add(itemId))
+            // stackCount <= 1 represents items that should not gain normal
+            // inventory stacking behavior (tools, equipment, overhead items, etc.).
+            if (original <= 1 ||
+                _multiplier.Value <= 1)
             {
                 return;
             }
 
-            _inspectedItemCount++;
+            long scaledLong =
+                (long)original * _multiplier.Value;
+
+            int scaled = scaledLong > int.MaxValue
+                ? int.MaxValue
+                : (int)scaledLong;
+
+            itemDef.stackCount = scaled;
 
             Logger.LogInfo(
-                $"[StackSizes Recon] Sampling item '{itemId}' ({item.GetType().FullName}).");
-
-            LogInterestingInstanceValues(item);
-
-            object definition =
-                TryReadNamedValue(item, "Definition") ??
-                TryReadNamedValue(item, "Def");
-
-            if (definition != null)
-            {
-                Logger.LogInfo(
-                    $"[StackSizes Recon] Sampling definition for '{itemId}' " +
-                    $"({definition.GetType().FullName}).");
-
-                LogInterestingInstanceValues(definition);
-            }
-            else
-            {
-                Logger.LogDebug(
-                    $"[StackSizes Recon] No definition object resolved for '{itemId}'.");
-            }
+                $"Stack Sizes: '{itemDef.id}' native limit {original} -> {scaled} " +
+                $"({_multiplier.Value}x).");
         }
 
-        private void LogTypeSurface(Type type)
+        private static string FormatParameterTypes(Type[] parameterTypes)
         {
-            Logger.LogInfo(
-                $"[StackSizes Recon] Candidate members on {type.FullName}:");
-
-            bool foundAny = false;
-
-            foreach (Type current in EnumerateTypeHierarchy(type))
+            if (parameterTypes == null ||
+                parameterTypes.Length == 0)
             {
-                BindingFlags flags =
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance |
-                    BindingFlags.Static |
-                    BindingFlags.DeclaredOnly;
-
-                foreach (FieldInfo field in current.GetFields(flags))
-                {
-                    if (!IsInteresting(field.Name))
-                    {
-                        continue;
-                    }
-
-                    foundAny = true;
-                    Logger.LogInfo(
-                        $"[StackSizes Recon] FIELD {current.Name}.{field.Name} : " +
-                        $"{field.FieldType.FullName}");
-                }
-
-                foreach (PropertyInfo property in current.GetProperties(flags))
-                {
-                    if (!IsInteresting(property.Name))
-                    {
-                        continue;
-                    }
-
-                    foundAny = true;
-                    Logger.LogInfo(
-                        $"[StackSizes Recon] PROPERTY {current.Name}.{property.Name} : " +
-                        $"{property.PropertyType.FullName} " +
-                        $"(get={property.CanRead}, set={property.CanWrite})");
-                }
-
-                foreach (MethodInfo method in current.GetMethods(flags))
-                {
-                    if (!IsInteresting(method.Name))
-                    {
-                        continue;
-                    }
-
-                    foundAny = true;
-                    Logger.LogInfo(
-                        $"[StackSizes Recon] METHOD {current.Name}.{FormatMethod(method)}");
-                }
+                return string.Empty;
             }
 
-            if (!foundAny)
+            string[] names =
+                new string[parameterTypes.Length];
+
+            for (int i = 0;
+                 i < parameterTypes.Length;
+                 i++)
             {
-                Logger.LogInfo(
-                    $"[StackSizes Recon] No name-matched candidates found on {type.FullName}.");
-            }
-        }
-
-        private void LogInterestingInstanceValues(object instance)
-        {
-            Type type = instance.GetType();
-
-            foreach (Type current in EnumerateTypeHierarchy(type))
-            {
-                BindingFlags flags =
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance |
-                    BindingFlags.DeclaredOnly;
-
-                foreach (FieldInfo field in current.GetFields(flags))
-                {
-                    if (!IsInteresting(field.Name))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        object value = field.GetValue(instance);
-                        Logger.LogInfo(
-                            $"[StackSizes Recon] VALUE {current.Name}.{field.Name} = " +
-                            $"{FormatValue(value)}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogDebug(
-                            $"[StackSizes Recon] Could not read {current.Name}.{field.Name}: " +
-                            $"{ex.GetType().Name}");
-                    }
-                }
-
-                foreach (PropertyInfo property in current.GetProperties(flags))
-                {
-                    if (!IsInteresting(property.Name) ||
-                        !property.CanRead ||
-                        property.GetIndexParameters().Length != 0)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        object value = property.GetValue(instance, null);
-                        Logger.LogInfo(
-                            $"[StackSizes Recon] VALUE {current.Name}.{property.Name} = " +
-                            $"{FormatValue(value)}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogDebug(
-                            $"[StackSizes Recon] Could not read {current.Name}.{property.Name}: " +
-                            $"{ex.GetType().Name}");
-                    }
-                }
-            }
-        }
-
-        private static object TryReadNamedValue(object instance, string memberName)
-        {
-            if (instance == null)
-            {
-                return null;
+                names[i] =
+                    parameterTypes[i].Name;
             }
 
-            for (Type current = instance.GetType();
-                 current != null;
-                 current = current.BaseType)
-            {
-                BindingFlags flags =
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance |
-                    BindingFlags.DeclaredOnly;
-
-                FieldInfo field = current.GetField(memberName, flags);
-
-                if (field != null)
-                {
-                    try
-                    {
-                        return field.GetValue(instance);
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                PropertyInfo property = current.GetProperty(memberName, flags);
-
-                if (property != null &&
-                    property.CanRead &&
-                    property.GetIndexParameters().Length == 0)
-                {
-                    try
-                    {
-                        return property.GetValue(instance, null);
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static IEnumerable<Type> EnumerateTypeHierarchy(Type type)
-        {
-            for (Type current = type;
-                 current != null && current != typeof(object);
-                 current = current.BaseType)
-            {
-                yield return current;
-            }
-        }
-
-        private static bool IsInteresting(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                return false;
-            }
-
-            foreach (string term in InterestingTerms)
-            {
-                if (name.IndexOf(
-                    term,
-                    StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static string FormatMethod(MethodInfo method)
-        {
-            ParameterInfo[] parameters = method.GetParameters();
-            string[] parameterText = new string[parameters.Length];
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                parameterText[i] =
-                    $"{parameters[i].ParameterType.Name} {parameters[i].Name}";
-            }
-
-            return
-                $"{method.ReturnType.Name} {method.Name}(" +
-                string.Join(", ", parameterText) +
-                ")";
-        }
-
-        private static string FormatValue(object value)
-        {
-            return value == null
-                ? "<null>"
-                : value.ToString();
+            return string.Join(", ", names);
         }
     }
 }
