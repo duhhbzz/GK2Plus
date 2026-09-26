@@ -204,10 +204,11 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -63f),
-                new Vector2(146f, 16f),
-                10.5f,
-                new Color(0.87f, 0.80f, 0.62f, 1f)
+                new Vector2(0f, -61f),
+                new Vector2(146f, 18f),
+                13f,
+                new Color(0.87f, 0.80f, 0.62f, 1f),
+                2.5f
             );
 
             titleBar.transform.SetAsLastSibling();
@@ -422,7 +423,8 @@ namespace GK2Plus.Framework.UI
             Vector2 anchoredPosition,
             Vector2 size,
             float fontSize,
-            Color color)
+            Color color,
+            float characterSpacing = 0f)
         {
             GameObject clone = UnityEngine.Object.Instantiate(template, parent, false);
             clone.name = name;
@@ -462,6 +464,7 @@ namespace GK2Plus.Framework.UI
             SetProperty(tmp, "text", text);
             SetProperty(tmp, "fontSize", fontSize);
             SetProperty(tmp, "color", color);
+            SetProperty(tmp, "characterSpacing", characterSpacing);
             TrySetEnumProperty(tmp, "fontStyle", "Normal");
             TrySetEnumProperty(tmp, "fontWeight", "Regular");
             TrySetEnumProperty(tmp, "alignment", "Center");
