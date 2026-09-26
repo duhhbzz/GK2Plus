@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using BepInEx.Configuration;
 using GK2Plus.Core;
 using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
@@ -23,17 +25,25 @@ namespace GK2Plus.Features.Cheats
 
         private readonly GK2SaveService _saveService;
         private readonly GK2UIService _uiService;
+        private readonly ConfigFile _config;
+
+        private ConfigEntry<string> _spawnItemId;
+        private ConfigEntry<int> _spawnItemCount;
         private bool _achievementGuardReady;
 
         public BasicCheatsFeature(
             GK2SaveService saveService,
-            GK2UIService uiService)
+            GK2UIService uiService,
+            ConfigFile config)
         {
             _saveService = saveService ??
                 throw new ArgumentNullException(nameof(saveService));
 
             _uiService = uiService ??
                 throw new ArgumentNullException(nameof(uiService));
+
+            _config = config ??
+                throw new ArgumentNullException(nameof(config));
         }
 
         public override string Id => "basic-cheats";
@@ -46,6 +56,26 @@ namespace GK2Plus.Features.Cheats
             "Optional player/economy cheat actions exposed through the GK2+ menu.";
 
         protected override bool DefaultEnabled => true;
+
+        protected override void OnInitialize()
+        {
+            _spawnItemId = _config.Bind(
+                Category,
+                $"{Id}.SpawnItemId",
+                "flitch",
+                "Native GK2 item id used by the Spawn Item cheat."
+            );
+
+            _spawnItemCount = _config.Bind(
+                Category,
+                $"{Id}.SpawnItemCount",
+                100,
+                new ConfigDescription(
+                    "Quantity used by the Spawn Item cheat.",
+                    new AcceptableValueRange<int>(1, 10000)
+                )
+            );
+        }
 
         protected override void OnEnabled()
         {
@@ -109,9 +139,14 @@ namespace GK2Plus.Features.Cheats
                 "Refill Energy",
                 RefillEnergy);
 
+            RegisterCheatAction(
+                "cheats.spawn-item",
+                "Spawn Item",
+                SpawnConfiguredItem);
+
             Logger.LogInfo(
                 "Basic Cheats enabled: Money increments, Heal Player, " +
-                "Refill Energy, and per-save achievement protection.");
+                "Refill Energy, Spawn Item, and per-save achievement protection.");
         }
 
         private bool TryPatchAchievementPlatformBoundary()
@@ -381,6 +416,102 @@ namespace GK2Plus.Features.Cheats
 
             Logger.LogInfo(
                 $"Give Money completed: {before} -> {after} bronze units.");
+        }
+
+        private void SpawnConfiguredItem()
+        {
+            string itemId =
+                (_spawnItemId?.Value ?? string.Empty).Trim();
+
+            int count =
+                _spawnItemCount?.Value ?? 0;
+
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because SpawnItemId is empty.");
+                return;
+            }
+
+            if (count <= 0)
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because SpawnItemCount must be greater than zero.");
+                return;
+            }
+
+            PlayerData playerData = MainGame.PlayerData;
+            Inventory inventory = playerData?.inventory;
+            GameBalance balance = GameBalance.Me;
+
+            if (inventory == null ||
+                inventory.Data == null ||
+                balance == null)
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because the native player inventory " +
+                    "or game balance is unavailable.");
+                return;
+            }
+
+            ItemDef itemDef = balance.GetData<ItemDef>(itemId);
+
+            if (itemDef == null)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because '{itemId}' is not a valid ItemDef id.");
+                return;
+            }
+
+            if (!inventory.CanAddItemToInventory(
+                itemId,
+                count))
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because the player inventory cannot " +
+                    $"accept {count}x '{itemId}'.");
+                return;
+            }
+
+            int before =
+                inventory.Data.GetTotalCountInInventory(itemId);
+
+            Item item =
+                new Item(itemId)
+                {
+                    Count = count
+                };
+
+            bool success =
+                _saveService.TryRunProtectedMutation(
+                    $"Spawn Item ({itemId} x{count})",
+                    SaveMutationRisk.Moderate,
+                    () =>
+                    {
+                        if (!inventory.AddItemToInventory(item))
+                        {
+                            throw new InvalidOperationException(
+                                $"GK2 rejected {count}x '{itemId}' while adding it to the player inventory.");
+                        }
+                    },
+                    () =>
+                        inventory.Data.GetTotalCountInInventory(itemId) >=
+                        before + count
+                );
+
+            if (!success)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item ({itemId} x{count}) did not complete.");
+                return;
+            }
+
+            int after =
+                inventory.Data.GetTotalCountInInventory(itemId);
+
+            Logger.LogInfo(
+                $"Spawn Item completed: '{itemId}' {before} -> {after} total " +
+                $"(+{count}). Native stack limit={itemDef.stackCount}.");
         }
 
         private void HealPlayer()
