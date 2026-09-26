@@ -78,10 +78,16 @@ Example:
 Bigger Item Stacks                         [ ON ]
     Stack Size Multiplier                  [ 3x ]
 
-Shared Chests                              [ ON ]
+Shared Storage                              [ ON ]
+    Storage Scope                   [ Current Zone ▼ ]
+    Character Inventory Access              [ ON ]
+    Use Items From Storage                  [ OFF ]
+    Craft From Selected Scope               [ OFF ]
 ~~~
 
 When the parent feature is OFF, its child settings should remain visible so the saved value is understandable, but they should be visually disabled/non-interactive until the feature is enabled again.
+
+Binary child options toggle directly when clicked. Multi-choice options continue to open the selector/picker.
 
 The config value itself remains valid and should be preserved. Turning a feature off should not erase its configured child values.
 
