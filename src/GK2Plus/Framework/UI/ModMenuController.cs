@@ -1042,13 +1042,19 @@ Button close = closeButton.GetComponent<Button>();
                 "Cheats",
                 StringComparison.OrdinalIgnoreCase);
 
-            rect.anchoredPosition = cheats
-                ? new Vector2(0f, -40f)
-                : new Vector2(0f, -40f);
+            bool more = string.Equals(
+                tab,
+                "More",
+                StringComparison.OrdinalIgnoreCase);
+
+            rect.anchoredPosition =
+                new Vector2(0f, -40f);
 
             rect.sizeDelta = cheats
                 ? new Vector2(350f, 42f)
-                : new Vector2(350f, 102f);
+                : more
+                    ? new Vector2(350f, 64f)
+                    : new Vector2(350f, 102f);
         }
 
         private string GetPlaceholderText(string tab)
