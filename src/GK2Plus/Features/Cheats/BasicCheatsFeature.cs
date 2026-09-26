@@ -504,33 +504,77 @@ namespace GK2Plus.Features.Cheats
                 return;
             }
 
+            int beforeTotal =
+                playerInventory.Data.GetTotalCountInInventory(itemId);
+
+            int beforeVisibleStack =
+                playerInventory.Data.GetItemById(itemId)?.Count ?? 0;
+
+            bool sameInventoryReference =
+                ReferenceEquals(
+                    playerInventory,
+                    playerData.inventory);
+
+            int afterTotal = beforeTotal;
+            int afterVisibleStack = beforeVisibleStack;
+            bool nativeAddResult = false;
+
+            Logger.LogInfo(
+                $"Spawn Item diagnostic before add: item='{itemId}', " +
+                $"requested={count}, materialized={materializedCount}, " +
+                $"objects={items.Count}, total={beforeTotal}, " +
+                $"visibleStack={beforeVisibleStack}, " +
+                $"PlayerData.Inventory==playerData.inventory={sameInventoryReference}.");
+
             bool success =
                 _saveService.TryRunProtectedMutation(
                     $"Spawn Item ({itemId} x{count})",
                     SaveMutationRisk.Moderate,
                     () =>
                     {
-                        if (!playerInventory.AddItemsToInventory(items))
+                        nativeAddResult =
+                            playerInventory.AddItemsToInventory(items);
+
+                        afterTotal =
+                            playerInventory.Data.GetTotalCountInInventory(itemId);
+
+                        afterVisibleStack =
+                            playerInventory.Data.GetItemById(itemId)?.Count ?? 0;
+
+                        Logger.LogInfo(
+                            $"Spawn Item diagnostic after add: item='{itemId}', " +
+                            $"AddItemsToInventory={nativeAddResult}, " +
+                            $"total={beforeTotal}->{afterTotal}, " +
+                            $"visibleStack={beforeVisibleStack}->{afterVisibleStack}.");
+
+                        if (!nativeAddResult)
                         {
                             throw new InvalidOperationException(
                                 $"GK2 rejected the native item list for " +
                                 $"{count}x '{itemId}'.");
                         }
                     },
-                    () => true
+                    () =>
+                        nativeAddResult &&
+                        afterTotal >= beforeTotal + count
                 );
 
             if (!success)
             {
                 Logger.LogWarning(
-                    $"Spawn Item ({itemId} x{count}) did not complete.");
+                    $"Spawn Item ({itemId} x{count}) did not complete. " +
+                    $"Destination inventory changed {beforeTotal}->{afterTotal}; " +
+                    $"visible stack {beforeVisibleStack}->{afterVisibleStack}.");
                 return;
             }
 
             Logger.LogInfo(
                 $"Spawn Item completed through GK2's native ItemCount pipeline: " +
                 $"'{itemId}' materialized={materializedCount} across " +
-                $"{items.Count} item object(s). Native stack limit={itemDef.stackCount}.");
+                $"{items.Count} item object(s); destination total " +
+                $"{beforeTotal}->{afterTotal}; visible stack " +
+                $"{beforeVisibleStack}->{afterVisibleStack}. " +
+                $"Native stack limit={itemDef.stackCount}.");
         }
 
         private void HealPlayer()
