@@ -1935,6 +1935,8 @@ Button close = closeButton.GetComponent<Button>();
 
         public void HideMenu()
         {
+            CloseItemPicker();
+
             if (_menuRoot != null)
             {
                 _menuRoot.SetActive(false);
