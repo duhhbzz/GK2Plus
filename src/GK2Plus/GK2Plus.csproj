@@ -15,8 +15,9 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
 
-    <!-- VERSION at the repository root is the single source of truth. -->
+    <!-- Root files are the single sources of truth for mod + tested game versions. -->
     <GK2PlusVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\VERSION').Trim())</GK2PlusVersion>
+    <GK2TestedGameVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\GAME_VERSION').Trim())</GK2TestedGameVersion>
 
     <Version>$(GK2PlusVersion)</Version>
     <FileVersion>$(GK2PlusVersion).0</FileVersion>
@@ -79,20 +80,20 @@
 
   </ItemGroup>
 
-  <!-- Generate the compile-time BepInEx version constant. -->
-  <Target Name="GenerateGK2PlusVersion"
+  <!-- Generate compile-time mod + tested game version constants. -->
+  <Target Name="GenerateGK2PlusBuildInfo"
           BeforeTargets="CoreCompile">
 
     <WriteLinesToFile
         File="$(IntermediateOutputPath)GK2Plus.Version.g.cs"
-        Lines="namespace GK2Plus.Core { internal static partial class ModInfo { internal const string Version = &quot;$(GK2PlusVersion)&quot;%3B } }"
+        Lines="namespace GK2Plus.Core { internal static partial class ModInfo { internal const string Version = &quot;$(GK2PlusVersion)&quot;%3B internal const string TestedGameVersion = &quot;$(GK2TestedGameVersion)&quot;%3B } }"
         Overwrite="true" />
 
     <ItemGroup>
       <Compile Include="$(IntermediateOutputPath)GK2Plus.Version.g.cs" />
     </ItemGroup>
 
-    <Message Text="Building GK2+ v$(GK2PlusVersion)"
+    <Message Text="Building GK2+ v$(GK2PlusVersion) (tested with GK2 v$(GK2TestedGameVersion))"
              Importance="high" />
 
   </Target>

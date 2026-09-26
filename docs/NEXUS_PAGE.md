@@ -26,6 +26,8 @@ The project is built around small, independently testable modules so players can
 
 v0.1.0 moves GK2+ beyond the original framework/menu preview and adds real gameplay functionality.
 
+**Tested with Graveyard Keeper 2 v1.006.** Newer game versions are allowed to load but are treated as unvalidated until tested.
+
 ### Manual Save
 
 GK2+ adds a native-style **Save Game** button to the pause menu.

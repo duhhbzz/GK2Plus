@@ -8,6 +8,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $version = (Get-Content (Join-Path $repoRoot 'VERSION') -Raw).Trim()
 $tag = "v$version"
 $zipPath = Join-Path $repoRoot "dist\GK2Plus-$version.zip"
+$thunderstoreZipPath = Join-Path $repoRoot "dist\GK2Plus-$version-Thunderstore.zip"
 $notesPath = Join-Path $repoRoot "docs\RELEASE_NOTES_$version.md"
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
@@ -21,6 +22,10 @@ if ($LASTEXITCODE -ne 0) {
 
 if (-not (Test-Path $zipPath)) {
     throw "Release ZIP not found: $zipPath. Run Build-ReleasePackage.ps1 first."
+}
+
+if (-not (Test-Path $thunderstoreZipPath)) {
+    throw "Thunderstore ZIP not found: $thunderstoreZipPath. Run Build-ThunderstorePackage.ps1 first."
 }
 
 if (-not (Test-Path $notesPath)) {
@@ -50,6 +55,7 @@ try {
     $args = @(
         'release', 'create', $tag,
         $zipPath,
+        $thunderstoreZipPath,
         '--target', 'main',
         '--title', "GK2+ $tag - First Gameplay Release",
         '--notes-file', $notesPath
@@ -68,6 +74,9 @@ try {
     Write-Host ''
     Write-Host "Published GitHub Release $tag with:"
     Write-Host "  $zipPath"
+    Write-Host "  $thunderstoreZipPath"
+    Write-Host ''
+    Write-Host 'Publishing the release will trigger GitHub Actions for Nexus Mods and Thunderstore.'
 }
 finally {
     Pop-Location

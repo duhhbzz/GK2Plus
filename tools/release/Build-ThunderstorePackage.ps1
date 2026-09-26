@@ -6,6 +6,7 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $version = (Get-Content (Join-Path $repoRoot 'VERSION') -Raw).Trim()
+$gameVersion = (Get-Content (Join-Path $repoRoot 'GAME_VERSION') -Raw).Trim()
 
 $projectPath = Join-Path $repoRoot 'src\GK2Plus\GK2Plus.csproj'
 $buildDll = Join-Path $repoRoot 'src\GK2Plus\bin\Release\netstandard2.1\GK2Plus.dll'
@@ -16,6 +17,10 @@ $distDir = Join-Path $repoRoot 'dist'
 
 if ([string]::IsNullOrWhiteSpace($version)) {
     throw 'VERSION is empty.'
+}
+
+if ([string]::IsNullOrWhiteSpace($gameVersion)) {
+    throw 'GAME_VERSION is empty.'
 }
 
 if (-not $SkipBuild) {
@@ -55,7 +60,7 @@ $manifest = [ordered]@{
     name = 'GK2Plus'
     version_number = $version
     website_url = 'https://github.com/duhhbzz/GK2Plus'
-    description = 'Modular Graveyard Keeper 2 QoL suite with Manual Save, native-style cheats, save-safety checkpoints, and per-save achievement protection.'
+    description = "Modular Graveyard Keeper 2 QoL suite with Manual Save, native-style cheats, save-safety checkpoints, and per-save achievement protection. Tested with GK2 v$gameVersion."
     dependencies = @(
         'BepInEx-BepInExPack-5.4.2305'
     )
@@ -163,6 +168,8 @@ $hash = Get-FileHash $zipPath -Algorithm SHA256
 Write-Host ''
 Write-Host "Thunderstore package created:"
 Write-Host "  $zipPath"
+Write-Host "Tested GK2 version:"
+Write-Host "  $gameVersion"
 Write-Host ''
 Write-Host "SHA256:"
 Write-Host "  $($hash.Hash)"

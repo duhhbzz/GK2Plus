@@ -5,6 +5,7 @@
 ### Repository / Packaging
 
 - [ ] Confirm `VERSION` matches the intended release.
+- [ ] Confirm `GAME_VERSION` matches the Graveyard Keeper 2 version used for final runtime validation.
 - [ ] Confirm experimental/local-only source is not present.
 - [ ] Confirm no `*.bak`, `bin/`, `obj/`, `local.props`, private recon output, game DLLs, extracted game assets, or local save data are staged.
 - [ ] Run `git status` and inspect every changed/untracked file.
@@ -18,6 +19,8 @@
 - [ ] Launch Graveyard Keeper 2 with the newly built DLL.
 - [ ] Confirm BepInEx loads GK2+ without unexpected errors.
 - [ ] Confirm the main-menu GK2+ badge shows the intended version.
+- [ ] Confirm the F2 menu reports the running GK2 version as `[tested]`.
+- [ ] Temporarily test a mismatched `GAME_VERSION` value and confirm GK2+ warns but still loads.
 - [ ] Confirm F2 opens/closes GK2+ from the main menu.
 - [ ] Load a save and confirm F2 opens/closes GK2+ during active gameplay.
 - [ ] Confirm Esc and the Close button work.
@@ -101,6 +104,7 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
 ### Release preparation
 
 - [ ] Confirm `VERSION` is `0.1.0`.
+- [ ] Confirm `GAME_VERSION` is `1.006`.
 - [ ] Confirm `CHANGELOG.md` contains the dated `0.1.0` section.
 - [ ] Confirm README describes current functional features instead of the foundation preview.
 - [ ] Confirm `docs/NEXUS_PAGE.md` reflects v0.1.0.

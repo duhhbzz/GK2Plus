@@ -18,6 +18,8 @@ VERSION
 
 The wrapper/layout differs by channel, but all channels must ship the same compiled `GK2Plus.dll`.
 
+The repository-root `GAME_VERSION` file records the Graveyard Keeper 2 version validated for the release. For v0.1.0, that is **1.006**.
+
 ## Community
 
 - Community: **Graveyard Keeper 2**

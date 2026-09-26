@@ -19,6 +19,7 @@
 
 <p align="center">
   <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-blue">
+  <img alt="Tested GK2 version" src="https://img.shields.io/badge/GK2%20tested-1.006-success">
   <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.5-purple">
   <img alt=".NET Standard" src="https://img.shields.io/badge/.NET%20Standard-2.1-blueviolet">
   <img alt="Status" src="https://img.shields.io/badge/status-first%20gameplay%20release-brightgreen">
@@ -33,6 +34,8 @@
 The project combines quality-of-life improvements, gameplay tweaks, management tools, and optional cheats behind one modular framework. The goal is to reduce the need for many tiny overlapping mods while still allowing players to disable individual GK2+ features when another mod provides an implementation they prefer.
 
 **v0.1.0 is the first functional gameplay release.** It moves GK2+ beyond the original framework/menu preview with a tested Manual Save feature, functional Cheats tools, save-safety checkpoints, and per-save achievement protection for cheat use.
+
+**Compatibility:** GK2+ v0.1.0 has been runtime-tested against **Graveyard Keeper 2 v1.006**. If the game updates, GK2+ reports the running game version as untested but continues loading so minor game patches do not create an unnecessary hard lock.
 
 ### Design goals
 
@@ -369,7 +372,7 @@ GK2+ follows **Semantic Versioning**:
 MAJOR.MINOR.PATCH
 ~~~
 
-The repository-root [VERSION](VERSION) file is the single source of truth.
+The repository-root [VERSION](VERSION) file is the single source of truth for the GK2+ version. [GAME_VERSION](GAME_VERSION) records the Graveyard Keeper 2 version that the current GK2+ build has been validated against.
 
 ~~~text
 0.0.x  Foundation / early development releases
