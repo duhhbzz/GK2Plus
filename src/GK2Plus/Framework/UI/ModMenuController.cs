@@ -697,9 +697,9 @@ namespace GK2Plus.Framework.UI
             bodyViewportRect.anchorMax = new Vector2(0.5f, 1f);
             bodyViewportRect.pivot = new Vector2(0.5f, 1f);
             bodyViewportRect.anchoredPosition =
-                new Vector2(-4f, -BodyViewportTopOffset);
+                new Vector2(0f, -BodyViewportTopOffset);
             bodyViewportRect.sizeDelta =
-                new Vector2(378f, BodyViewportHeight);
+                new Vector2(388f, BodyViewportHeight);
 
             Image bodyViewportImage =
                 bodyViewport.GetComponent<Image>();
