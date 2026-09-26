@@ -8,6 +8,7 @@ using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
 using HarmonyLib;
 using LazyBearTechnology;
+using UnityEngine;
 
 namespace GK2Plus.Features.Cheats
 {
@@ -452,7 +453,10 @@ namespace GK2Plus.Features.Cheats
             foreach (object value in itemDefs)
             {
                 if (!(value is ItemDef itemDef) ||
-                    string.IsNullOrWhiteSpace(itemDef.id))
+                    string.IsNullOrWhiteSpace(itemDef.id) ||
+                    itemDef.stackCount <= 0 ||
+                    (itemDef.itemSize != ItemSize.Small &&
+                     itemDef.itemSize != ItemSize.Big))
                 {
                     continue;
                 }
@@ -602,12 +606,16 @@ namespace GK2Plus.Features.Cheats
 
             PlayerData playerData = MainGame.PlayerData;
             GameBalance balance = GameBalance.Me;
+            MainGame mainGame = MainGame.Instance;
 
             if (playerData == null ||
-                balance == null)
+                balance == null ||
+                mainGame == null ||
+                mainGame.dropSystem == null)
             {
                 Logger.LogWarning(
-                    "Spawn Item was blocked because PlayerData or game balance is unavailable.");
+                    "Spawn Item was blocked because the player, game balance, " +
+                    "or native drop system is unavailable.");
                 return;
             }
 
@@ -617,6 +625,26 @@ namespace GK2Plus.Features.Cheats
             {
                 Logger.LogWarning(
                     $"Spawn Item was blocked because '{itemId}' is not a valid ItemDef id.");
+                return;
+            }
+
+            if (itemDef.stackCount <= 0 ||
+                (itemDef.itemSize != ItemSize.Small &&
+                 itemDef.itemSize != ItemSize.Big))
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because '{itemId}' does not expose " +
+                    "a valid native stack/drop definition.");
+                return;
+            }
+
+            string worldId =
+                playerData.currentGameSceneId;
+
+            if (string.IsNullOrWhiteSpace(worldId))
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because the current game scene id is unavailable.");
                 return;
             }
 
@@ -664,27 +692,47 @@ namespace GK2Plus.Features.Cheats
                 return;
             }
 
-            int beforeTotal =
+            Vector3 spawnPosition;
+            bool resolvedNativeDropPosition =
+                SpecialPhysicsCastUtils.GetPlayerDropPosition(
+                    playerData.position.Value,
+                    playerData.Direction,
+                    out spawnPosition);
+
+            if (!resolvedNativeDropPosition)
+            {
+                spawnPosition =
+                    playerData.position.Value +
+                    new Vector3(
+                        playerData.Direction.x,
+                        0f,
+                        playerData.Direction.y);
+            }
+
+            bool allowInventoryFallback =
+                itemDef.itemSize == ItemSize.Small &&
+                !itemDef.isLinkedToWgo &&
+                !itemDef.isTechPoint;
+
+            List<Item> nativeDroppedItems =
+                new List<Item>();
+
+            List<Item> inventoryFallbackItems =
+                new List<Item>();
+
+            int worldHandledCount = 0;
+            int fallbackRequestedCount = 0;
+            int beforeInventoryTotal =
                 playerInventory.Data.GetTotalCountInInventory(itemId);
-
-            int beforeVisibleStack =
-                playerInventory.GetItemById(itemId)?.Count ?? 0;
-
-            bool sameInventoryReference =
-                ReferenceEquals(
-                    playerInventory,
-                    playerData.inventory);
-
-            int afterTotal = beforeTotal;
-            int afterVisibleStack = beforeVisibleStack;
-            bool nativeAddResult = false;
+            int afterInventoryTotal = beforeInventoryTotal;
+            bool fallbackAddResult = true;
+            bool mutationCompleted = false;
 
             Logger.LogInfo(
-                $"Spawn Item diagnostic before add: item='{itemId}', " +
-                $"requested={count}, materialized={materializedCount}, " +
-                $"objects={items.Count}, total={beforeTotal}, " +
-                $"visibleStack={beforeVisibleStack}, " +
-                $"PlayerData.Inventory==playerData.inventory={sameInventoryReference}.");
+                $"Spawn Item routing: item='{itemId}', requested={count}, " +
+                $"size={itemDef.itemSize}, linkedToWgo={itemDef.isLinkedToWgo}, " +
+                $"fuel={itemDef.isFuel}, techPoint={itemDef.isTechPoint}, " +
+                $"scene='{worldId}', nativeDropPosition={resolvedNativeDropPosition}.");
 
             bool success =
                 _saveService.TryRunProtectedMutation(
@@ -692,49 +740,95 @@ namespace GK2Plus.Features.Cheats
                     SaveMutationRisk.Moderate,
                     () =>
                     {
-                        nativeAddResult =
-                            playerInventory.AddItemsToInventory(items);
+                        foreach (Item createdItem in items)
+                        {
+                            if (createdItem == null ||
+                                createdItem.IsEmpty)
+                            {
+                                throw new InvalidOperationException(
+                                    $"GK2 materialized an empty item while spawning '{itemId}'.");
+                            }
 
-                        afterTotal =
+                            int createdCount =
+                                createdItem.Count;
+
+                            bool nativeDropResult =
+                                mainGame.dropSystem.DropItem(
+                                    createdItem,
+                                    worldId,
+                                    spawnPosition,
+                                    nativeDroppedItems);
+
+                            if (nativeDropResult)
+                            {
+                                worldHandledCount +=
+                                    createdCount;
+                                continue;
+                            }
+
+                            if (!allowInventoryFallback)
+                            {
+                                throw new InvalidOperationException(
+                                    $"GK2 rejected world spawning for '{itemId}'. " +
+                                    "GK2+ refused to force this world/carry item into inventory.");
+                            }
+
+                            inventoryFallbackItems.Add(
+                                createdItem);
+
+                            fallbackRequestedCount +=
+                                createdCount;
+                        }
+
+                        if (inventoryFallbackItems.Count > 0)
+                        {
+                            fallbackAddResult =
+                                playerInventory.AddItemsToInventory(
+                                    inventoryFallbackItems);
+
+                            if (!fallbackAddResult)
+                            {
+                                throw new InvalidOperationException(
+                                    $"GK2 rejected the inventory fallback for " +
+                                    $"{fallbackRequestedCount}x '{itemId}'.");
+                            }
+                        }
+
+                        afterInventoryTotal =
                             playerInventory.Data.GetTotalCountInInventory(itemId);
 
-                        afterVisibleStack =
-                            playerInventory.GetItemById(itemId)?.Count ?? 0;
+                        mutationCompleted =
+                            worldHandledCount + fallbackRequestedCount == count &&
+                            fallbackAddResult &&
+                            afterInventoryTotal >=
+                                beforeInventoryTotal + fallbackRequestedCount;
 
-                        Logger.LogInfo(
-                            $"Spawn Item diagnostic after add: item='{itemId}', " +
-                            $"AddItemsToInventory={nativeAddResult}, " +
-                            $"total={beforeTotal}->{afterTotal}, " +
-                            $"visibleStack={beforeVisibleStack}->{afterVisibleStack}.");
-
-                        if (!nativeAddResult)
+                        if (!mutationCompleted)
                         {
                             throw new InvalidOperationException(
-                                $"GK2 rejected the native item list for " +
+                                $"GK2+ could not verify the complete native spawn route for " +
                                 $"{count}x '{itemId}'.");
                         }
                     },
-                    () =>
-                        nativeAddResult &&
-                        afterTotal >= beforeTotal + count
+                    () => mutationCompleted
                 );
 
             if (!success)
             {
                 Logger.LogWarning(
                     $"Spawn Item ({itemId} x{count}) did not complete. " +
-                    $"Destination inventory changed {beforeTotal}->{afterTotal}; " +
-                    $"visible stack {beforeVisibleStack}->{afterVisibleStack}.");
+                    $"Native-world handled={worldHandledCount}, " +
+                    $"inventory fallback requested={fallbackRequestedCount}, " +
+                    $"inventory total={beforeInventoryTotal}->{afterInventoryTotal}.");
                 return;
             }
 
             Logger.LogInfo(
-                $"Spawn Item completed through GK2's native ItemCount pipeline: " +
-                $"'{itemId}' materialized={materializedCount} across " +
-                $"{items.Count} item object(s); destination total " +
-                $"{beforeTotal}->{afterTotal}; visible stack " +
-                $"{beforeVisibleStack}->{afterVisibleStack}. " +
-                $"Native stack limit={itemDef.stackCount}.");
+                $"Spawn Item completed through GK2 native routing: " +
+                $"'{itemId}' requested={count}, world handled={worldHandledCount}, " +
+                $"physical drop object(s)={nativeDroppedItems.Count}, " +
+                $"inventory fallback={fallbackRequestedCount}, " +
+                $"size={itemDef.itemSize}, linkedToWgo={itemDef.isLinkedToWgo}.");
         }
 
         private void HealPlayer()
