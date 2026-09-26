@@ -49,6 +49,10 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Known Issues
 
+- **Use Items From Storage** currently supports consumable Use behavior only; Equip, Plant, Fertilize, Destroy, and hotbar actions remain player-inventory only.
+- **Spawn Item** is intended primarily for normal inventory items in v0.1.5; big carryables and world-linked definitions are not yet routed through GK2's native physical drop/carry path.
+- Configurable GK2+ menu hotkey and Continuous Planting remain in development and are not included in v0.1.5.
+
 ---
 
 ## [0.1.0] - 2026-09-25
