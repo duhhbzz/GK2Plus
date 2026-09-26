@@ -11,7 +11,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and, optionally, the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
 - **Character Inventory Access** child setting for Shared Chests, allowing that UI path to be disabled independently while keeping normal chest-window sharing enabled.
 - **Bigger Item Stacks**: scale live native stack limits from 2x through 20x, with a grouped main-menu multiplier control.
-- **Spawn Item** cheat: searchable/paged native item picker, configurable quantity, and native item creation/inventory insertion through GK2's own item pipeline.
+- **Spawn Item** cheat: searchable/paged native item picker, configurable quantity, and native world-drop routing so small items collect normally while large/carryable objects stay in the world.
 
 ### Changed
 
