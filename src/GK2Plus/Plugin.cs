@@ -25,7 +25,10 @@ namespace GK2Plus
             Logger.LogInfo("----------------------------------------");
             Logger.LogInfo($"{ModInfo.Name} v{ModInfo.Version}");
             Logger.LogInfo("Graveyard Keeper Plus");
+            Logger.LogInfo($"Tested game version: v{ModInfo.TestedGameVersion}");
             Logger.LogInfo("----------------------------------------");
+
+            GameCompatibility.LogStatus(Logger);
 
             MasterEnabled = Config.Bind(
                 "General",
