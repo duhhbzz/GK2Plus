@@ -424,12 +424,12 @@ namespace GK2Plus.Framework.UI
                 bodyTemplate,
                 window.transform,
                 "VersionText",
-                $"v{ModInfo.Version}",
+                GameCompatibility.DisplayText,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(18f, -17f),
-                new Vector2(64f, 14f),
+                new Vector2(190f, 14f),
                 8f,
                 "Left"
             );
