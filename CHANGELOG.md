@@ -10,6 +10,10 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Feature-setting rows now use deterministic ordering instead of registration order.
+- Child settings can be grouped directly beneath their parent feature, with tighter spacing between parent/child rows than between separate features.
+- Child settings remain visible but become disabled/greyed while their parent feature is OFF, preserving the configured value for later re-enable.
+
 ### Fixed
 
 ### Compatibility
