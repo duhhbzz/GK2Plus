@@ -6,6 +6,8 @@ GK2+ is a modular quality-of-life and gameplay enhancement suite for **Graveyard
 
 ## v0.1.0 — First Gameplay Release
 
+**Tested with Graveyard Keeper 2 v1.006.** Newer game versions are allowed to load but are treated as unvalidated until tested.
+
 ### Manual Save
 
 Adds a native-style **Save Game** button to the in-game pause menu.
