@@ -252,7 +252,7 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -61f),
+                new Vector2(4f, -61f),
                 new Vector2(146f, 18f),
                 13f,
                 new Color(0.87f, 0.80f, 0.62f, 1f),
@@ -356,7 +356,7 @@ namespace GK2Plus.Framework.UI
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = Vector2.zero;
+            rect.anchoredPosition = new Vector2(-5f, 0f);
             rect.offsetMin = new Vector2(20f, 0f);
             rect.offsetMax = new Vector2(-20f, 0f);
             rect.localScale = Vector3.one;
