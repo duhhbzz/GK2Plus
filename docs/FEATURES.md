@@ -13,6 +13,7 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
+| Inventory | [Shared Chests](#shared-chests) |
 | Cheats | [Functional Cheats](#functional-cheats) |
 | Cheats / Safety | [Cheat & Achievement Integrity](#cheat--achievement-integrity) |
 | Safety | [Save Safety Checkpoints](#save-safety-checkpoints) |
@@ -54,6 +55,93 @@ Last saved: 10 minutes ago (4:26 AM).
 ~~~
 
 The value comes from native save metadata and updates after a successful save.
+
+---
+
+## Shared Chests
+
+**Category:** Inventory  
+**Setting mode:** Main-menu enable/disable; read-only status during gameplay.
+
+Shared Chests makes the eligible storage inventories that Graveyard Keeper 2 already exposes for the **current world zone** usable from both normal chest windows and the character inventory.
+
+### How it works
+
+Vanilla GK2 already supplies those other current-zone storage inventories to the chest-window data, but their remote slots are rendered unavailable. GK2+ enables those existing inventory widgets and keeps the game's own inventory objects, transfer callbacks, stack rules, filters, capacity behavior, and notifications in control.
+
+GK2+ does **not** create a separate shared-storage database or custom shared-chest save format.
+
+### Player behavior
+
+With **Shared Chests ON**:
+
+- open a normal chest and access other eligible storage in the current zone;
+- open the character inventory and browse/transfer items from eligible current-zone storage;
+- move full stacks, partial stacks, or single items through GK2's native inventory paths.
+
+Player-only context actions such as **Use** or **Equip** still require the item to be in the player's carried inventory. Shared Chests does not currently bypass those native restrictions.
+
+With **Shared Chests OFF**, the remote inventories return to their vanilla greyed/read-only behavior.
+
+### Configuration
+
+From the **main menu → Inventory** tab:
+
+~~~text
+Shared Chests    [ ON / OFF ]
+~~~
+
+During active gameplay, the same row is shown as read-only status.
+
+The underlying enable/disable value is a normal BepInEx configuration entry, so advanced users may also manage it through the generated GK2+ `.cfg` file or a compatible mod-manager config editor. External config edits should be treated as next-launch changes.
+
+### Validation completed
+
+Runtime validation covered:
+
+- current-zone remote storage discovery;
+- character-inventory remote storage activation;
+- remote chest selection;
+- remote → opened chest transfers;
+- opened chest → remote transfers;
+- full-stack, partial-stack, and single-item movement;
+- full destination behavior;
+- repeated close/reopen cycles;
+- save/reload persistence;
+- main-menu ON/OFF behavior;
+- read-only in-game status;
+- disabling the feature and returning to vanilla remote-slot behavior;
+- preserving native player-only restrictions for context actions such as Use/Equip.
+
+### Compatibility
+
+Shared Chests patches the chest-window data construction path narrowly and reuses GK2's native transfer behavior.
+
+If another mod should own overlapping chest behavior, disable Shared Chests from the main menu.
+
+### Planned Shared Storage direction
+
+Shared Chests is intentionally narrow for the current release, but the longer-term feature family is expected to evolve toward **Shared Storage** with independent child settings instead of one all-or-nothing "god mode" switch.
+
+Planned shape:
+
+~~~text
+Shared Storage                              [ ON ]
+    Storage Scope                   [ Current Zone ▼ ]
+    Character Inventory Access              [ ON ]
+    Use Items From Storage                  [ OFF ]
+    Craft From Storage                      [ OFF ]
+~~~
+
+The key design rule is that **scope** and **capability** remain separate:
+
+- **Storage Scope** decides whether eligible storage is limited to the current zone or can span the world.
+- **Character Inventory Access** controls whether remote storage appears in the character inventory.
+- **Use Items From Storage** would allow selected player-only item actions directly from eligible storage.
+- **Craft From Storage** would allow workstations to source ingredients from eligible storage while preserving the workstation's own crafting rules.
+
+These are planned capabilities, not part of the current release, and each should be investigated/tested independently before implementation.
+
 
 ---
 

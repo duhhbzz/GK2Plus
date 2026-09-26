@@ -4,6 +4,7 @@ using HarmonyLib;
 using GK2Plus.Core;
 using GK2Plus.Features.Cheats;
 using GK2Plus.Features.General;
+using GK2Plus.Features.Inventory;
 using GK2Plus.Framework;
 using GK2Plus.Framework.Diagnostics;
 using GK2Plus.Framework.UI;
@@ -95,6 +96,13 @@ namespace GK2Plus
             registry.Register(
                 new BasicCheatsFeature(
                     _services.Saves,
+                    _services.UI)
+            );
+
+
+            registry.Register(
+                new SharedChestsFeature(
+                    Config,
                     _services.UI)
             );
         }

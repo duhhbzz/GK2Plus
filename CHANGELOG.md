@@ -8,6 +8,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
 ### Changed
 
 - Feature-setting rows now use deterministic ordering instead of registration order.
@@ -19,6 +20,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Compatibility
 
+- Shared Chests creates no custom shared-storage save data and can be disabled independently when another mod should own overlapping storage behavior.
 ### Known Issues
 
 ---
