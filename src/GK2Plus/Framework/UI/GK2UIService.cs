@@ -18,6 +18,7 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<string, System.Func<string>> _tabNotices =
             new Dictionary<string, System.Func<string>>();
 
+        private GK2SpawnItemControl _spawnItemControl;
         private ModMenuController _modMenuController;
 
         public GK2UIService(ManualLogSource logger)
@@ -43,6 +44,12 @@ namespace GK2Plus.Framework.UI
                 _modMenuController.RegisterTabNotice(
                     notice.Key,
                     notice.Value);
+            }
+
+            if (_spawnItemControl != null)
+            {
+                _modMenuController.RegisterSpawnItemControl(
+                    _spawnItemControl);
             }
 
             Logger.LogInfo(
@@ -84,6 +91,19 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterSpawnItemControl(
+            GK2SpawnItemControl control)
+        {
+            _spawnItemControl = control;
+
+            if (_modMenuController != null &&
+                control != null)
+            {
+                _modMenuController.RegisterSpawnItemControl(
+                    control);
+            }
+        }
+
         public void RefreshMenu()
         {
             _modMenuController?.RefreshActiveTab();
@@ -109,6 +129,7 @@ namespace GK2Plus.Framework.UI
             _modMenuController = null;
             _menuActions.Clear();
             _tabNotices.Clear();
+            _spawnItemControl = null;
 
             base.Shutdown();
         }
