@@ -77,6 +77,10 @@ try {
     Write-Host "  $thunderstoreZipPath"
     Write-Host ''
     Write-Host 'Publishing the release will trigger GitHub Actions for Nexus Mods and Thunderstore.'
+    Write-Host ''
+    Write-Warning 'MAINTAINER CHECK: verify/update the live Nexus Mods main-page description.'
+    Write-Host '  Source copy: docs/NEXUS_PAGE.md'
+    Write-Host '  Automated file upload metadata is separate from the full public mod-page description.'
 }
 finally {
     Pop-Location

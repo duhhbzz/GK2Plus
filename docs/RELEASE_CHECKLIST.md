@@ -1,6 +1,70 @@
 # GK2+ Release Checklist
 
+## Feature PR Approval Gate
+
+Use this before approving every player-facing feature PR.
+
+### 1. Does it work?
+
+- [ ] Branch is current with `main`.
+- [ ] PR contains only the intended feature/fix and required support changes.
+- [ ] Project builds successfully.
+- [ ] Game launches with the branch DLL and no new unexpected errors.
+- [ ] Primary feature behavior is tested in-game.
+- [ ] Relevant edge cases are tested.
+- [ ] Save/reload behavior is tested when persistence is involved.
+- [ ] Enable/disable behavior is tested when applicable.
+- [ ] Main-menu controls and in-game status are tested when applicable.
+- [ ] Compatibility/overlap behavior is tested when applicable.
+
+### 2. Is feature documentation current?
+
+- [ ] `docs/FEATURES.md` documents the player-facing behavior.
+- [ ] Feature-specific docs are current.
+- [ ] README navigation/high-level copy is still accurate.
+- [ ] Screenshots are captured when useful for visible UI changes.
+
+### 3. Maintainer-owned integration bookkeeping
+
+Before merge, the maintainer:
+
+- [ ] reviews/updates `CHANGELOG.md` under `[Unreleased]`;
+- [ ] decides whether any release/public metadata needs a corresponding update;
+- [ ] confirms no contributor-owned version/release metadata drift was introduced;
+- [ ] performs final PR approval.
+
+Only the maintainer merges official feature PRs.
+
+---
+
 ## Every Release — Core Quality Gates
+
+### Branch / Pull Request Hygiene
+
+Before release preparation begins, inventory every open PR and active development branch and classify it as:
+
+- **This release** — must be merged to `main`, explicitly removed from the release, or blocked with a documented reason before publishing.
+- **Next release / future work** — may remain open, but its target milestone/intent must be clear and it must not be accidentally included in the current release.
+- **Obsolete / superseded** — close the PR and delete the branch once any needed commits have been preserved elsewhere.
+
+Checklist:
+
+- [ ] Review all open pull requests.
+- [ ] Confirm every PR intended for this release is already merged to `main` or is explicitly ready for final maintainer approval/merge.
+- [ ] Confirm no current-release feature exists only on an unmerged branch.
+- [ ] Confirm future-release PRs/branches are intentionally deferred and clearly identifiable as future work.
+- [ ] Close superseded/abandoned PRs after preserving any commits that are still needed.
+- [ ] Delete merged/superseded remote branches that are no longer needed.
+- [ ] Remove temporary integration/test branches after their work has landed in the canonical branch.
+- [ ] Confirm no duplicate branches contain divergent copies of the same feature that could cause future confusion.
+- [ ] Re-check the branch list after cleanup and confirm only `main` plus intentional active/future work remains.
+- [ ] Do not delete a branch whose commits are not safely merged, cherry-picked, tagged, or otherwise preserved.
+
+After the release is published:
+
+- [ ] Delete the completed release-preparation branch after merge.
+- [ ] Close any release-specific tracking PRs/issues that are finished.
+- [ ] Confirm branches intentionally kept for the next release are still current enough to rebase/sync cleanly later.
 
 ### Repository / Packaging
 
@@ -13,6 +77,9 @@
 - [ ] Confirm only intended GK2+ files are included.
 - [ ] Record the release ZIP SHA256 printed by the packaging script.
 - [ ] Use the same version/build artifact for GitHub Releases and Nexus Mods.
+- [ ] Confirm `docs/FEATURES.md` reflects the final released feature set.
+- [ ] Confirm the maintainer has finalized `CHANGELOG.md`, release notes, and public release metadata.
+- [ ] Confirm any public page that cannot be fully automated has an explicit manual update step.
 
 ### Launch / UI Lifecycle
 
