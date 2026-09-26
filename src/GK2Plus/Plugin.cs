@@ -32,7 +32,10 @@ namespace GK2Plus
                 "General",
                 "Enabled",
                 true,
-                "Master switch for GK2+ gameplay features."
+                "Master switch for GK2+ gameplay features. " +
+                "For normal use, configure GK2+ from its in-game menu. " +
+                "Advanced users may edit com.duhhbzz.gk2plus.cfg directly or through r2modman/Thunderstore Mod Manager; " +
+                "external edits apply on the next game launch."
             );
 
             _harmony = new Harmony(ModInfo.Guid);
