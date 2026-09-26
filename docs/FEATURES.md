@@ -214,7 +214,7 @@ Cheat actions use the integrity and save-safety systems described below.
 **Category:** Cheats  
 **Setting mode:** Item/quantity selection in the GK2+ Cheats menu; cheat execution requires a loaded save.
 
-Spawn Item creates a selected native GK2 item and adds it to the player's inventory through GK2's normal item materialization and inventory-add paths.
+Spawn Item materializes a selected native GK2 item and routes it through GK2's normal world-drop system. Small drops can collect into inventory naturally, while large/carryable or world-linked items remain physical world objects and use the game's normal interaction behavior.
 
 ### Player behavior
 
@@ -230,11 +230,11 @@ The selected item id and quantity are normal BepInEx configuration values. Quant
 
 Spawn Item is a cheat action. It uses the same first-cheat confirmation, save checkpoint/taint flow, and achievement-integrity protection as the other GK2+ cheats.
 
-GK2+ asks GK2 to materialize the requested item through `ItemCount.CreateItems()` and add it through the player's native inventory API rather than constructing a separate inventory representation.
+GK2+ asks GK2 to materialize the requested item through `ItemCount.CreateItems()` and then passes it to the native `DropSystem`. GK2 itself decides whether the drop is auto-collected, carried overhead, or treated as a linked world object. A direct inventory fallback is allowed only for small, non-linked items that GK2 refuses to drop normally; large or linked items are never forced into inventory.
 
 ### Validation completed
 
-Runtime validation confirmed item selection, quantity control, native item creation, and insertion into the player's inventory.
+Previous runtime validation confirmed item selection, quantity control, native item creation, and inventory insertion. Native world-drop routing is implemented and awaiting in-game validation across small items, big carryables, bodies/zombies, and unsupported/internal definitions.
 
 ---
 
