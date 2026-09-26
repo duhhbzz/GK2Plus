@@ -6,6 +6,8 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-26
+
 ### Added
 
 - **Shared Storage**: configurable Current Zone or Global access to eligible storage from normal chest windows and the character inventory while retaining GK2's native inventory behavior.
