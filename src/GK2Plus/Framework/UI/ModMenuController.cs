@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using GK2Plus.Core;
+using LazyBearTechnology;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,9 +34,23 @@ namespace GK2Plus.Framework.UI
         private GameObject _githubButton;
         private GameObject _nexusButton;
         private GameObject _bugButton;
+        private GameObject _hotkeyButton;
         private GameObject _contentRoot;
         private GameObject _menuButtonLabelTemplate;
         private Sprite _menuButtonSprite;
+        private GameObject _headerHotkeyHint;
+        private GameObject _captureOverlay;
+        private GameObject _captureText;
+        private GameObject _capturePrimaryButton;
+        private GameObject _captureSecondaryButton;
+        private GameObject _captureCancelButton;
+
+        private ConfigEntry<KeyCode> _menuHotkey;
+        private KeyCode _displayedHotkey = KeyCode.None;
+        private bool _capturingHotkey;
+        private int _captureReadyFrame;
+        private KeyCode _pendingHotkey = KeyCode.None;
+        private KeyBinding _pendingNativeConflict;
 
         private readonly Dictionary<string, GameObject> _tabButtons =
             new Dictionary<string, GameObject>();
@@ -51,7 +67,9 @@ namespace GK2Plus.Framework.UI
         private string _activeTab = "General";
         private bool _built;
 
-        public static ModMenuController Create(ManualLogSource logger)
+        public static ModMenuController Create(
+            ManualLogSource logger,
+            ConfigEntry<KeyCode> menuHotkey)
         {
             GameObject host = GameObject.Find("GK2PlusModMenuController");
 
@@ -60,6 +78,7 @@ namespace GK2Plus.Framework.UI
                 ModMenuController existing = host.GetComponent<ModMenuController>();
                 if (existing != null)
                 {
+                    existing._menuHotkey = menuHotkey;
                     return existing;
                 }
             }
@@ -69,6 +88,7 @@ namespace GK2Plus.Framework.UI
 
             ModMenuController controller = host.AddComponent<ModMenuController>();
             controller._logger = logger;
+            controller._menuHotkey = menuHotkey;
             return controller;
         }
 
@@ -153,7 +173,7 @@ namespace GK2Plus.Framework.UI
                         _built = true;
                         _logger?.LogInfo(
                             "GK2+ mod menu shell ready under persistent GUIElements.Root. " +
-                            "Press F2 to toggle.");
+                            $"Press {CurrentHotkey} to toggle.");
                     }
                     catch (Exception ex)
                     {
@@ -177,18 +197,38 @@ namespace GK2Plus.Framework.UI
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.F2))
+            if (_displayedHotkey != CurrentHotkey)
             {
-                _logger?.LogInfo("GK2+ F2 detected; toggling mod menu.");
+                RefreshHotkeyLabels();
+            }
+
+            if (_capturingHotkey)
+            {
+                HandleHotkeyCapture();
+                return;
+            }
+
+            KeyCode hotkey = CurrentHotkey;
+            if (hotkey != KeyCode.None &&
+                Input.GetKeyDown(hotkey))
+            {
+                _logger?.LogInfo(
+                    $"GK2+ {hotkey} detected; toggling mod menu.");
                 ToggleMenu();
                 return;
             }
 
-            if (_menuRoot.activeSelf && Input.GetKeyDown(KeyCode.Escape))
+            if (_menuRoot.activeSelf &&
+                Input.GetKeyDown(KeyCode.Escape))
             {
                 HideMenu();
             }
         }
+
+        private KeyCode CurrentHotkey =>
+            _menuHotkey != null
+                ? _menuHotkey.Value
+                : KeyCode.F2;
 
         private bool TryGetReadyContext(
             out Component mainMenu,
@@ -434,16 +474,16 @@ namespace GK2Plus.Framework.UI
                 "Left"
             );
 
-            CreateBodyText(
+            _headerHotkeyHint = CreateBodyText(
                 bodyTemplate,
                 window.transform,
-                "HeaderF2Hint",
-                "F2 Toggle",
+                "HeaderHotkeyHint",
+                $"{CurrentHotkey} Toggle",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(-94f, -17f),
-                new Vector2(58f, 14f),
+                new Vector2(70f, 14f),
                 8f,
                 "Center"
             );
@@ -606,6 +646,25 @@ namespace GK2Plus.Framework.UI
             );
             _bugButton.GetComponent<Button>().onClick.AddListener(
                 () => Application.OpenURL(ProjectLinks.BugReportUrl));
+
+            _hotkeyButton = CreateActionButton(
+                buttonLabelTemplate,
+                content.transform,
+                redButtonSprite,
+                "Change Hotkey",
+                new Vector2(0f, -112f),
+                new Vector2(110f, 20f)
+            );
+            _hotkeyButton.GetComponent<Button>().onClick.AddListener(
+                BeginHotkeyCapture);
+
+            BuildHotkeyCaptureOverlay(
+                window.transform,
+                bodyTemplate,
+                buttonLabelTemplate,
+                frameSprite,
+                bgSprite,
+                redButtonSprite);
 
             BuildRegisteredActionButtons();
 
@@ -957,7 +1016,9 @@ Button close = closeButton.GetComponent<Button>();
             if (_githubButton != null) _githubButton.SetActive(more);
             if (_nexusButton != null) _nexusButton.SetActive(more);
             if (_bugButton != null) _bugButton.SetActive(more);
+            if (_hotkeyButton != null) _hotkeyButton.SetActive(more);
 
+            RefreshHotkeyLabels();
             RefreshRegisteredActionButtons();
         }
 
@@ -981,13 +1042,19 @@ Button close = closeButton.GetComponent<Button>();
                 "Cheats",
                 StringComparison.OrdinalIgnoreCase);
 
-            rect.anchoredPosition = cheats
-                ? new Vector2(0f, -40f)
-                : new Vector2(0f, -40f);
+            bool more = string.Equals(
+                tab,
+                "More",
+                StringComparison.OrdinalIgnoreCase);
+
+            rect.anchoredPosition =
+                new Vector2(0f, -40f);
 
             rect.sizeDelta = cheats
                 ? new Vector2(350f, 42f)
-                : new Vector2(350f, 102f);
+                : more
+                    ? new Vector2(350f, 64f)
+                    : new Vector2(350f, 102f);
         }
 
         private string GetPlaceholderText(string tab)
@@ -1044,13 +1111,10 @@ Button close = closeButton.GetComponent<Button>();
                         "Health and stamina refills use native player systems.";
                 case "More":
                     return
-                        "GK2+ Project Links\n\n" +
-                        "GitHub: source, development progress, and releases.\n" +
-                        (ProjectLinks.HasNexusUrl
-                            ? "Nexus Mods: public mod page and downloads.\n"
-                            : "Nexus Mods: public mod page coming soon.\n") +
-                        "Report Bug: opens a new GitHub issue for GK2+.\n\n" +
-                        "Quest/map tools, compatibility, diagnostics, and About will live here.";
+                        $"Menu Hotkey: {CurrentHotkey}\n" +
+                        "Use Change Hotkey to press a new key. Conflicts with native GK2 controls are detected.\n\n" +
+                        "Project Links\n" +
+                        "GitHub: source and releases.  Report Bug: opens a GitHub issue.";
                 default:
                     return tab;
             }
@@ -1070,7 +1134,8 @@ Button close = closeButton.GetComponent<Button>();
         {
             if (!_built || _menuRoot == null)
             {
-                _logger?.LogWarning("GK2+ F2 toggle ignored because the menu shell is not ready.");
+                _logger?.LogWarning(
+                    "GK2+ menu toggle ignored because the menu shell is not ready.");
                 return;
             }
 
@@ -1150,10 +1215,473 @@ Button close = closeButton.GetComponent<Button>();
             _githubButton = null;
             _nexusButton = null;
             _bugButton = null;
+            _hotkeyButton = null;
             _contentRoot = null;
             _menuButtonLabelTemplate = null;
             _menuButtonSprite = null;
+            _headerHotkeyHint = null;
+            _captureOverlay = null;
+            _captureText = null;
+            _capturePrimaryButton = null;
+            _captureSecondaryButton = null;
+            _captureCancelButton = null;
+            _capturingHotkey = false;
+            _pendingHotkey = KeyCode.None;
+            _pendingNativeConflict = null;
             _built = false;
+        }
+
+        private void BuildHotkeyCaptureOverlay(
+            Transform window,
+            GameObject bodyTemplate,
+            GameObject buttonLabelTemplate,
+            Sprite frameSprite,
+            Sprite backgroundSprite,
+            Sprite buttonSprite)
+        {
+            _captureOverlay = new GameObject(
+                "HotkeyCaptureOverlay",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            _captureOverlay.transform.SetParent(window, false);
+            _captureOverlay.transform.SetAsLastSibling();
+
+            RectTransform overlayRect =
+                _captureOverlay.GetComponent<RectTransform>();
+            overlayRect.anchorMin = Vector2.zero;
+            overlayRect.anchorMax = Vector2.one;
+            overlayRect.offsetMin = Vector2.zero;
+            overlayRect.offsetMax = Vector2.zero;
+
+            Image overlayImage =
+                _captureOverlay.GetComponent<Image>();
+            overlayImage.color =
+                new Color(0.02f, 0.01f, 0.02f, 0.78f);
+            overlayImage.raycastTarget = true;
+
+            GameObject panel = new GameObject(
+                "CapturePanel",
+                typeof(RectTransform));
+            panel.transform.SetParent(
+                _captureOverlay.transform,
+                false);
+
+            RectTransform panelRect =
+                panel.GetComponent<RectTransform>();
+            panelRect.anchorMin =
+                new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax =
+                new Vector2(0.5f, 0.5f);
+            panelRect.pivot =
+                new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta =
+                new Vector2(330f, 150f);
+
+            GameObject backing = CreateImage(
+                panel.transform,
+                "Backing",
+                null,
+                Image.Type.Simple,
+                Vector2.zero,
+                Vector2.one,
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                Vector2.zero);
+            backing.GetComponent<Image>().color =
+                new Color(0.24f, 0.05f, 0.13f, 1f);
+
+            GameObject background = CreateStretchImage(
+                panel.transform,
+                "Background",
+                backgroundSprite,
+                Image.Type.Sliced,
+                new Vector2(-2f, -2f),
+                new Vector2(2f, 2f));
+            background.GetComponent<Image>().color =
+                new Color(1f, 1f, 1f, 0.98f);
+
+            CreateStretchImage(
+                panel.transform,
+                "Frame",
+                frameSprite,
+                Image.Type.Sliced,
+                Vector2.zero,
+                Vector2.zero);
+
+            CreateNativeTitleText(
+                buttonLabelTemplate,
+                panel.transform,
+                "Set Menu Hotkey",
+                new Vector2(0f, -18f),
+                new Vector2(220f, 20f),
+                0.66f);
+
+            _captureText = CreateBodyText(
+                bodyTemplate,
+                panel.transform,
+                "CaptureText",
+                "",
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -48f),
+                new Vector2(285f, 54f),
+                9f,
+                "Center");
+
+            _capturePrimaryButton = CreateActionButton(
+                buttonLabelTemplate,
+                panel.transform,
+                buttonSprite,
+                "Use Anyway",
+                new Vector2(-82f, -118f),
+                new Vector2(92f, 20f));
+            _capturePrimaryButton.GetComponent<Button>()
+                .onClick.AddListener(
+                    () => ApplyPendingHotkey(false));
+
+            _captureSecondaryButton = CreateActionButton(
+                buttonLabelTemplate,
+                panel.transform,
+                buttonSprite,
+                "Move to GK2+",
+                new Vector2(24f, -118f),
+                new Vector2(104f, 20f));
+            _captureSecondaryButton.GetComponent<Button>()
+                .onClick.AddListener(
+                    () => ApplyPendingHotkey(true));
+
+            _captureCancelButton = CreateActionButton(
+                buttonLabelTemplate,
+                panel.transform,
+                buttonSprite,
+                "Cancel",
+                new Vector2(116f, -118f),
+                new Vector2(70f, 20f));
+            _captureCancelButton.GetComponent<Button>()
+                .onClick.AddListener(OnCaptureCancel);
+
+            _captureOverlay.SetActive(false);
+        }
+
+        private void BeginHotkeyCapture()
+        {
+            if (_captureOverlay == null)
+            {
+                return;
+            }
+
+            _pendingHotkey = KeyCode.None;
+            _pendingNativeConflict = null;
+            _capturingHotkey = true;
+            _captureReadyFrame = Time.frameCount + 2;
+
+            SetText(
+                _captureText,
+                "Press the key you want to use to open GK2+.\n" +
+                $"Current hotkey: {CurrentHotkey}\n\n" +
+                "ESC - Cancel");
+
+            _capturePrimaryButton.SetActive(false);
+            _captureSecondaryButton.SetActive(false);
+            _captureCancelButton.SetActive(true);
+            SetButtonLabel(_captureCancelButton, "Cancel");
+
+            _captureOverlay.SetActive(true);
+            _captureOverlay.transform.SetAsLastSibling();
+
+            _logger?.LogInfo(
+                "GK2+ menu hotkey capture started.");
+        }
+
+        private void HandleHotkeyCapture()
+        {
+            if (Time.frameCount < _captureReadyFrame)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                CancelHotkeyCapture();
+                return;
+            }
+
+            foreach (KeyCode key in
+                Enum.GetValues(typeof(KeyCode)))
+            {
+                if (!IsBindableHotkey(key) ||
+                    !Input.GetKeyDown(key))
+                {
+                    continue;
+                }
+
+                KeyBinding conflict =
+                    FindNativeBindingConflict(key);
+
+                if (conflict == null)
+                {
+                    SaveMenuHotkey(key);
+                    CloseHotkeyCapture();
+                    return;
+                }
+
+                _pendingHotkey = key;
+                _pendingNativeConflict = conflict;
+                _capturingHotkey = false;
+
+                string actionName =
+                    GetNativeBindingName(conflict);
+
+                SetText(
+                    _captureText,
+                    $"{key} is already bound to {actionName}.\n\n" +
+                    "Use Anyway keeps both bindings.\n" +
+                    "Move to GK2+ unbinds it from the game's Controls menu.");
+
+                _capturePrimaryButton.SetActive(true);
+                _captureSecondaryButton.SetActive(true);
+                _captureCancelButton.SetActive(true);
+                SetButtonLabel(
+                    _captureCancelButton,
+                    "Try Another");
+
+                _logger?.LogInfo(
+                    $"GK2+ hotkey candidate {key} conflicts with native action '{actionName}'.");
+                return;
+            }
+        }
+
+        private static bool IsBindableHotkey(KeyCode key)
+        {
+            if (key == KeyCode.None ||
+                key == KeyCode.Escape ||
+                key == KeyCode.Mouse0)
+            {
+                return false;
+            }
+
+            switch (key)
+            {
+                case KeyCode.LeftWindows:
+                case KeyCode.RightWindows:
+                case KeyCode.LeftMeta:
+                case KeyCode.RightMeta:
+                case KeyCode.Menu:
+                case KeyCode.Print:
+                case KeyCode.Break:
+                case KeyCode.Pause:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        private static KeyBinding FindNativeBindingConflict(
+            KeyCode key)
+        {
+            if (!LazyInput.IsInitialized ||
+                LazyInput.GameBindings == null ||
+                LazyInput.GameBindings.keyBindings == null)
+            {
+                return null;
+            }
+
+            return LazyInput.GameBindings.keyBindings
+                .FirstOrDefault(binding =>
+                    binding != null &&
+                    binding.keyCode == key);
+        }
+
+        private static string GetNativeBindingName(
+            KeyBinding binding)
+        {
+            if (binding == null)
+            {
+                return "another game action";
+            }
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(
+                    binding.localeId))
+                {
+                    string localized =
+                        LLBase.L(binding.localeId);
+
+                    if (!string.IsNullOrWhiteSpace(
+                        localized))
+                    {
+                        return localized;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return
+                $"game action #{binding.gameKey.value}";
+        }
+
+        private void ApplyPendingHotkey(
+            bool moveNativeBinding)
+        {
+            if (_pendingHotkey == KeyCode.None)
+            {
+                return;
+            }
+
+            KeyCode key = _pendingHotkey;
+            KeyBinding conflict =
+                _pendingNativeConflict;
+
+            if (moveNativeBinding &&
+                conflict != null)
+            {
+                conflict.keyCode = KeyCode.None;
+
+                try
+                {
+                    GameSettings.Instance
+                        .SaveCurrentGameBindings();
+                    ControllerIconLibrary
+                        .UpdateStandaloneIcons();
+
+                    _logger?.LogInfo(
+                        $"GK2+ unbound {key} from native action " +
+                        $"'{GetNativeBindingName(conflict)}'.");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(
+                        "GK2+ could not save the native control change: " +
+                        ex);
+                    return;
+                }
+            }
+
+            SaveMenuHotkey(key);
+            CloseHotkeyCapture();
+        }
+
+        private void OnCaptureCancel()
+        {
+            if (_pendingHotkey != KeyCode.None)
+            {
+                BeginHotkeyCapture();
+                return;
+            }
+
+            CancelHotkeyCapture();
+        }
+
+        private void CancelHotkeyCapture()
+        {
+            _logger?.LogInfo(
+                "GK2+ menu hotkey capture cancelled.");
+            CloseHotkeyCapture();
+        }
+
+        private void CloseHotkeyCapture()
+        {
+            _capturingHotkey = false;
+            _pendingHotkey = KeyCode.None;
+            _pendingNativeConflict = null;
+
+            if (_captureOverlay != null)
+            {
+                _captureOverlay.SetActive(false);
+            }
+        }
+
+        private void SaveMenuHotkey(KeyCode key)
+        {
+            if (_menuHotkey == null)
+            {
+                _logger?.LogWarning(
+                    "GK2+ menu hotkey config is unavailable.");
+                return;
+            }
+
+            KeyCode previous = _menuHotkey.Value;
+            _menuHotkey.Value = key;
+
+            RefreshHotkeyLabels();
+            SetActiveTab(_activeTab);
+
+            _logger?.LogInfo(
+                $"GK2+ menu hotkey changed: {previous} -> {key}.");
+        }
+
+        private void RefreshHotkeyLabels()
+        {
+            _displayedHotkey = CurrentHotkey;
+
+            if (_headerHotkeyHint != null)
+            {
+                SetText(
+                    _headerHotkeyHint,
+                    $"{CurrentHotkey} Toggle");
+            }
+
+            if (string.Equals(
+                _activeTab,
+                "More",
+                StringComparison.OrdinalIgnoreCase) &&
+                _pageText != null)
+            {
+                SetText(
+                    _pageText,
+                    GetPlaceholderText("More"));
+            }
+
+            GameObject badge =
+                GameObject.Find("GK2PlusMainMenuBadge");
+
+            Transform badgeHotkey =
+                badge != null
+                    ? badge.transform.Find("HotkeyText")
+                    : null;
+
+            if (badgeHotkey != null)
+            {
+                SetText(
+                    badgeHotkey.gameObject,
+                    $"Press {CurrentHotkey} for Mod Menu");
+            }
+        }
+
+        private static void SetButtonLabel(
+            GameObject button,
+            string text)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Transform label =
+                button.transform.Find("Label");
+
+            if (label == null)
+            {
+                return;
+            }
+
+            Component tmp = FindTmp(
+                label.gameObject);
+
+            if (tmp != null)
+            {
+                SetProperty(
+                    tmp,
+                    "text",
+                    text);
+            }
         }
 
         private GameObject CreateNativeTitleText(

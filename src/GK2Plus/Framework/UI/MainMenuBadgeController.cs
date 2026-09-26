@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Linq;
 using System.Reflection;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using GK2Plus.Core;
 using UnityEngine;
@@ -14,7 +15,7 @@ namespace GK2Plus.Framework.UI
         private const string BadgeObjectName = "GK2PlusMainMenuBadge";
         private static bool _created;
 
-        public static IEnumerator Run(ManualLogSource logger)
+        public static IEnumerator Run(ManualLogSource logger, ConfigEntry<KeyCode> menuHotkey)
         {
             if (_created)
             {
@@ -46,7 +47,7 @@ namespace GK2Plus.Framework.UI
 
             try
             {
-                CreateBadge(mainMenu.transform, logger);
+                CreateBadge(mainMenu.transform, logger, menuHotkey);
                 _created = true;
                 logger.LogInfo("GK2+ main-menu badge created.");
             }
@@ -75,7 +76,7 @@ namespace GK2Plus.Framework.UI
             return null;
         }
 
-        private static void CreateBadge(Transform mainMenuRoot, ManualLogSource logger)
+        private static void CreateBadge(Transform mainMenuRoot, ManualLogSource logger, ConfigEntry<KeyCode> menuHotkey)
         {
             Transform existing = mainMenuRoot.Find(BadgeObjectName);
 
@@ -167,7 +168,7 @@ namespace GK2Plus.Framework.UI
                 bodyTemplate,
                 badge.transform,
                 "HotkeyText",
-                "Press F2 for Mod Menu",
+                $"Press {menuHotkey.Value} for Mod Menu",
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),

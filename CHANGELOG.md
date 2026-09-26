@@ -8,7 +8,13 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Configurable GK2+ menu hotkey with F2 as the default.
+- In-game **Change Hotkey** control on the More tab with live input capture.
+- Native GK2 keyboard-binding conflict detection with options to keep both bindings or move the key to GK2+ and unbind the vanilla action.
+
 ### Changed
+
+- The GK2+ header and main-menu badge now display the configured menu hotkey dynamically.
 
 ### Fixed
 

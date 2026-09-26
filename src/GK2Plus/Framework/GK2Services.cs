@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using GK2Plus.Framework.Crafting;
 using GK2Plus.Framework.Events;
@@ -11,6 +12,7 @@ using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
 using GK2Plus.Framework.World;
 using GK2Plus.Framework.Zombies;
+using UnityEngine;
 
 namespace GK2Plus.Framework
 {
@@ -25,7 +27,7 @@ namespace GK2Plus.Framework
         private readonly ManualLogSource _logger;
         private readonly List<IGK2Service> _services;
 
-        public GK2Services(ManualLogSource logger)
+        public GK2Services(ManualLogSource logger, ConfigEntry<KeyCode> menuHotkey)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -38,7 +40,7 @@ namespace GK2Plus.Framework
             Zombies = new GK2ZombieService(logger);
             Quests = new GK2QuestService(logger);
             Localization = new GK2LocalizationService(logger);
-            UI = new GK2UIService(logger);
+            UI = new GK2UIService(logger, menuHotkey);
 
             _services = new List<IGK2Service>
             {

@@ -7,6 +7,7 @@ using GK2Plus.Features.General;
 using GK2Plus.Framework;
 using GK2Plus.Framework.Diagnostics;
 using GK2Plus.Framework.UI;
+using UnityEngine;
 
 namespace GK2Plus
 {
@@ -19,6 +20,7 @@ namespace GK2Plus
         private GK2Services _services;
 
         internal static ConfigEntry<bool> MasterEnabled { get; private set; }
+        internal static ConfigEntry<KeyCode> MenuHotkey { get; private set; }
 
         private void Awake()
         {
@@ -34,6 +36,13 @@ namespace GK2Plus
                 "Master switch for GK2+ gameplay features."
             );
 
+            MenuHotkey = Config.Bind(
+                "UI",
+                "MenuHotkey",
+                KeyCode.F2,
+                "Key used to open or close the GK2+ mod menu. This can also be changed in-game from the More tab."
+            );
+
             _harmony = new Harmony(ModInfo.Guid);
 
             _compatibilityManager =
@@ -42,14 +51,14 @@ namespace GK2Plus
             _compatibilityManager.Scan();
 
             _services =
-                new GK2Services(Logger);
+                new GK2Services(Logger, MenuHotkey);
 
             _services.Initialize();
 
             FrameworkDiagnostics.LogReady(Logger);
 
             // The UI framework service owns the persistent GK2+ menu lifecycle.
-            StartCoroutine(MainMenuBadgeController.Run(Logger));
+            StartCoroutine(MainMenuBadgeController.Run(Logger, MenuHotkey));
 
             _featureRegistry =
                 new FeatureRegistry();
