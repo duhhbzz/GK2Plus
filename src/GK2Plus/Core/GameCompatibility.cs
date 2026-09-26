@@ -29,6 +29,11 @@ namespace GK2Plus.Core
                 ? $"v{ModInfo.Version} | GK2 {CurrentGameVersion} [tested]"
                 : $"v{ModInfo.Version} | GK2 {CurrentGameVersion} [untested]";
 
+        internal static string BadgeText =>
+            IsTestedVersion
+                ? $"GK2 {CurrentGameVersion} [Tested]"
+                : $"GK2 {CurrentGameVersion} [Untested]";
+
         internal static void LogStatus(ManualLogSource logger)
         {
             if (IsTestedVersion)
