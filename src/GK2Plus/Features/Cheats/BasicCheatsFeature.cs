@@ -508,7 +508,7 @@ namespace GK2Plus.Features.Cheats
                 playerInventory.Data.GetTotalCountInInventory(itemId);
 
             int beforeVisibleStack =
-                playerInventory.Data.GetItemById(itemId)?.Count ?? 0;
+                playerInventory.GetItemById(itemId)?.Count ?? 0;
 
             bool sameInventoryReference =
                 ReferenceEquals(
@@ -539,7 +539,7 @@ namespace GK2Plus.Features.Cheats
                             playerInventory.Data.GetTotalCountInInventory(itemId);
 
                         afterVisibleStack =
-                            playerInventory.Data.GetItemById(itemId)?.Count ?? 0;
+                            playerInventory.GetItemById(itemId)?.Count ?? 0;
 
                         Logger.LogInfo(
                             $"Spawn Item diagnostic after add: item='{itemId}', " +
