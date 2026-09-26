@@ -28,13 +28,21 @@ namespace GK2Plus.Framework.UI
         private GameObject _menuRoot;
         private GameObject _pageTitle;
         private GameObject _pageText;
+        private GameObject _featureSettingsNote;
 
         private GameObject _githubButton;
         private GameObject _nexusButton;
         private GameObject _bugButton;
         private GameObject _contentRoot;
+        private GameObject _bodyTextTemplate;
         private GameObject _menuButtonLabelTemplate;
         private Sprite _menuButtonSprite;
+
+        private readonly List<GK2FeatureToggleControl> _featureToggleControls =
+            new List<GK2FeatureToggleControl>();
+
+        private readonly Dictionary<GK2FeatureToggleControl, GameObject> _featureToggleRows =
+            new Dictionary<GK2FeatureToggleControl, GameObject>();
 
         private GK2SpawnItemControl _spawnItemControl;
         private GameObject _spawnItemRow;
@@ -111,6 +119,39 @@ namespace GK2Plus.Framework.UI
                 _menuButtonSprite != null)
             {
                 BuildRegisteredActionButtons();
+                SetActiveTab(_activeTab);
+            }
+        }
+
+        public void RegisterFeatureToggleControl(
+            GK2FeatureToggleControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            GK2FeatureToggleControl existing =
+                _featureToggleControls.FirstOrDefault(candidate =>
+                    string.Equals(
+                        candidate.Id,
+                        control.Id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                _featureToggleControls.Remove(existing);
+            }
+
+            _featureToggleControls.Add(control);
+
+            if (_built &&
+                _contentRoot != null &&
+                _bodyTextTemplate != null &&
+                _menuButtonLabelTemplate != null &&
+                _menuButtonSprite != null)
+            {
+                BuildFeatureToggleRows();
                 SetActiveTab(_activeTab);
             }
         }
@@ -582,6 +623,7 @@ namespace GK2Plus.Framework.UI
             contentBg.raycastTarget = false;
 
             _contentRoot = content;
+            _bodyTextTemplate = bodyTemplate;
             _menuButtonLabelTemplate = buttonLabelTemplate;
             _menuButtonSprite = redButtonSprite;
 
@@ -613,6 +655,21 @@ namespace GK2Plus.Framework.UI
             Component pageTmp = FindTmp(_pageText);
             SetProperty(pageTmp, "characterSpacing", 2.45f);
             SetProperty(pageTmp, "wordSpacing", 1.25f);
+
+            _featureSettingsNote = CreateBodyText(
+                bodyTemplate,
+                content.transform,
+                "FeatureSettingsNote",
+                "Return to the main menu to enable or disable features safely.",
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -157f),
+                new Vector2(340f, 12f),
+                7f,
+                "Center"
+            );
+            _featureSettingsNote.SetActive(false);
 
             _githubButton = CreateActionButton(
                 buttonLabelTemplate,
@@ -654,6 +711,7 @@ namespace GK2Plus.Framework.UI
                 () => Application.OpenURL(ProjectLinks.BugReportUrl));
 
             BuildRegisteredActionButtons();
+            BuildFeatureToggleRows();
             BuildSpawnItemRow();
 
             if (dividerSprite != null)
@@ -872,6 +930,205 @@ Button close = closeButton.GetComponent<Button>();
                     }
                 }
             }
+        }
+
+        private void BuildFeatureToggleRows()
+        {
+            foreach (GameObject existing in _featureToggleRows.Values)
+            {
+                if (existing != null)
+                {
+                    Destroy(existing);
+                }
+            }
+
+            _featureToggleRows.Clear();
+
+            if (_contentRoot == null ||
+                _bodyTextTemplate == null ||
+                _menuButtonLabelTemplate == null ||
+                _menuButtonSprite == null)
+            {
+                return;
+            }
+
+            foreach (IGrouping<string, GK2FeatureToggleControl> group in
+                _featureToggleControls.GroupBy(control => control.Tab))
+            {
+                List<GK2FeatureToggleControl> controls =
+                    group.ToList();
+
+                for (int i = 0; i < controls.Count; i++)
+                {
+                    GK2FeatureToggleControl control =
+                        controls[i];
+
+                    GameObject row = new GameObject(
+                        control.Id + "FeatureRow",
+                        typeof(RectTransform));
+
+                    row.transform.SetParent(
+                        _contentRoot.transform,
+                        false);
+
+                    RectTransform rowRect =
+                        row.GetComponent<RectTransform>();
+
+                    rowRect.anchorMin =
+                        new Vector2(0.5f, 1f);
+                    rowRect.anchorMax =
+                        new Vector2(0.5f, 1f);
+                    rowRect.pivot =
+                        new Vector2(0.5f, 1f);
+                    rowRect.anchoredPosition =
+                        new Vector2(0f, -88f - (i * 27f));
+                    rowRect.sizeDelta =
+                        new Vector2(350f, 20f);
+
+                    CreateBodyText(
+                        _bodyTextTemplate,
+                        row.transform,
+                        "FeatureLabel",
+                        control.Label,
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(-60f, 0f),
+                        new Vector2(210f, 20f),
+                        9f,
+                        "Left");
+
+                    GameObject toggleButton =
+                        CreateActionButton(
+                            _menuButtonLabelTemplate,
+                            row.transform,
+                            _menuButtonSprite,
+                            "OFF",
+                            new Vector2(124f, 0f),
+                            new Vector2(82f, 20f));
+
+                    toggleButton.name =
+                        "ToggleButton";
+
+                    toggleButton
+                        .GetComponent<Button>()
+                        .onClick
+                        .AddListener(() =>
+                        {
+                            if (!string.Equals(
+                                DetectContext(),
+                                "MainMenu",
+                                StringComparison.Ordinal))
+                            {
+                                _logger?.LogWarning(
+                                    $"GK2+ feature '{control.Id}' can only be changed from the main menu.");
+                                RefreshFeatureToggleRows();
+                                return;
+                            }
+
+                            bool nextValue =
+                                !control.EnabledProvider();
+
+                            try
+                            {
+                                control.EnabledChanged(
+                                    nextValue);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError(
+                                    $"GK2+ feature toggle '{control.Id}' failed: {ex}");
+                            }
+
+                            RefreshFeatureToggleRows();
+                        });
+
+                    _featureToggleRows[control] =
+                        row;
+                }
+            }
+
+            RefreshFeatureToggleRows();
+        }
+
+        private void RefreshFeatureToggleRows()
+        {
+            bool mainMenu =
+                string.Equals(
+                    DetectContext(),
+                    "MainMenu",
+                    StringComparison.Ordinal);
+
+            foreach (var pair in _featureToggleRows)
+            {
+                GK2FeatureToggleControl control =
+                    pair.Key;
+
+                GameObject row =
+                    pair.Value;
+
+                if (row == null)
+                {
+                    continue;
+                }
+
+                bool visible =
+                    string.Equals(
+                        control.Tab,
+                        _activeTab,
+                        StringComparison.OrdinalIgnoreCase);
+
+                row.SetActive(visible);
+
+                if (!visible)
+                {
+                    continue;
+                }
+
+                Button toggle =
+                    row.transform
+                        .Find("ToggleButton")
+                        ?.GetComponent<Button>();
+
+                if (toggle == null)
+                {
+                    continue;
+                }
+
+                string text = mainMenu
+                    ? (control.EnabledProvider()
+                        ? "ON"
+                        : "OFF")
+                    : control.StatusProvider();
+
+                SetButtonText(
+                    toggle.gameObject,
+                    text);
+
+                toggle.interactable =
+                    mainMenu;
+            }
+
+            if (_featureSettingsNote != null)
+            {
+                bool hasFeatureControls =
+                    HasFeatureControlsForTab(
+                        _activeTab);
+
+                _featureSettingsNote.SetActive(
+                    hasFeatureControls &&
+                    !mainMenu);
+            }
+        }
+
+        private bool HasFeatureControlsForTab(
+            string tab)
+        {
+            return _featureToggleControls.Any(control =>
+                string.Equals(
+                    control.Tab,
+                    tab,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         private void BuildSpawnItemRow()
@@ -1791,6 +2048,7 @@ Button close = closeButton.GetComponent<Button>();
             if (_bugButton != null) _bugButton.SetActive(more);
 
             RefreshRegisteredActionButtons();
+            RefreshFeatureToggleRows();
             RefreshSpawnItemRow();
         }
 
@@ -1809,17 +2067,18 @@ Button close = closeButton.GetComponent<Button>();
                 return;
             }
 
-            bool cheats = string.Equals(
-                tab,
-                "Cheats",
-                StringComparison.OrdinalIgnoreCase);
+            bool compact =
+                string.Equals(
+                    tab,
+                    "Cheats",
+                    StringComparison.OrdinalIgnoreCase) ||
+                HasFeatureControlsForTab(tab);
 
-            rect.anchoredPosition = cheats
-                ? new Vector2(0f, -40f)
-                : new Vector2(0f, -40f);
+            rect.anchoredPosition =
+                new Vector2(0f, -40f);
 
-            rect.sizeDelta = cheats
-                ? new Vector2(350f, 42f)
+            rect.sizeDelta = compact
+                ? new Vector2(350f, 36f)
                 : new Vector2(350f, 102f);
         }
 
@@ -1828,6 +2087,16 @@ Button close = closeButton.GetComponent<Button>();
             string followText = ProjectLinks.HasNexusUrl
                 ? "Follow development on GitHub or visit the GK2+ page on Nexus Mods."
                 : "Follow development on GitHub. The Nexus Mods page is coming soon.";
+
+            if (HasFeatureControlsForTab(tab))
+            {
+                return string.Equals(
+                    DetectContext(),
+                    "MainMenu",
+                    StringComparison.Ordinal)
+                    ? $"Configure {tab.ToLowerInvariant()} features before loading a save."
+                    : $"Current {tab.ToLowerInvariant()} feature status for this save.";
+            }
 
             switch (tab)
             {
@@ -1979,13 +2248,16 @@ Button close = closeButton.GetComponent<Button>();
 
             _tabButtons.Clear();
             _registeredActionButtons.Clear();
+            _featureToggleRows.Clear();
             _tabNotices.Clear();
             _pageTitle = null;
             _pageText = null;
+            _featureSettingsNote = null;
             _githubButton = null;
             _nexusButton = null;
             _bugButton = null;
             _contentRoot = null;
+            _bodyTextTemplate = null;
             _menuButtonLabelTemplate = null;
             _menuButtonSprite = null;
             _spawnItemRow = null;
