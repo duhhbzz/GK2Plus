@@ -1,5 +1,8 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
+using BepInEx.Configuration;
 using GK2Plus.Core;
 using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
@@ -23,17 +26,25 @@ namespace GK2Plus.Features.Cheats
 
         private readonly GK2SaveService _saveService;
         private readonly GK2UIService _uiService;
+        private readonly ConfigFile _config;
+
+        private ConfigEntry<string> _spawnItemId;
+        private ConfigEntry<int> _spawnItemCount;
         private bool _achievementGuardReady;
 
         public BasicCheatsFeature(
             GK2SaveService saveService,
-            GK2UIService uiService)
+            GK2UIService uiService,
+            ConfigFile config)
         {
             _saveService = saveService ??
                 throw new ArgumentNullException(nameof(saveService));
 
             _uiService = uiService ??
                 throw new ArgumentNullException(nameof(uiService));
+
+            _config = config ??
+                throw new ArgumentNullException(nameof(config));
         }
 
         public override string Id => "basic-cheats";
@@ -46,6 +57,26 @@ namespace GK2Plus.Features.Cheats
             "Optional player/economy cheat actions exposed through the GK2+ menu.";
 
         protected override bool DefaultEnabled => true;
+
+        protected override void OnInitialize()
+        {
+            _spawnItemId = _config.Bind(
+                Category,
+                $"{Id}.SpawnItemId",
+                "stick",
+                "Native GK2 item id used by the Spawn Item cheat."
+            );
+
+            _spawnItemCount = _config.Bind(
+                Category,
+                $"{Id}.SpawnItemCount",
+                100,
+                new ConfigDescription(
+                    "Quantity used by the Spawn Item cheat.",
+                    new AcceptableValueRange<int>(1, 10000)
+                )
+            );
+        }
 
         protected override void OnEnabled()
         {
@@ -109,9 +140,23 @@ namespace GK2Plus.Features.Cheats
                 "Refill Energy",
                 RefillEnergy);
 
+            _uiService.RegisterSpawnItemControl(
+                new GK2SpawnItemControl(
+                    "Cheats",
+                    GetSpawnItemOptions,
+                    () => _spawnItemId?.Value ?? string.Empty,
+                    () => _spawnItemCount?.Value ?? 1,
+                    SelectSpawnItem,
+                    SetSpawnQuantity,
+                    () => RequestCheatExecution(
+                        "cheats.spawn-item",
+                        "Spawn Item",
+                        SpawnConfiguredItem),
+                    CanUseCheats));
+
             Logger.LogInfo(
                 "Basic Cheats enabled: Money increments, Heal Player, " +
-                "Refill Energy, and per-save achievement protection.");
+                "Refill Energy, Spawn Item, and per-save achievement protection.");
         }
 
         private bool TryPatchAchievementPlatformBoundary()
@@ -381,6 +426,315 @@ namespace GK2Plus.Features.Cheats
 
             Logger.LogInfo(
                 $"Give Money completed: {before} -> {after} bronze units.");
+        }
+
+        private IReadOnlyList<GK2ItemOption> GetSpawnItemOptions()
+        {
+            List<GK2ItemOption> options =
+                new List<GK2ItemOption>();
+
+            GameBalance balance =
+                GameBalance.Me;
+
+            if (balance == null)
+            {
+                return options;
+            }
+
+            IEnumerable itemDefs =
+                ResolveItemDefs(balance);
+
+            if (itemDefs == null)
+            {
+                return options;
+            }
+
+            foreach (object value in itemDefs)
+            {
+                if (!(value is ItemDef itemDef) ||
+                    string.IsNullOrWhiteSpace(itemDef.id))
+                {
+                    continue;
+                }
+
+                string displayName = itemDef.id;
+
+                try
+                {
+                    string header =
+                        itemDef.GetHeader();
+
+                    if (!string.IsNullOrWhiteSpace(header))
+                    {
+                        displayName = header;
+                    }
+                }
+                catch
+                {
+                    // Fall back to the technical item id if localization/header
+                    // data is unavailable for an unusual definition.
+                }
+
+                options.Add(
+                    new GK2ItemOption(
+                        itemDef.id,
+                        displayName));
+            }
+
+            options.Sort((left, right) =>
+            {
+                int byName =
+                    string.Compare(
+                        left.DisplayName,
+                        right.DisplayName,
+                        StringComparison.OrdinalIgnoreCase);
+
+                return byName != 0
+                    ? byName
+                    : string.Compare(
+                        left.Id,
+                        right.Id,
+                        StringComparison.OrdinalIgnoreCase);
+            });
+
+            return options;
+        }
+
+        private void SelectSpawnItem(
+            string itemId)
+        {
+            if (_spawnItemId == null ||
+                string.IsNullOrWhiteSpace(itemId))
+            {
+                return;
+            }
+
+            _spawnItemId.Value =
+                itemId.Trim();
+
+            _config.Save();
+
+            Logger.LogInfo(
+                $"Spawn Item selection changed to '{_spawnItemId.Value}'.");
+        }
+
+        private void SetSpawnQuantity(
+            int quantity)
+        {
+            if (_spawnItemCount == null)
+            {
+                return;
+            }
+
+            int clamped =
+                Math.Max(
+                    1,
+                    Math.Min(
+                        10000,
+                        quantity));
+
+            if (_spawnItemCount.Value == clamped)
+            {
+                return;
+            }
+
+            _spawnItemCount.Value =
+                clamped;
+
+            _config.Save();
+        }
+
+        private static IEnumerable ResolveItemDefs(
+            GameBalance balance)
+        {
+            if (balance == null)
+            {
+                return null;
+            }
+
+            Type type =
+                balance.GetType();
+
+            FieldInfo field =
+                AccessTools.Field(
+                    type,
+                    "itemDefs");
+
+            if (field?.GetValue(balance) is IEnumerable fieldValues)
+            {
+                return fieldValues;
+            }
+
+            PropertyInfo property =
+                AccessTools.Property(
+                    type,
+                    "itemDefs");
+
+            if (property?.GetValue(balance, null) is IEnumerable propertyValues)
+            {
+                return propertyValues;
+            }
+
+            return null;
+        }
+
+        private void SpawnConfiguredItem()
+        {
+            string itemId =
+                (_spawnItemId?.Value ?? string.Empty).Trim();
+
+            int count =
+                _spawnItemCount?.Value ?? 0;
+
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because SpawnItemId is empty.");
+                return;
+            }
+
+            if (count <= 0)
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because SpawnItemCount must be greater than zero.");
+                return;
+            }
+
+            PlayerData playerData = MainGame.PlayerData;
+            GameBalance balance = GameBalance.Me;
+
+            if (playerData == null ||
+                balance == null)
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because PlayerData or game balance is unavailable.");
+                return;
+            }
+
+            ItemDef itemDef = balance.GetData<ItemDef>(itemId);
+
+            if (itemDef == null)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because '{itemId}' is not a valid ItemDef id.");
+                return;
+            }
+
+            global::Inventory playerInventory =
+                playerData.Inventory;
+
+            if (playerInventory == null)
+            {
+                Logger.LogWarning(
+                    "Spawn Item was blocked because PlayerData.Inventory is unavailable.");
+                return;
+            }
+
+            List<Item> items =
+                new ItemCount(itemId, count).CreateItems();
+
+            if (items == null ||
+                items.Count == 0)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because GK2 could not materialize " +
+                    $"{count}x '{itemId}' through ItemCount.CreateItems().");
+                return;
+            }
+
+            int materializedCount = 0;
+
+            foreach (Item createdItem in items)
+            {
+                if (createdItem != null &&
+                    string.Equals(
+                        createdItem.id,
+                        itemId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    materializedCount += createdItem.Count;
+                }
+            }
+
+            if (materializedCount != count)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item was blocked because GK2 materialized " +
+                    $"{materializedCount}x '{itemId}' instead of {count}.");
+                return;
+            }
+
+            int beforeTotal =
+                playerInventory.Data.GetTotalCountInInventory(itemId);
+
+            int beforeVisibleStack =
+                playerInventory.GetItemById(itemId)?.Count ?? 0;
+
+            bool sameInventoryReference =
+                ReferenceEquals(
+                    playerInventory,
+                    playerData.inventory);
+
+            int afterTotal = beforeTotal;
+            int afterVisibleStack = beforeVisibleStack;
+            bool nativeAddResult = false;
+
+            Logger.LogInfo(
+                $"Spawn Item diagnostic before add: item='{itemId}', " +
+                $"requested={count}, materialized={materializedCount}, " +
+                $"objects={items.Count}, total={beforeTotal}, " +
+                $"visibleStack={beforeVisibleStack}, " +
+                $"PlayerData.Inventory==playerData.inventory={sameInventoryReference}.");
+
+            bool success =
+                _saveService.TryRunProtectedMutation(
+                    $"Spawn Item ({itemId} x{count})",
+                    SaveMutationRisk.Moderate,
+                    () =>
+                    {
+                        nativeAddResult =
+                            playerInventory.AddItemsToInventory(items);
+
+                        afterTotal =
+                            playerInventory.Data.GetTotalCountInInventory(itemId);
+
+                        afterVisibleStack =
+                            playerInventory.GetItemById(itemId)?.Count ?? 0;
+
+                        Logger.LogInfo(
+                            $"Spawn Item diagnostic after add: item='{itemId}', " +
+                            $"AddItemsToInventory={nativeAddResult}, " +
+                            $"total={beforeTotal}->{afterTotal}, " +
+                            $"visibleStack={beforeVisibleStack}->{afterVisibleStack}.");
+
+                        if (!nativeAddResult)
+                        {
+                            throw new InvalidOperationException(
+                                $"GK2 rejected the native item list for " +
+                                $"{count}x '{itemId}'.");
+                        }
+                    },
+                    () =>
+                        nativeAddResult &&
+                        afterTotal >= beforeTotal + count
+                );
+
+            if (!success)
+            {
+                Logger.LogWarning(
+                    $"Spawn Item ({itemId} x{count}) did not complete. " +
+                    $"Destination inventory changed {beforeTotal}->{afterTotal}; " +
+                    $"visible stack {beforeVisibleStack}->{afterVisibleStack}.");
+                return;
+            }
+
+            Logger.LogInfo(
+                $"Spawn Item completed through GK2's native ItemCount pipeline: " +
+                $"'{itemId}' materialized={materializedCount} across " +
+                $"{items.Count} item object(s); destination total " +
+                $"{beforeTotal}->{afterTotal}; visible stack " +
+                $"{beforeVisibleStack}->{afterVisibleStack}. " +
+                $"Native stack limit={itemDef.stackCount}.");
         }
 
         private void HealPlayer()

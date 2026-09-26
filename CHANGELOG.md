@@ -8,9 +8,17 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **Shared Chests**: use other eligible storage in the current world zone from normal chest windows and the character inventory while retaining GK2's native transfer, capacity, stack, filter, and notification behavior.
+- **Shared Storage**: configurable Current Zone or Global access to eligible storage from normal chest windows and the character inventory while retaining GK2's native inventory behavior.
+- **Character Inventory Access** child setting for Shared Storage.
+- **Use Items From Storage** child setting for supported remote consumable Use actions.
+- **Craft From Selected Scope** child setting, extending native crafting plus blueprint/building material access to eligible Global storage when enabled.
+- **Bigger Item Stacks**: scale live native stack limits from 2x through 20x, with a grouped main-menu multiplier control.
+- **Spawn Item** cheat: searchable/paged native item picker, configurable quantity, and native item creation/inventory insertion through GK2's own item pipeline.
+
 ### Changed
 
+- Binary child settings now toggle directly in the GK2+ menu instead of opening a two-choice picker; multi-choice settings still use the selector.
+- Shared Chests has been reframed player-facing as **Shared Storage** while retaining its existing internal config ID for compatibility.
 - Feature-setting rows now use deterministic ordering instead of registration order.
 - Child settings can be grouped directly beneath their parent feature, with tighter spacing between parent/child rows than between separate features.
 - Child settings remain visible but become disabled/greyed while their parent feature is OFF, preserving the configured value for later re-enable.
@@ -18,9 +26,25 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Cheats-tab layout now keeps the Spawn Item row separated from Heal Player / Refill Energy instead of overlapping the third action row.
+
+### Validation
+
+- Bigger Item Stacks validated at 2x and 3x, including a 150-item stack from a native 50-item limit.
+- Save/reload downgrade test confirmed existing over-cap stacks are preserved and GK2 normalizes them when later moved/adjusted.
+- Spawn Item validated with native item materialization and player-inventory insertion.
+- Stack multiplier parent/child ordering and disabled-child UI behavior validated in runtime testing.
+
+- Global Shared Storage validated across character inventory and normal chest windows, including cross-zone transfers.
+- Remote consumable Use validated from eligible Shared Storage.
+- Global crafting and blueprint/building resource checks plus actual remote resource consumption validated.
+- Current Zone / Global scope switching and child-option UX validated.
+
 ### Compatibility
 
-- Shared Chests creates no custom shared-storage save data and can be disabled independently when another mod should own overlapping storage behavior.
+- Shared Storage creates no custom shared-storage save data and can be disabled or narrowed by child capability when another mod should own overlapping storage behavior.
+- Bigger Item Stacks restores only stack-limit values that still match GK2+'s last applied value, preserving later third-party changes.
+
 ### Known Issues
 
 ---

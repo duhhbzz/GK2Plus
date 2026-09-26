@@ -11,8 +11,8 @@ using HarmonyLib;
 namespace GK2Plus.Features.Inventory
 {
     /// <summary>
-    /// Makes the current-zone storage inventories that vanilla already adds to
-    /// the chest window's left side selectable, while keeping GK2's native
+    /// Shared Storage makes eligible storage inventories available through GK2+'s
+    /// storage access surfaces while keeping GK2's native
     /// transfer, capacity, stack, filter, bag, and notification logic intact.
     ///
     /// No custom shared-storage state is created. The physically opened chest
@@ -21,13 +21,30 @@ namespace GK2Plus.Features.Inventory
     /// </summary>
     internal sealed class SharedChestsFeature : FeatureBase
     {
+        private enum SharedStorageScope
+        {
+            CurrentZone,
+            Global
+        }
+
         private static SharedChestsFeature _activeInstance;
 
         private readonly ConfigFile _config;
         private readonly GK2UIService _uiService;
 
+        private ConfigEntry<SharedStorageScope> _storageScope;
+        private ConfigEntry<bool> _characterInventoryAccess;
+        private ConfigEntry<bool> _useItemsFromStorage;
+        private ConfigEntry<bool> _craftFromStorage;
+
+        private static global::Inventory _pendingUseSourceInventory;
+        private static string _pendingUseItemId;
+
         private bool _loggedRuntimeSuccess;
         private bool _loggedCharacterInventorySuccess;
+        private bool _loggedGlobalCraftingSuccess;
+        private bool _loggedGlobalBuildingSuccess;
+        private bool _loggedRemoteUseSuccess;
         private bool _loggedMissingShape;
 
         internal SharedChestsFeature(
@@ -43,18 +60,56 @@ namespace GK2Plus.Features.Inventory
 
         public override string Id => "shared-chests";
 
-        public override string Name => "Shared Chests";
+        public override string Name => "Shared Storage";
 
         public override string Category => "Inventory";
 
         public override string Description =>
-            "Access other eligible storage in the current world zone from a normal chest window.";
+            "Access eligible storage through GK2+ while preserving native inventory behavior.";
 
         protected override bool DefaultEnabled => true;
 
         protected override void OnInitialize()
         {
             _activeInstance = this;
+
+            _storageScope = _config.Bind(
+                Category,
+                $"{Id}.StorageScope",
+                SharedStorageScope.CurrentZone,
+                new ConfigDescription(
+                    "Choose which eligible storage inventories Shared Storage exposes. " +
+                    "CurrentZone keeps access limited to the current world zone. " +
+                    "Global includes eligible OpenInMultiInventory storage from persisted world data.")
+            );
+
+            _characterInventoryAccess = _config.Bind(
+                Category,
+                $"{Id}.CharacterInventoryAccess",
+                true,
+                new ConfigDescription(
+                    "Allow Shared Storage access from the character inventory for the selected Storage Scope. " +
+                    "Remote consumable Use is controlled separately; Equip, Plant, Fertilize, Destroy, and hotbar actions remain player-inventory only. " +
+                    "Recommended: configure from the GK2+ main-menu Inventory tab; external config edits apply on next launch.")
+            );
+
+            _useItemsFromStorage = _config.Bind(
+                Category,
+                $"{Id}.UseItemsFromStorage",
+                false,
+                new ConfigDescription(
+                    "Allow consumable Use actions directly from eligible Shared Storage shown in the character inventory. " +
+                    "This does not enable Equip, Plant, Fertilize, Destroy, or hotbar actions for remote items.")
+            );
+
+            _craftFromStorage = _config.Bind(
+                Category,
+                $"{Id}.CraftFromStorage",
+                false,
+                new ConfigDescription(
+                    "When Storage Scope is Global, extend native crafting and blueprint/building material checks and consumption to eligible global Shared Storage. " +
+                    "Current-zone crafting remains controlled by GK2's native behavior.")
+            );
 
             List<ConstructorInfo> constructors =
                 typeof(global::UIBaseChestWindowData)
@@ -72,11 +127,16 @@ namespace GK2Plus.Features.Inventory
             if (constructors.Count == 0)
             {
                 Logger.LogError(
-                    "Shared Chests could not resolve a UIBaseChestWindowData constructor " +
+                    "Shared Storage could not resolve a UIBaseChestWindowData constructor " +
                     "that receives MultiInventory. The feature will remain inactive.");
             }
             else
             {
+                HarmonyMethod prefix =
+                    new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(UIBaseChestWindowDataPrefix));
+
                 HarmonyMethod postfix =
                     new HarmonyMethod(
                         typeof(SharedChestsFeature),
@@ -86,11 +146,12 @@ namespace GK2Plus.Features.Inventory
                 {
                     Harmony.Patch(
                         constructor,
+                        prefix: prefix,
                         postfix: postfix);
                 }
 
                 Logger.LogInfo(
-                    $"Shared Chests hooked {constructors.Count} native chest-window data constructor(s).");
+                    $"Shared Storage hooked {constructors.Count} native chest-window data constructor(s).");
             }
 
             List<ConstructorInfo> characterWindowConstructors =
@@ -116,29 +177,233 @@ namespace GK2Plus.Features.Inventory
                 }
 
                 Logger.LogInfo(
-                    $"Shared Chests hooked {characterWindowConstructors.Count} character-window data constructor(s).");
+                    $"Shared Storage hooked {characterWindowConstructors.Count} character-window data constructor(s).");
             }
             else
             {
                 Logger.LogWarning(
-                    "Shared Chests could not resolve CharacterWindowData constructors. Character-inventory storage access will remain vanilla.");
+                    "Shared Storage could not resolve CharacterWindowData constructors. Character-inventory storage access will remain vanilla.");
+            }
+
+            MethodInfo useItemMethod =
+                AccessTools.Method(
+                    typeof(global::PlayerData),
+                    nameof(global::PlayerData.UseItem),
+                    new[] { typeof(global::Item) });
+
+            if (useItemMethod != null)
+            {
+                Harmony.Patch(
+                    useItemMethod,
+                    prefix: new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(PlayerDataUseItemPrefix)),
+                    postfix: new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(PlayerDataUseItemPostfix)),
+                    finalizer: new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(PlayerDataUseItemFinalizer)));
+            }
+            else
+            {
+                Logger.LogWarning(
+                    "Shared Storage could not resolve PlayerData.UseItem. Remote item Use will remain vanilla.");
+            }
+
+            MethodInfo removeItemByIdMethod =
+                AccessTools.Method(
+                    typeof(global::Inventory),
+                    nameof(global::Inventory.RemoveItemById),
+                    new[]
+                    {
+                        typeof(string),
+                        typeof(int),
+                        typeof(global::Item),
+                        typeof(global::Item),
+                        typeof(bool)
+                    });
+
+            if (removeItemByIdMethod != null)
+            {
+                Harmony.Patch(
+                    removeItemByIdMethod,
+                    prefix: new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(InventoryRemoveItemByIdPrefix)));
+            }
+            else
+            {
+                Logger.LogWarning(
+                    "Shared Storage could not resolve Inventory.RemoveItemById. Remote item Use will remain vanilla.");
+            }
+
+            MethodInfo getCraftableMultiInventoryMethod =
+                AccessTools.Method(
+                    typeof(global::WgoData),
+                    nameof(global::WgoData.GetCraftableMultiInventory),
+                    new[] { typeof(bool) });
+
+            if (getCraftableMultiInventoryMethod != null)
+            {
+                Harmony.Patch(
+                    getCraftableMultiInventoryMethod,
+                    postfix: new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(WgoDataGetCraftableMultiInventoryPostfix)));
+            }
+            else
+            {
+                Logger.LogWarning(
+                    "Shared Storage could not resolve WgoData.GetCraftableMultiInventory. Global crafting will remain zone-bound.");
+            }
+
+            MethodInfo buildManagerTryEnableMethod =
+                AccessTools.Method(
+                    typeof(global::BuildManager),
+                    nameof(global::BuildManager.TryEnable),
+                    new[]
+                    {
+                        typeof(global::Wgo),
+                        typeof(Func<List<global::Inventory>>)
+                    });
+
+            if (buildManagerTryEnableMethod != null)
+            {
+                Harmony.Patch(
+                    buildManagerTryEnableMethod,
+                    prefix: new HarmonyMethod(
+                        typeof(SharedChestsFeature),
+                        nameof(BuildManagerTryEnablePrefix)));
+            }
+            else
+            {
+                Logger.LogWarning(
+                    "Shared Storage could not resolve BuildManager.TryEnable. Global blueprint/building materials will remain zone-bound.");
             }
 
             _uiService.RegisterFeatureToggleControl(
                 new GK2FeatureToggleControl(
                     Id,
                     Category,
-                    "Shared Chests",
+                    "Shared Storage",
                     () => Enabled?.Value ?? DefaultEnabled,
                     BuildUiStatus,
                     SetEnabledFromMainMenu,
                     order: 200));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.storage-scope",
+                    Category,
+                    "Storage Scope",
+                    () => (_storageScope?.Value ?? SharedStorageScope.CurrentZone).ToString(),
+                    BuildStorageScopeOptions,
+                    SetStorageScopeFromMainMenu,
+                    parentFeatureId: Id,
+                    order: 5,
+                    enabledProvider: () => Enabled?.Value ?? DefaultEnabled));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.character-inventory-access",
+                    Category,
+                    "Character Inventory Access",
+                    () => (_characterInventoryAccess?.Value ?? true)
+                        ? "ON"
+                        : "OFF",
+                    BuildBooleanOptions,
+                    SetCharacterInventoryAccessFromMainMenu,
+                    parentFeatureId: Id,
+                    order: 10,
+                    enabledProvider: () => Enabled?.Value ?? DefaultEnabled));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.use-items-from-storage",
+                    Category,
+                    "Use Items From Storage",
+                    () => (_useItemsFromStorage?.Value ?? false)
+                        ? "ON"
+                        : "OFF",
+                    BuildBooleanOptions,
+                    SetUseItemsFromStorageFromMainMenu,
+                    parentFeatureId: Id,
+                    order: 20,
+                    enabledProvider: () =>
+                        (Enabled?.Value ?? DefaultEnabled) &&
+                        (_characterInventoryAccess?.Value ?? true)));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.craft-from-storage",
+                    Category,
+                    "Craft From Selected Scope",
+                    () => (_craftFromStorage?.Value ?? false)
+                        ? "ON"
+                        : "OFF",
+                    BuildBooleanOptions,
+                    SetCraftFromStorageFromMainMenu,
+                    parentFeatureId: Id,
+                    order: 30,
+                    enabledProvider: () =>
+                        (Enabled?.Value ?? DefaultEnabled) &&
+                        (_storageScope?.Value ?? SharedStorageScope.CurrentZone) ==
+                            SharedStorageScope.Global));
         }
 
         protected override void OnEnabled()
         {
             Logger.LogInfo(
-                "Shared Chests enabled for current-zone native storage inventories.");
+                $"Shared Storage enabled with scope {BuildStorageScopeLabel(_storageScope?.Value ?? SharedStorageScope.CurrentZone)}.");
+        }
+
+        private IReadOnlyList<GK2FeatureOption> BuildStorageScopeOptions()
+        {
+            return new[]
+            {
+                new GK2FeatureOption(
+                    SharedStorageScope.CurrentZone.ToString(),
+                    "Current Zone"),
+                new GK2FeatureOption(
+                    SharedStorageScope.Global.ToString(),
+                    "Global")
+            };
+        }
+
+        private static string BuildStorageScopeLabel(
+            SharedStorageScope scope)
+        {
+            return scope == SharedStorageScope.Global
+                ? "Global"
+                : "Current Zone";
+        }
+
+        private void SetStorageScopeFromMainMenu(
+            string value)
+        {
+            if (_storageScope == null ||
+                !Enum.TryParse(
+                    value,
+                    ignoreCase: true,
+                    out SharedStorageScope scope))
+            {
+                return;
+            }
+
+            if (_storageScope.Value == scope)
+            {
+                _uiService.RefreshMenu();
+                return;
+            }
+
+            _storageScope.Value = scope;
+            _config.Save();
+
+            Logger.LogInfo(
+                $"Shared Storage scope changed to {BuildStorageScopeLabel(scope)} from the main menu.");
+
+            _uiService.RefreshMenu();
         }
 
         private string BuildUiStatus()
@@ -146,6 +411,87 @@ namespace GK2Plus.Features.Inventory
             return Enabled?.Value == true
                 ? "ON"
                 : "OFF";
+        }
+
+        private IReadOnlyList<GK2FeatureOption> BuildBooleanOptions()
+        {
+            return new[]
+            {
+                new GK2FeatureOption("true", "ON"),
+                new GK2FeatureOption("false", "OFF")
+            };
+        }
+
+        private void SetUseItemsFromStorageFromMainMenu(
+            string value)
+        {
+            if (_useItemsFromStorage == null ||
+                !bool.TryParse(
+                    value,
+                    out bool enabled))
+            {
+                return;
+            }
+
+            if (_useItemsFromStorage.Value != enabled)
+            {
+                _useItemsFromStorage.Value = enabled;
+                _config.Save();
+
+                Logger.LogInfo(
+                    $"Shared Storage Use Items From Storage {(enabled ? "enabled" : "disabled")} from the main menu.");
+            }
+
+            _uiService.RefreshMenu();
+        }
+
+        private void SetCraftFromStorageFromMainMenu(
+            string value)
+        {
+            if (_craftFromStorage == null ||
+                !bool.TryParse(
+                    value,
+                    out bool enabled))
+            {
+                return;
+            }
+
+            if (_craftFromStorage.Value != enabled)
+            {
+                _craftFromStorage.Value = enabled;
+                _config.Save();
+
+                Logger.LogInfo(
+                    $"Shared Storage Craft From Selected Scope {(enabled ? "enabled" : "disabled")} from the main menu.");
+            }
+
+            _uiService.RefreshMenu();
+        }
+
+        private void SetCharacterInventoryAccessFromMainMenu(
+            string value)
+        {
+            if (_characterInventoryAccess == null ||
+                !bool.TryParse(
+                    value,
+                    out bool enabled))
+            {
+                return;
+            }
+
+            if (_characterInventoryAccess.Value == enabled)
+            {
+                _uiService.RefreshMenu();
+                return;
+            }
+
+            _characterInventoryAccess.Value = enabled;
+            _config.Save();
+
+            Logger.LogInfo(
+                $"Shared Storage Character Inventory Access {(enabled ? "enabled" : "disabled")} from the main menu.");
+
+            _uiService.RefreshMenu();
         }
 
         private void SetEnabledFromMainMenu(
@@ -168,9 +514,463 @@ namespace GK2Plus.Features.Inventory
             _config.Save();
 
             Logger.LogInfo(
-                $"Shared Chests {(enabled ? "enabled" : "disabled")} from the main menu.");
+                $"Shared Storage {(enabled ? "enabled" : "disabled")} from the main menu.");
 
             _uiService.RefreshMenu();
+        }
+
+        private static void PlayerDataUseItemPrefix(
+            global::PlayerData __instance,
+            global::Item item)
+        {
+            ClearPendingUseRedirect();
+
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                feature.Enabled?.Value != true ||
+                feature._characterInventoryAccess?.Value != true ||
+                feature._useItemsFromStorage?.Value != true ||
+                __instance == null ||
+                item == null ||
+                item.IsEmpty ||
+                item.Definition == null ||
+                !item.Definition.CanBeUsed ||
+                item.Definition.stayOnUse ||
+                feature.InventoryContainsItemByUniqueId(
+                    __instance.Inventory,
+                    item))
+            {
+                return;
+            }
+
+            global::Inventory sourceInventory =
+                feature.FindEligibleStorageInventoryContainingItem(
+                    item);
+
+            if (sourceInventory == null)
+            {
+                return;
+            }
+
+            _pendingUseSourceInventory =
+                sourceInventory;
+            _pendingUseItemId =
+                item.id;
+        }
+
+        private static void PlayerDataUseItemPostfix()
+        {
+            ClearPendingUseRedirect();
+        }
+
+        private static Exception PlayerDataUseItemFinalizer(
+            Exception __exception)
+        {
+            ClearPendingUseRedirect();
+            return __exception;
+        }
+
+        private static bool InventoryRemoveItemByIdPrefix(
+            global::Inventory __instance,
+            string itemId,
+            int count,
+            ref List<global::Item> __result)
+        {
+            if (_pendingUseSourceInventory == null ||
+                string.IsNullOrWhiteSpace(
+                    _pendingUseItemId) ||
+                !string.Equals(
+                    _pendingUseItemId,
+                    itemId,
+                    StringComparison.Ordinal) ||
+                !ReferenceEquals(
+                    __instance,
+                    global::MainGame.PlayerData?.Inventory))
+            {
+                return true;
+            }
+
+            global::Inventory sourceInventory =
+                _pendingUseSourceInventory;
+
+            ClearPendingUseRedirect();
+
+            __result =
+                sourceInventory.RemoveItemById(
+                    itemId,
+                    count,
+                    null,
+                    null,
+                    false);
+
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature != null &&
+                __result != null &&
+                __result.Count > 0 &&
+                !feature._loggedRemoteUseSuccess)
+            {
+                feature._loggedRemoteUseSuccess = true;
+
+                feature.Logger.LogInfo(
+                    "Shared Storage successfully redirected a native consumable Use removal to the selected storage inventory.");
+            }
+
+            return false;
+        }
+
+        private static void ClearPendingUseRedirect()
+        {
+            _pendingUseSourceInventory = null;
+            _pendingUseItemId = null;
+        }
+
+        private bool InventoryContainsItemByUniqueId(
+            global::Inventory inventory,
+            global::Item item)
+        {
+            if (inventory == null ||
+                item == null ||
+                item.UniqueId == null)
+            {
+                return false;
+            }
+
+            global::Item found =
+                inventory.GetItemByUniqueId(
+                    item.UniqueId.ToString());
+
+            return found != null &&
+                !found.IsEmpty;
+        }
+
+        private global::Inventory FindEligibleStorageInventoryContainingItem(
+            global::Item item)
+        {
+            global::PlayerData playerData =
+                global::MainGame.PlayerData;
+
+            if (playerData == null ||
+                item == null ||
+                item.UniqueId == null)
+            {
+                return null;
+            }
+
+            global::MultiInventory currentZone =
+                playerData.CurrentWorldZoneData == null
+                    ? new global::MultiInventory()
+                    : new global::MultiInventory(
+                        playerData.CurrentWorldZoneData);
+
+            global::MultiInventory eligible =
+                (_storageScope?.Value ?? SharedStorageScope.CurrentZone) ==
+                    SharedStorageScope.Global
+                    ? BuildGlobalStorageMultiInventory(
+                        currentZone,
+                        playerData.Inventory)
+                    : currentZone;
+
+            foreach (global::Inventory inventory in
+                eligible.inventoryList)
+            {
+                if (InventoryContainsItemByUniqueId(
+                    inventory,
+                    item))
+                {
+                    return inventory;
+                }
+            }
+
+            return null;
+        }
+
+        private static void WgoDataGetCraftableMultiInventoryPostfix(
+            global::WgoData __instance,
+            ref global::MultiInventory __result)
+        {
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                feature.Enabled?.Value != true ||
+                feature._craftFromStorage?.Value != true ||
+                feature._storageScope?.Value != SharedStorageScope.Global ||
+                __instance == null ||
+                __result == null)
+            {
+                return;
+            }
+
+            int added =
+                feature.AppendMissingGlobalStorage(
+                    __result,
+                    __instance.Inventory,
+                    __instance.CraftInventory,
+                    global::MainGame.PlayerData?.Inventory);
+
+            if (added > 0 &&
+                !feature._loggedGlobalCraftingSuccess)
+            {
+                feature._loggedGlobalCraftingSuccess = true;
+
+                feature.Logger.LogInfo(
+                    $"Shared Storage extended native crafting with {added} global storage inventory source(s).");
+            }
+        }
+
+        private static void BuildManagerTryEnablePrefix(
+            ref Func<List<global::Inventory>> getAdditionalInventories)
+        {
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                feature.Enabled?.Value != true ||
+                feature._craftFromStorage?.Value != true ||
+                feature._storageScope?.Value != SharedStorageScope.Global)
+            {
+                return;
+            }
+
+            Func<List<global::Inventory>> original =
+                getAdditionalInventories;
+
+            getAdditionalInventories = () =>
+            {
+                List<global::Inventory> inventories =
+                    original?.Invoke() ??
+                    new List<global::Inventory>();
+
+                int added =
+                    feature.AppendCrossZoneStorage(
+                        inventories);
+
+                if (added > 0 &&
+                    !feature._loggedGlobalBuildingSuccess)
+                {
+                    feature._loggedGlobalBuildingSuccess = true;
+
+                    feature.Logger.LogInfo(
+                        $"Shared Storage extended native blueprint/building materials with {added} cross-zone storage inventory source(s).");
+                }
+
+                return inventories;
+            };
+        }
+
+        private int AppendMissingGlobalStorage(
+            global::MultiInventory target,
+            params global::Inventory[] excludedInventories)
+        {
+            if (target == null)
+            {
+                return 0;
+            }
+
+            global::MultiInventory globalStorage =
+                BuildGlobalStorageMultiInventory(
+                    null,
+                    excludedInventories);
+
+            int added = 0;
+
+            foreach (global::Inventory inventory in
+                globalStorage.inventoryList)
+            {
+                if (inventory == null ||
+                    ContainsInventoryByReference(
+                        target.inventoryList,
+                        inventory))
+                {
+                    continue;
+                }
+
+                target.Add(
+                    inventory);
+                added++;
+            }
+
+            return added;
+        }
+
+        private int AppendCrossZoneStorage(
+            List<global::Inventory> target)
+        {
+            if (target == null)
+            {
+                return 0;
+            }
+
+            global::PlayerData playerData =
+                global::MainGame.PlayerData;
+
+            if (playerData == null)
+            {
+                return 0;
+            }
+
+            global::MultiInventory currentZone =
+                playerData.CurrentWorldZoneData == null
+                    ? new global::MultiInventory()
+                    : new global::MultiInventory(
+                        playerData.CurrentWorldZoneData);
+
+            global::MultiInventory allStorage =
+                BuildGlobalStorageMultiInventory(
+                    null,
+                    playerData.Inventory);
+
+            int added = 0;
+
+            foreach (global::Inventory inventory in
+                allStorage.inventoryList)
+            {
+                if (inventory == null ||
+                    ContainsInventoryByReference(
+                        currentZone.inventoryList,
+                        inventory) ||
+                    ContainsInventoryByReference(
+                        target,
+                        inventory))
+                {
+                    continue;
+                }
+
+                target.Add(
+                    inventory);
+                added++;
+            }
+
+            return added;
+        }
+
+        private static void UIBaseChestWindowDataPrefix(
+            global::Inventory __0,
+            ref global::MultiInventory __1,
+            global::WgoData __2)
+        {
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                feature.Enabled?.Value != true ||
+                feature._storageScope?.Value != SharedStorageScope.Global)
+            {
+                return;
+            }
+
+            __1 = feature.BuildGlobalStorageMultiInventory(
+                __1,
+                __2?.Inventory,
+                __0);
+
+            feature.Logger.LogDebug(
+                $"Shared Storage Global scope supplied {__1?.inventoryList?.Count ?? 0} storage inventory source(s) to the chest window constructor.");
+        }
+
+        private global::MultiInventory BuildGlobalStorageMultiInventory(
+            global::MultiInventory preferredFirst,
+            params global::Inventory[] excludedInventories)
+        {
+            List<global::Inventory> inventories =
+                new List<global::Inventory>();
+
+            HashSet<global::Inventory> seen =
+                new HashSet<global::Inventory>(
+                    ReferenceEqualityComparer<global::Inventory>.Instance);
+
+            HashSet<global::Inventory> excluded =
+                new HashSet<global::Inventory>(
+                    ReferenceEqualityComparer<global::Inventory>.Instance);
+
+            if (excludedInventories != null)
+            {
+                foreach (global::Inventory excludedInventory in excludedInventories)
+                {
+                    if (excludedInventory != null)
+                    {
+                        excluded.Add(
+                            excludedInventory);
+                    }
+                }
+            }
+
+            if (preferredFirst?.inventoryList != null)
+            {
+                foreach (global::Inventory inventory in
+                    preferredFirst.inventoryList)
+                {
+                    if (inventory != null &&
+                        !excluded.Contains(inventory) &&
+                        seen.Add(inventory))
+                    {
+                        inventories.Add(
+                            inventory);
+                    }
+                }
+            }
+
+            global::WorldData worldData =
+                global::MainGame.Instance?.GameSave?.worldData;
+
+            if (worldData?.gameSceneDataList == null)
+            {
+                return new global::MultiInventory(
+                    inventories);
+            }
+
+            foreach (global::GameSceneData sceneData in
+                worldData.gameSceneDataList)
+            {
+                if (sceneData?.wgoDataList == null)
+                {
+                    continue;
+                }
+
+                foreach (global::WgoData wgoData in
+                    sceneData.wgoDataList)
+                {
+                    if (wgoData == null)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        if (wgoData.Definition == null ||
+                            wgoData.Definition.inventorySize == 0 ||
+                            !wgoData.Definition.OpenInMultiInventory)
+                        {
+                            continue;
+                        }
+
+                        global::Inventory inventory =
+                            wgoData.Inventory;
+
+                        if (inventory == null ||
+                            excluded.Contains(inventory) ||
+                            !seen.Add(inventory))
+                        {
+                            continue;
+                        }
+
+                        inventories.Add(
+                            inventory);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogDebug(
+                            $"Shared Storage skipped one persisted storage candidate during Global scope enumeration: {ex.Message}");
+                    }
+                }
+            }
+
+            return new global::MultiInventory(
+                inventories);
         }
 
         private static void UIBaseChestWindowDataPostfix(
@@ -185,7 +985,16 @@ namespace GK2Plus.Features.Inventory
         private static void CharacterWindowDataPostfix(
             object __instance)
         {
-            _activeInstance?.ApplyToCharacterInventoryData(
+            SharedChestsFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                feature._characterInventoryAccess?.Value == false)
+            {
+                return;
+            }
+
+            feature.ApplyToCharacterInventoryData(
                 __instance);
         }
 
@@ -236,7 +1045,7 @@ namespace GK2Plus.Features.Inventory
             if (widgetData.Count == 0)
             {
                 LogMissingShapeOnce(
-                    "Shared Chests could not find inventory widget data under FirstMultiInventoryData.");
+                    "Shared Storage could not find inventory widget data under FirstMultiInventoryData.");
                 return;
             }
 
@@ -249,7 +1058,7 @@ namespace GK2Plus.Features.Inventory
             if (playerWidget == null)
             {
                 LogMissingShapeOnce(
-                    "Shared Chests could not identify the player inventory widget used as the native callback template.");
+                    "Shared Storage could not identify the player inventory widget used as the native callback template.");
                 return;
             }
 
@@ -266,10 +1075,18 @@ namespace GK2Plus.Features.Inventory
                 if (inventory == null ||
                     ReferenceEquals(
                         inventory,
-                        playerInventory) ||
-                    !ContainsInventoryByReference(
+                        playerInventory))
+                {
+                    continue;
+                }
+
+                bool eligibleStorage =
+                    _storageScope?.Value == SharedStorageScope.Global ||
+                    ContainsInventoryByReference(
                         worldZoneMultiInventory.inventoryList,
-                        inventory))
+                        inventory);
+
+                if (!eligibleStorage)
                 {
                     continue;
                 }
@@ -283,7 +1100,10 @@ namespace GK2Plus.Features.Inventory
                     CopyNamedMember(
                         playerWidget,
                         widget,
-                        "CustomItemsAvailableCondition");
+                        "CustomItemsAvailableCondition") ||
+                    GetMemberValue(
+                        widget,
+                        "CustomItemsAvailableCondition") != null;
 
                 bool state =
                     SetItemRelatedWidgetState(
@@ -310,7 +1130,7 @@ namespace GK2Plus.Features.Inventory
             if (enabledWidgets <= 0)
             {
                 LogMissingShapeOnce(
-                    "Shared Chests found current-zone inventories but could not activate their native widget callbacks/state.");
+                    "Shared Storage found eligible storage inventories but could not activate their native widget callbacks/state.");
                 return;
             }
 
@@ -319,14 +1139,14 @@ namespace GK2Plus.Features.Inventory
                 _loggedRuntimeSuccess = true;
 
                 Logger.LogInfo(
-                    $"Shared Chests activated {enabledWidgets} current-zone storage widget(s) " +
+                    $"Shared Storage activated {enabledWidgets} storage widget(s) " +
                     $"using vanilla transfer callbacks " +
                     $"(delegates={copiedDelegates}, availability={copiedAvailability}, states={updatedStates}).");
             }
             else
             {
                 Logger.LogDebug(
-                    $"Shared Chests prepared chest UI: currentZoneStorage={enabledWidgets}.");
+                    $"Shared Storage prepared chest UI: storage={enabledWidgets}.");
             }
         }
 
@@ -348,7 +1168,7 @@ namespace GK2Plus.Features.Inventory
             if (mainPageData == null)
             {
                 LogMissingShapeOnce(
-                    "Shared Chests could not resolve CharacterWindowData.CharMainPageWidgetData.");
+                    "Shared Storage could not resolve CharacterWindowData.CharMainPageWidgetData.");
                 return;
             }
 
@@ -360,9 +1180,13 @@ namespace GK2Plus.Features.Inventory
             if (multiInventoryData == null)
             {
                 LogMissingShapeOnce(
-                    "Shared Chests could not resolve the character inventory MultiInventoryWidgetData.");
+                    "Shared Storage could not resolve the character inventory MultiInventoryWidgetData.");
                 return;
             }
+
+            AppendGlobalCharacterStorageWidgets(
+                characterWindowData,
+                multiInventoryData);
 
             List<object> widgetData =
                 FindInventoryWidgetData(
@@ -385,7 +1209,7 @@ namespace GK2Plus.Features.Inventory
             if (playerWidget == null)
             {
                 LogMissingShapeOnce(
-                    "Shared Chests could not identify the active player inventory widget in the character inventory.");
+                    "Shared Storage could not identify the active player inventory widget in the character inventory.");
                 return;
             }
 
@@ -461,13 +1285,20 @@ namespace GK2Plus.Features.Inventory
                     ? 1
                     : 0;
 
+                bool availability =
+                    CopyNamedMember(
+                        playerWidget,
+                        widget,
+                        "CustomItemsAvailableCondition");
+
                 bool state =
                     SetItemRelatedWidgetState(
                         widget,
                         "Default");
 
                 if (state &&
-                    copied >= 2)
+                    copied >= 2 &&
+                    availability)
                 {
                     activated++;
                     callbacks += copied;
@@ -485,15 +1316,87 @@ namespace GK2Plus.Features.Inventory
                 _loggedCharacterInventorySuccess = true;
 
                 Logger.LogInfo(
-                    $"Shared Chests activated {activated} character-inventory current-zone storage widget(s) " +
+                    $"Shared Storage activated {activated} character-inventory storage widget(s) " +
                     $"using native PlayerInventoryUIItemOpHandler callbacks " +
                     $"(callbacks={callbacks}, states={states}).");
             }
             else
             {
                 Logger.LogDebug(
-                    $"Shared Chests prepared character inventory UI: currentZoneStorage={activated}.");
+                    $"Shared Storage prepared character inventory UI: storage={activated}.");
             }
+        }
+
+        private void AppendGlobalCharacterStorageWidgets(
+            object characterWindowData,
+            object multiInventoryData)
+        {
+            if (_storageScope?.Value != SharedStorageScope.Global ||
+                !(multiInventoryData is global::MultiInventoryWidgetData typedWidgetData))
+            {
+                return;
+            }
+
+            global::PlayerData playerData =
+                GetMemberValue(
+                    characterWindowData,
+                    "PlayerData") as global::PlayerData ??
+                global::MainGame.PlayerData;
+
+            if (playerData == null)
+            {
+                return;
+            }
+
+            global::MultiInventory currentZone =
+                playerData.CurrentWorldZoneData == null
+                    ? new global::MultiInventory()
+                    : new global::MultiInventory(
+                        playerData.CurrentWorldZoneData);
+
+            global::MultiInventory allStorage =
+                BuildGlobalStorageMultiInventory(
+                    currentZone,
+                    playerData.Inventory);
+
+            List<global::Inventory> extraInventories =
+                allStorage.inventoryList
+                    .Where(inventory =>
+                        inventory != null &&
+                        !ContainsInventoryByReference(
+                            currentZone.inventoryList,
+                            inventory))
+                    .ToList();
+
+            if (extraInventories.Count == 0)
+            {
+                return;
+            }
+
+            global::MultiInventory extras =
+                new global::MultiInventory(
+                    extraInventories);
+
+            List<global::InventoryWidgetDataBase> extraWidgets =
+                global::InventoryWidgetDataHelper
+                    .GetWidgetsDataForMultiInventory(
+                        extras,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        addBags: true,
+                        disableHeaderForFirstWidget: false,
+                        customState: global::ItemRelatedWidgetState.Disabled,
+                        customStateBags: global::ItemRelatedWidgetState.Disabled);
+
+            typedWidgetData.AddRange(
+                extraWidgets);
+
+            Logger.LogDebug(
+                $"Shared Storage Global scope added {extraInventories.Count} cross-zone inventory widget source(s) to the character inventory.");
         }
 
         private static Delegate GetDelegateMember(

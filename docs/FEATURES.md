@@ -15,8 +15,10 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
-| Inventory | [Shared Chests](#shared-chests) |
+| Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
+| Inventory | [Shared Storage](#shared-storage) |
 | Cheats | [Functional Cheats](#functional-cheats) |
+| Cheats | [Spawn Item](#spawn-item) |
 | Cheats / Safety | [Cheat & Achievement Integrity](#cheat--achievement-integrity) |
 | Safety | [Save Safety Checkpoints](#save-safety-checkpoints) |
 
@@ -60,89 +62,141 @@ The value comes from native save metadata and updates after a successful save.
 
 ---
 
-## Shared Chests
+## Bigger Item Stacks
 
 **Category:** Inventory  
-**Setting mode:** Main-menu enable/disable; read-only status during gameplay.
+**Setting mode:** Main-menu enable/disable + multiplier selection; read-only status during gameplay.
 
-Shared Chests makes the eligible storage inventories that Graveyard Keeper 2 already exposes for the **current world zone** usable from both normal chest windows and the character inventory.
-
-### How it works
-
-Vanilla GK2 already supplies those other current-zone storage inventories to the chest-window data, but their remote slots are rendered unavailable. GK2+ enables those existing inventory widgets and keeps the game's own inventory objects, transfer callbacks, stack rules, filters, capacity behavior, and notifications in control.
-
-GK2+ does **not** create a separate shared-storage database or custom shared-chest save format.
-
-### Player behavior
-
-With **Shared Chests ON**:
-
-- open a normal chest and access other eligible storage in the current zone;
-- open the character inventory and browse/transfer items from eligible current-zone storage;
-- move full stacks, partial stacks, or single items through GK2's native inventory paths.
-
-Player-only context actions such as **Use** or **Equip** still require the item to be in the player's carried inventory. Shared Chests does not currently bypass those native restrictions.
-
-With **Shared Chests OFF**, the remote inventories return to their vanilla greyed/read-only behavior.
+Bigger Item Stacks scales GK2's live native stack limits for stackable items while leaving items with a native stack limit of 1 unchanged.
 
 ### Configuration
 
 From the **main menu → Inventory** tab:
 
 ~~~text
-Shared Chests    [ ON / OFF ]
+Bigger Item Stacks                 [ ON ]
+    Stack Size Multiplier           [ 3x ]
 ~~~
 
-During active gameplay, the same row is shown as read-only status.
+The multiplier picker exposes **2x through 20x** for normal menu use. The underlying BepInEx value remains the single source of truth.
 
-The underlying enable/disable value is a normal BepInEx configuration entry, so advanced users may also manage it through the generated GK2+ `.cfg` file or a compatible mod-manager config editor. External config edits should be treated as next-launch changes.
+When the parent feature is OFF, the multiplier remains visible but greyed/non-interactive and keeps its saved value.
+
+### Native behavior and compatibility
+
+GK2+ modifies the live `ItemDef.stackCount` value after game balance loads and leaves inventory transfer/merge behavior to GK2.
+
+The feature records the live value it scaled. When disabling or changing the multiplier, GK2+ only restores values that still match the value GK2+ applied. If another mod changed a stack limit afterward, GK2+ preserves that newer live value instead of overwriting it.
+
+### Save behavior
+
+No custom stack data is written to the save.
+
+Testing confirmed that an already-saved over-cap stack remains present after Bigger Item Stacks is disabled. GK2 then normalizes/splits that stack through its normal inventory behavior when the stack is moved or otherwise adjusted.
 
 ### Validation completed
 
 Runtime validation covered:
 
-- current-zone remote storage discovery;
-- character-inventory remote storage activation;
-- remote chest selection;
-- remote → opened chest transfers;
-- opened chest → remote transfers;
-- full-stack, partial-stack, and single-item movement;
-- full destination behavior;
-- repeated close/reopen cycles;
-- save/reload persistence;
-- main-menu ON/OFF behavior;
-- read-only in-game status;
-- disabling the feature and returning to vanilla remote-slot behavior;
-- preserving native player-only restrictions for context actions such as Use/Equip.
+- 2x → 3x multiplier changes;
+- a native 50-stack item reaching 150 at 3x;
+- main-menu enable/disable behavior;
+- parent/child menu grouping and disabled-child presentation;
+- saving with an over-cap stack;
+- disabling the feature before reload;
+- loading the existing over-cap stack without loss;
+- GK2 lazily splitting/normalizing that stack when it is moved.
 
-### Compatibility
+---
 
-Shared Chests patches the chest-window data construction path narrowly and reuses GK2's native transfer behavior.
+## Shared Storage
 
-If another mod should own overlapping chest behavior, disable Shared Chests from the main menu.
+**Category:** Inventory  
+**Setting mode:** Main-menu configuration; read-only status during gameplay.
 
-### Planned Shared Storage direction
+Shared Storage exposes eligible Graveyard Keeper 2 storage through one configurable feature family while continuing to use GK2's native inventories, transfer logic, stack limits, filters, capacity rules, notifications, crafting checks, and resource consumption.
 
-Shared Chests is intentionally narrow for the current release, but the longer-term feature family is expected to evolve toward **Shared Storage** with independent child settings instead of one all-or-nothing "god mode" switch.
+GK2+ does **not** create a separate shared-storage database or custom shared-storage save format.
 
-Planned shape:
+### Configuration
+
+From the **main menu → Inventory** tab:
 
 ~~~text
 Shared Storage                              [ ON ]
     Storage Scope                   [ Current Zone ▼ ]
     Character Inventory Access              [ ON ]
     Use Items From Storage                  [ OFF ]
-    Craft From Storage                      [ OFF ]
+    Craft From Selected Scope               [ OFF ]
 ~~~
 
-The key design rule is that **scope** and **capability** remain separate:
+**Storage Scope** controls which eligible storage participates:
 
-- **Storage Scope** decides whether eligible storage is limited to the current zone or can span the world.
-- **Character Inventory Access** controls whether remote storage appears in the character inventory.
-- **Use Items From Storage** would allow selected player-only item actions directly from eligible storage.
-- **Craft From Storage** would allow workstations to source ingredients from eligible storage while preserving the workstation's own crafting rules.
+- **Current Zone** — uses GK2's current world-zone storage scope.
+- **Global** — also exposes eligible persisted storage from other zones.
 
-These are planned capabilities, not part of the current release, and each should be investigated/tested independently before implementation.
+Scope and capability are intentionally separate. Turning one child capability off does not disable the others.
+
+Binary child settings toggle directly when clicked. Multi-choice settings such as **Storage Scope** open the normal selector.
+
+### Character Inventory Access
+
+When ON, eligible Shared Storage appears in the character inventory and can use GK2's native transfer behavior.
+
+When OFF, character-inventory remote storage returns to the vanilla disabled/read-only behavior while normal chest-window Shared Storage can remain enabled.
+
+### Use Items From Storage
+
+When ON, supported consumable **Use** actions can be executed directly from eligible Shared Storage shown in the character inventory.
+
+GK2+ redirects the native item-removal step to the selected source inventory while leaving the normal player item-use effects in control.
+
+This setting intentionally does **not** make all player-only context actions remote-capable. **Equip, Plant, Fertilize, Destroy, and hotbar actions remain player-inventory only** unless separately supported later.
+
+### Craft From Selected Scope
+
+GK2 already supports crafting from eligible storage in the current world zone.
+
+When **Storage Scope = Global** and **Craft From Selected Scope = ON**, GK2+ extends the native crafting and blueprint/building inventory sources with eligible cross-zone Shared Storage. GK2's own recipe checks, counts, material consumption, workstation rules, and building rules remain authoritative.
+
+Turning this option OFF restores crafting/building material access to GK2's normal zone-bound behavior without disabling Shared Storage browsing or transfers.
+
+### Chest behavior
+
+With Shared Storage enabled:
+
+- normal chest windows can browse eligible storage in the selected scope;
+- full, partial, and single-stack transfers continue through GK2's native inventory paths;
+- storage-to-storage, player-to-storage, and storage-to-opened-chest transfers retain native capacity/filter/stack behavior.
+
+### Validation completed
+
+Runtime validation covered:
+
+- current-zone and Global storage discovery;
+- character-inventory and normal chest-window access;
+- Global cross-zone chest visibility;
+- remote chest selection;
+- remote → opened chest, opened chest → remote, and chest → chest transfers;
+- full-stack, partial-stack, and single-item movement;
+- full destination behavior;
+- Character Inventory Access ON/OFF behavior;
+- direct consumable Use from remote eligible storage;
+- Global crafting from materials stored only in another zone;
+- Global blueprint/building material checks and actual remote resource consumption;
+- Craft From Selected Scope OFF restoring zone-bound crafting/building behavior;
+- switching Global back to Current Zone;
+- save/reload persistence for transferred items;
+- main-menu configuration and read-only in-game status;
+- inline binary child-setting toggles and selector behavior for non-binary settings.
+
+### Compatibility
+
+Shared Storage uses GK2's native inventory objects and deliberately keeps stack, filter, capacity, transfer, crafting, and building behavior in the game's own systems wherever possible.
+
+The stable internal feature/config ID remains **`shared-chests`** for configuration compatibility even though the player-facing feature is now named **Shared Storage**.
+
+If another mod should own overlapping storage behavior, disable Shared Storage or the specific overlapping child capability rather than uninstalling GK2+.
 
 
 ---
@@ -151,11 +205,40 @@ These are planned capabilities, not part of the current release, and each should
 
 The Cheats tab currently provides money and player-recovery actions.
 
-Released actions include Silver/Gold increments, **Heal Player**, and **Refill Energy**.
+Released actions include Silver/Gold increments, **Heal Player**, **Refill Energy**, and **Spawn Item**.
 
 Money changes use GK2's native resource path and normal feedback. Refill Energy targets the normal work/action energy resource.
 
 Cheat actions use the integrity and save-safety systems described below.
+
+---
+
+## Spawn Item
+
+**Category:** Cheats  
+**Setting mode:** Item/quantity selection in the GK2+ Cheats menu; cheat execution requires a loaded save.
+
+Spawn Item creates a selected native GK2 item and adds it to the player's inventory through GK2's normal item materialization and inventory-add paths.
+
+### Player behavior
+
+The Cheats tab provides:
+
+- a searchable/paged native item picker;
+- a quantity field;
+- a Spawn action.
+
+The selected item id and quantity are normal BepInEx configuration values. Quantity is limited to **1–10,000**.
+
+### Safety
+
+Spawn Item is a cheat action. It uses the same first-cheat confirmation, save checkpoint/taint flow, and achievement-integrity protection as the other GK2+ cheats.
+
+GK2+ asks GK2 to materialize the requested item through `ItemCount.CreateItems()` and add it through the player's native inventory API rather than constructing a separate inventory representation.
+
+### Validation completed
+
+Runtime validation confirmed item selection, quantity control, native item creation, and insertion into the player's inventory.
 
 ---
 
