@@ -117,6 +117,10 @@ namespace GK2Plus.Framework.UI
             badgeRect.anchoredPosition = new Vector2(-14f, -12f);
             badgeRect.sizeDelta = new Vector2(176f, 84f);
 
+            // Keep the existing native-derived internal proportions while reducing
+            // the badge's effective on-screen footprint by 25 percent.
+            badgeRect.localScale = new Vector3(0.75f, 0.75f, 1f);
+
             if (backgroundSprite != null)
             {
                 CreateStretchImage(
@@ -196,7 +200,7 @@ namespace GK2Plus.Framework.UI
                 bodyTemplate,
                 badge.transform,
                 "StatusText",
-                "Status: Loaded",
+                GameCompatibility.BadgeText,
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
