@@ -143,7 +143,7 @@ namespace GK2Plus.Features.Inventory
         private string BuildUiStatus()
         {
             return Enabled?.Value == true
-                ? $"ON ({_multiplier?.Value ?? DefaultMultiplier}x)"
+                ? "ON"
                 : "OFF";
         }
 

@@ -34,6 +34,9 @@ namespace GK2Plus.Framework.UI
         private GameObject _nexusButton;
         private GameObject _bugButton;
         private GameObject _contentRoot;
+        private RectTransform _bodyContentRect;
+        private ScrollRect _bodyScrollRect;
+        private Scrollbar _bodyScrollbar;
         private GameObject _bodyTextTemplate;
         private GameObject _menuButtonLabelTemplate;
         private Sprite _menuButtonSprite;
@@ -74,6 +77,9 @@ namespace GK2Plus.Framework.UI
         private int _itemPickerPage;
 
         private const int ItemPickerPageSize = 6;
+
+        private const float BodyViewportTopOffset = 33f;
+        private const float BodyViewportHeight = 143f;
 
         private readonly Dictionary<string, GameObject> _tabButtons =
             new Dictionary<string, GameObject>();
@@ -675,7 +681,154 @@ namespace GK2Plus.Framework.UI
             contentBg.color = new Color(0.12f, 0.02f, 0.07f, 0.86f);
             contentBg.raycastTarget = false;
 
-            _contentRoot = content;
+            GameObject bodyViewport = new GameObject(
+                "BodyViewport",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(RectMask2D)
+            );
+            bodyViewport.transform.SetParent(content.transform, false);
+
+            RectTransform bodyViewportRect =
+                bodyViewport.GetComponent<RectTransform>();
+
+            bodyViewportRect.anchorMin = new Vector2(0.5f, 1f);
+            bodyViewportRect.anchorMax = new Vector2(0.5f, 1f);
+            bodyViewportRect.pivot = new Vector2(0.5f, 1f);
+            bodyViewportRect.anchoredPosition =
+                new Vector2(-4f, -BodyViewportTopOffset);
+            bodyViewportRect.sizeDelta =
+                new Vector2(378f, BodyViewportHeight);
+
+            Image bodyViewportImage =
+                bodyViewport.GetComponent<Image>();
+            bodyViewportImage.color =
+                new Color(0f, 0f, 0f, 0.001f);
+            bodyViewportImage.raycastTarget = true;
+
+            GameObject bodyContent = new GameObject(
+                "BodyScrollContent",
+                typeof(RectTransform)
+            );
+            bodyContent.transform.SetParent(
+                bodyViewport.transform,
+                false);
+
+            RectTransform bodyContentRect =
+                bodyContent.GetComponent<RectTransform>();
+
+            bodyContentRect.anchorMin =
+                new Vector2(0f, 1f);
+            bodyContentRect.anchorMax =
+                new Vector2(1f, 1f);
+            bodyContentRect.pivot =
+                new Vector2(0.5f, 1f);
+            bodyContentRect.anchoredPosition =
+                Vector2.zero;
+            bodyContentRect.sizeDelta =
+                new Vector2(0f, BodyViewportHeight);
+
+            ScrollRect bodyScroll =
+                content.AddComponent<ScrollRect>();
+            bodyScroll.viewport =
+                bodyViewportRect;
+            bodyScroll.content =
+                bodyContentRect;
+            bodyScroll.horizontal = false;
+            bodyScroll.vertical = true;
+            bodyScroll.movementType =
+                ScrollRect.MovementType.Clamped;
+            bodyScroll.inertia = false;
+            bodyScroll.scrollSensitivity = 18f;
+            bodyScroll.verticalNormalizedPosition = 1f;
+
+            GameObject scrollbarObject = new GameObject(
+                "BodyScrollbar",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Scrollbar)
+            );
+            scrollbarObject.transform.SetParent(
+                content.transform,
+                false);
+
+            RectTransform scrollbarRect =
+                scrollbarObject.GetComponent<RectTransform>();
+            scrollbarRect.anchorMin =
+                new Vector2(1f, 1f);
+            scrollbarRect.anchorMax =
+                new Vector2(1f, 1f);
+            scrollbarRect.pivot =
+                new Vector2(1f, 1f);
+            scrollbarRect.anchoredPosition =
+                new Vector2(-4f, -BodyViewportTopOffset);
+            scrollbarRect.sizeDelta =
+                new Vector2(5f, BodyViewportHeight);
+
+            Image scrollbarTrack =
+                scrollbarObject.GetComponent<Image>();
+            scrollbarTrack.color =
+                new Color(0.08f, 0.01f, 0.04f, 0.72f);
+            scrollbarTrack.raycastTarget = true;
+
+            GameObject handle = new GameObject(
+                "Handle",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image)
+            );
+            handle.transform.SetParent(
+                scrollbarObject.transform,
+                false);
+
+            RectTransform handleRect =
+                handle.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.offsetMin = Vector2.zero;
+            handleRect.offsetMax = Vector2.zero;
+
+            Image handleImage =
+                handle.GetComponent<Image>();
+            handleImage.sprite =
+                redButtonSprite;
+            handleImage.type =
+                Image.Type.Sliced;
+            handleImage.color =
+                new Color(0.88f, 0.88f, 0.92f, 0.92f);
+            handleImage.raycastTarget = true;
+
+            Scrollbar bodyScrollbar =
+                scrollbarObject.GetComponent<Scrollbar>();
+            bodyScrollbar.handleRect =
+                handleRect;
+            bodyScrollbar.targetGraphic =
+                handleImage;
+            bodyScrollbar.direction =
+                Scrollbar.Direction.BottomToTop;
+            bodyScrollbar.transition =
+                Selectable.Transition.ColorTint;
+
+            Navigation scrollbarNavigation =
+                bodyScrollbar.navigation;
+            scrollbarNavigation.mode =
+                Navigation.Mode.None;
+            bodyScrollbar.navigation =
+                scrollbarNavigation;
+
+            bodyScroll.verticalScrollbar =
+                bodyScrollbar;
+            bodyScroll.verticalScrollbarVisibility =
+                ScrollRect.ScrollbarVisibility.Permanent;
+
+            scrollbarObject.SetActive(false);
+
+            _contentRoot = bodyContent;
+            _bodyContentRect = bodyContentRect;
+            _bodyScrollRect = bodyScroll;
+            _bodyScrollbar = bodyScrollbar;
             _bodyTextTemplate = bodyTemplate;
             _menuButtonLabelTemplate = buttonLabelTemplate;
             _menuButtonSprite = redButtonSprite;
@@ -691,13 +844,13 @@ namespace GK2Plus.Framework.UI
 
             _pageText = CreateBodyText(
                 bodyTemplate,
-                content.transform,
+                _contentRoot.transform,
                 "PageText",
                 "",
                 new Vector2(0f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -40f),
+                new Vector2(0f, BodyY(-40f)),
                 new Vector2(350f, 102f),
                 10f,
                 "Center"
@@ -711,13 +864,13 @@ namespace GK2Plus.Framework.UI
 
             _featureSettingsNote = CreateBodyText(
                 bodyTemplate,
-                content.transform,
+                _contentRoot.transform,
                 "FeatureSettingsNote",
                 "Return to the main menu to change feature settings safely.",
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -157f),
+                new Vector2(0f, BodyY(-157f)),
                 new Vector2(340f, 12f),
                 7f,
                 "Center"
@@ -726,10 +879,10 @@ namespace GK2Plus.Framework.UI
 
             _githubButton = CreateActionButton(
                 buttonLabelTemplate,
-                content.transform,
+                _contentRoot.transform,
                 redButtonSprite,
                 "GitHub",
-                new Vector2(-92f, -142f),
+                new Vector2(-92f, BodyY(-142f)),
                 new Vector2(78f, 20f)
             );
             _githubButton.GetComponent<Button>().onClick.AddListener(
@@ -737,10 +890,10 @@ namespace GK2Plus.Framework.UI
 
             _nexusButton = CreateActionButton(
                 buttonLabelTemplate,
-                content.transform,
+                _contentRoot.transform,
                 redButtonSprite,
                 ProjectLinks.HasNexusUrl ? "Nexus Mods" : "Nexus Soon",
-                new Vector2(0f, -142f),
+                new Vector2(0f, BodyY(-142f)),
                 new Vector2(92f, 20f)
             );
             Button nexus = _nexusButton.GetComponent<Button>();
@@ -754,10 +907,10 @@ namespace GK2Plus.Framework.UI
 
             _bugButton = CreateActionButton(
                 buttonLabelTemplate,
-                content.transform,
+                _contentRoot.transform,
                 redButtonSprite,
                 "Report Bug",
-                new Vector2(100f, -142f),
+                new Vector2(100f, BodyY(-142f)),
                 new Vector2(92f, 20f)
             );
             _bugButton.GetComponent<Button>().onClick.AddListener(
@@ -922,7 +1075,7 @@ Button close = closeButton.GetComponent<Button>();
                         _contentRoot.transform,
                         _menuButtonSprite,
                         action.Label,
-                        new Vector2(x, y),
+                        new Vector2(x, BodyY(y)),
                         new Vector2(buttonWidth, 20f));
 
                     Button button = buttonObject.GetComponent<Button>();
@@ -1130,7 +1283,7 @@ Button close = closeButton.GetComponent<Button>();
                             : -88f;
 
                     rowRect.anchoredPosition =
-                        new Vector2(0f, rowY);
+                        new Vector2(0f, BodyY(rowY));
                     rowRect.sizeDelta =
                         new Vector2(350f, 20f);
 
@@ -1268,6 +1421,39 @@ Button close = closeButton.GetComponent<Button>();
                 _featureSettingsNote.SetActive(
                     hasFeatureControls &&
                     !mainMenu);
+
+                UpdateFeatureSettingsNotePosition();
+            }
+        }
+
+        private void UpdateFeatureSettingsNotePosition()
+        {
+            if (_featureSettingsNote == null ||
+                !HasFeatureControlsForTab(_activeTab))
+            {
+                return;
+            }
+
+            Dictionary<string, float> positions =
+                BuildFeatureControlLayout(_activeTab);
+
+            if (positions.Count == 0)
+            {
+                return;
+            }
+
+            float lowestRowY =
+                positions.Values.Min();
+
+            RectTransform noteRect =
+                _featureSettingsNote.GetComponent<RectTransform>();
+
+            if (noteRect != null)
+            {
+                noteRect.anchoredPosition =
+                    new Vector2(
+                        0f,
+                        BodyY(lowestRowY - 24f));
             }
         }
 
@@ -1358,7 +1544,7 @@ Button close = closeButton.GetComponent<Button>();
                     rowRect.anchoredPosition =
                         new Vector2(
                             0f,
-                            rowY);
+                            BodyY(rowY));
                     rowRect.sizeDelta =
                         new Vector2(350f, 20f);
 
@@ -1440,7 +1626,6 @@ Button close = closeButton.GetComponent<Button>();
                 }
 
                 bool visible =
-                    mainMenu &&
                     string.Equals(
                         control.Tab,
                         _activeTab,
@@ -1482,16 +1667,25 @@ Button close = closeButton.GetComponent<Button>();
                         ? selected.Label
                         : currentValue;
 
+                string buttonText =
+                    string.IsNullOrWhiteSpace(label)
+                        ? "Select"
+                        : label;
+
+                if (mainMenu)
+                {
+                    buttonText += "  ▼";
+                }
+
                 SetButtonText(
                     button.gameObject,
-                    (string.IsNullOrWhiteSpace(label)
-                        ? "Select"
-                        : label) + "  ▼");
+                    buttonText);
 
                 bool enabled =
                     control.EnabledProvider();
 
                 button.interactable =
+                    mainMenu &&
                     enabled;
 
                 Transform labelTransform =
@@ -1814,7 +2008,7 @@ Button close = closeButton.GetComponent<Button>();
             rowRect.anchorMin = new Vector2(0.5f, 1f);
             rowRect.anchorMax = new Vector2(0.5f, 1f);
             rowRect.pivot = new Vector2(0.5f, 1f);
-            rowRect.anchoredPosition = new Vector2(0f, -154f);
+            rowRect.anchoredPosition = new Vector2(0f, BodyY(-154f));
             rowRect.sizeDelta = new Vector2(350f, 20f);
 
             GameObject spawnButton = CreateActionButton(
@@ -2673,6 +2867,12 @@ Button close = closeButton.GetComponent<Button>();
         }
         private void SetActiveTab(string tabName)
         {
+            bool tabChanged =
+                !string.Equals(
+                    _activeTab,
+                    tabName,
+                    StringComparison.OrdinalIgnoreCase);
+
             _activeTab = tabName;
 
             foreach (var kvp in _tabButtons)
@@ -2702,6 +2902,84 @@ Button close = closeButton.GetComponent<Button>();
             RefreshFeatureToggleRows();
             RefreshFeatureOptionRows();
             RefreshSpawnItemRow();
+            RefreshBodyScrollBounds(tabChanged);
+        }
+
+        private static float BodyY(float legacyY)
+        {
+            return legacyY + BodyViewportTopOffset;
+        }
+
+        private void RefreshBodyScrollBounds(
+            bool resetToTop)
+        {
+            if (_contentRoot == null ||
+                _bodyContentRect == null ||
+                _bodyScrollRect == null)
+            {
+                return;
+            }
+
+            float requiredHeight =
+                BodyViewportHeight;
+
+            foreach (Transform child in
+                _contentRoot.transform)
+            {
+                if (child == null ||
+                    !child.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                RectTransform childRect =
+                    child as RectTransform;
+
+                if (childRect == null)
+                {
+                    continue;
+                }
+
+                float bottomDepth =
+                    -childRect.anchoredPosition.y +
+                    (childRect.rect.height *
+                     childRect.pivot.y);
+
+                requiredHeight =
+                    Mathf.Max(
+                        requiredHeight,
+                        bottomDepth);
+            }
+
+            _bodyContentRect.sizeDelta =
+                new Vector2(
+                    _bodyContentRect.sizeDelta.x,
+                    requiredHeight);
+
+            bool overflow =
+                requiredHeight >
+                BodyViewportHeight + 0.5f;
+
+            if (_bodyScrollbar != null)
+            {
+                _bodyScrollbar.gameObject.SetActive(
+                    overflow);
+
+                if (overflow)
+                {
+                    _bodyScrollbar.size =
+                        Mathf.Clamp01(
+                            BodyViewportHeight /
+                            requiredHeight);
+                }
+            }
+
+            if (resetToTop ||
+                !overflow)
+            {
+                _bodyScrollRect.verticalNormalizedPosition =
+                    1f;
+            }
         }
 
         private void LayoutPageTextForTab(string tab)
@@ -2727,7 +3005,7 @@ Button close = closeButton.GetComponent<Button>();
                 HasFeatureControlsForTab(tab);
 
             rect.anchoredPosition =
-                new Vector2(0f, -40f);
+                new Vector2(0f, BodyY(-40f));
 
             rect.sizeDelta = compact
                 ? new Vector2(350f, 36f)
@@ -2737,7 +3015,7 @@ Button close = closeButton.GetComponent<Button>();
         private string GetPlaceholderText(string tab)
         {
             string followText = ProjectLinks.HasNexusUrl
-                ? "Follow development on GitHub or visit the GK2+ page on Nexus Mods."
+                ? "Follow development on GitHub or download GK2+ from Nexus Mods."
                 : "Follow development on GitHub. The Nexus Mods page is coming soon.";
 
             if (HasFeatureControlsForTab(tab))
@@ -2799,12 +3077,12 @@ Button close = closeButton.GetComponent<Button>();
                 case "More":
                     return
                         "GK2+ Project Links\n\n" +
-                        "GitHub: source, development progress, and releases.\n" +
+                        "GitHub: source code, development progress, and releases.\n" +
                         (ProjectLinks.HasNexusUrl
-                            ? "Nexus Mods: public mod page and downloads.\n"
+                            ? "Nexus Mods: downloads, screenshots, posts, and public updates.\n"
                             : "Nexus Mods: public mod page coming soon.\n") +
                         "Report Bug: opens a new GitHub issue for GK2+.\n\n" +
-                        "Quest/map tools, compatibility, diagnostics, and About will live here.";
+                        "More tools, compatibility information, diagnostics, and About are planned here.";
                 default:
                     return tab;
             }
@@ -2915,6 +3193,9 @@ Button close = closeButton.GetComponent<Button>();
             _nexusButton = null;
             _bugButton = null;
             _contentRoot = null;
+            _bodyContentRect = null;
+            _bodyScrollRect = null;
+            _bodyScrollbar = null;
             _bodyTextTemplate = null;
             _menuButtonLabelTemplate = null;
             _menuButtonSprite = null;
