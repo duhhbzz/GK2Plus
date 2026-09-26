@@ -62,7 +62,7 @@ namespace GK2Plus.Features.Cheats
             _spawnItemId = _config.Bind(
                 Category,
                 $"{Id}.SpawnItemId",
-                "flitch",
+                "stick",
                 "Native GK2 item id used by the Spawn Item cheat."
             );
 
