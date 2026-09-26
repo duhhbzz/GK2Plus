@@ -99,6 +99,12 @@ namespace GK2Plus
                     Config,
                     _services.UI)
             );
+
+            registry.Register(
+                new SharedChestsFeature(
+                    Config,
+                    _services.UI)
+            );
         }
 
         private void OnDestroy()
