@@ -2,7 +2,7 @@
 
 GK2+ v0.1.0 is the first release that moves beyond the original framework/menu preview and adds functional gameplay features.
 
-**Tested with Graveyard Keeper 2 v1.005.**
+**Tested with Graveyard Keeper 2 v1.006.**
 
 ## Highlights
 
