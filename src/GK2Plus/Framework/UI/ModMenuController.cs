@@ -44,6 +44,21 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<GK2FeatureToggleControl, GameObject> _featureToggleRows =
             new Dictionary<GK2FeatureToggleControl, GameObject>();
 
+        private readonly List<GK2FeatureOptionControl> _featureOptionControls =
+            new List<GK2FeatureOptionControl>();
+
+        private readonly Dictionary<GK2FeatureOptionControl, GameObject> _featureOptionRows =
+            new Dictionary<GK2FeatureOptionControl, GameObject>();
+
+        private GameObject _featureOptionPickerRoot;
+        private GK2FeatureOptionControl _activeFeatureOptionPickerControl;
+        private GameObject _featureOptionPickerPageText;
+        private readonly List<GameObject> _featureOptionPickerButtons =
+            new List<GameObject>();
+        private int _featureOptionPickerPage;
+
+        private const int FeatureOptionPickerPageSize = 6;
+
         private GK2SpawnItemControl _spawnItemControl;
         private GameObject _spawnItemRow;
         private GameObject _spawnItemButton;
@@ -156,6 +171,39 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterFeatureOptionControl(
+            GK2FeatureOptionControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            GK2FeatureOptionControl existing =
+                _featureOptionControls.FirstOrDefault(candidate =>
+                    string.Equals(
+                        candidate.Id,
+                        control.Id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                _featureOptionControls.Remove(existing);
+            }
+
+            _featureOptionControls.Add(control);
+
+            if (_built &&
+                _contentRoot != null &&
+                _bodyTextTemplate != null &&
+                _menuButtonLabelTemplate != null &&
+                _menuButtonSprite != null)
+            {
+                BuildFeatureOptionRows();
+                SetActiveTab(_activeTab);
+            }
+        }
+
         public void RegisterSpawnItemControl(
             GK2SpawnItemControl control)
         {
@@ -258,7 +306,11 @@ namespace GK2Plus.Framework.UI
 
             if (_menuRoot.activeSelf && Input.GetKeyDown(KeyCode.Escape))
             {
-                if (_itemPickerRoot != null)
+                if (_featureOptionPickerRoot != null)
+                {
+                    CloseFeatureOptionPicker();
+                }
+                else if (_itemPickerRoot != null)
                 {
                     CloseItemPicker();
                 }
@@ -712,6 +764,7 @@ namespace GK2Plus.Framework.UI
 
             BuildRegisteredActionButtons();
             BuildFeatureToggleRows();
+            BuildFeatureOptionRows();
             BuildSpawnItemRow();
 
             if (dividerSprite != null)
@@ -1124,11 +1177,472 @@ Button close = closeButton.GetComponent<Button>();
         private bool HasFeatureControlsForTab(
             string tab)
         {
-            return _featureToggleControls.Any(control =>
+            return
+                _featureToggleControls.Any(control =>
+                    string.Equals(
+                        control.Tab,
+                        tab,
+                        StringComparison.OrdinalIgnoreCase)) ||
+                _featureOptionControls.Any(control =>
+                    string.Equals(
+                        control.Tab,
+                        tab,
+                        StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void BuildFeatureOptionRows()
+        {
+            foreach (GameObject existing in _featureOptionRows.Values)
+            {
+                if (existing != null)
+                {
+                    Destroy(existing);
+                }
+            }
+
+            _featureOptionRows.Clear();
+
+            if (_contentRoot == null ||
+                _bodyTextTemplate == null ||
+                _menuButtonLabelTemplate == null ||
+                _menuButtonSprite == null)
+            {
+                return;
+            }
+
+            foreach (IGrouping<string, GK2FeatureOptionControl> group in
+                _featureOptionControls.GroupBy(control => control.Tab))
+            {
+                List<GK2FeatureOptionControl> controls =
+                    group.ToList();
+
+                int toggleCount =
+                    _featureToggleControls.Count(control =>
+                        string.Equals(
+                            control.Tab,
+                            group.Key,
+                            StringComparison.OrdinalIgnoreCase));
+
+                for (int i = 0; i < controls.Count; i++)
+                {
+                    GK2FeatureOptionControl control =
+                        controls[i];
+
+                    GameObject row = new GameObject(
+                        control.Id + "FeatureOptionRow",
+                        typeof(RectTransform));
+
+                    row.transform.SetParent(
+                        _contentRoot.transform,
+                        false);
+
+                    RectTransform rowRect =
+                        row.GetComponent<RectTransform>();
+
+                    rowRect.anchorMin =
+                        new Vector2(0.5f, 1f);
+                    rowRect.anchorMax =
+                        new Vector2(0.5f, 1f);
+                    rowRect.pivot =
+                        new Vector2(0.5f, 1f);
+                    rowRect.anchoredPosition =
+                        new Vector2(
+                            0f,
+                            -88f - ((toggleCount + i) * 27f));
+                    rowRect.sizeDelta =
+                        new Vector2(350f, 20f);
+
+                    CreateBodyText(
+                        _bodyTextTemplate,
+                        row.transform,
+                        "FeatureOptionLabel",
+                        control.Label,
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(-60f, 0f),
+                        new Vector2(210f, 20f),
+                        9f,
+                        "Left");
+
+                    GameObject optionButton =
+                        CreateActionButton(
+                            _menuButtonLabelTemplate,
+                            row.transform,
+                            _menuButtonSprite,
+                            "Select",
+                            new Vector2(124f, 0f),
+                            new Vector2(82f, 20f));
+
+                    optionButton.name =
+                        "OptionButton";
+
+                    optionButton
+                        .GetComponent<Button>()
+                        .onClick
+                        .AddListener(() =>
+                        {
+                            if (!string.Equals(
+                                DetectContext(),
+                                "MainMenu",
+                                StringComparison.Ordinal))
+                            {
+                                return;
+                            }
+
+                            OpenFeatureOptionPicker(
+                                control);
+                        });
+
+                    _featureOptionRows[control] =
+                        row;
+                }
+            }
+
+            RefreshFeatureOptionRows();
+        }
+
+        private void RefreshFeatureOptionRows()
+        {
+            bool mainMenu =
                 string.Equals(
-                    control.Tab,
-                    tab,
-                    StringComparison.OrdinalIgnoreCase));
+                    DetectContext(),
+                    "MainMenu",
+                    StringComparison.Ordinal);
+
+            foreach (var pair in _featureOptionRows)
+            {
+                GK2FeatureOptionControl control =
+                    pair.Key;
+
+                GameObject row =
+                    pair.Value;
+
+                if (row == null)
+                {
+                    continue;
+                }
+
+                bool visible =
+                    mainMenu &&
+                    string.Equals(
+                        control.Tab,
+                        _activeTab,
+                        StringComparison.OrdinalIgnoreCase);
+
+                row.SetActive(visible);
+
+                if (!visible)
+                {
+                    continue;
+                }
+
+                Button button =
+                    row.transform
+                        .Find("OptionButton")
+                        ?.GetComponent<Button>();
+
+                if (button == null)
+                {
+                    continue;
+                }
+
+                string currentValue =
+                    control.ValueProvider() ?? string.Empty;
+
+                IReadOnlyList<GK2FeatureOption> options =
+                    control.OptionsProvider() ??
+                    Array.Empty<GK2FeatureOption>();
+
+                GK2FeatureOption selected =
+                    options.FirstOrDefault(option =>
+                        string.Equals(
+                            option.Value,
+                            currentValue,
+                            StringComparison.OrdinalIgnoreCase));
+
+                string label =
+                    selected != null
+                        ? selected.Label
+                        : currentValue;
+
+                SetButtonText(
+                    button.gameObject,
+                    (string.IsNullOrWhiteSpace(label)
+                        ? "Select"
+                        : label) + "  ▼");
+
+                button.interactable = true;
+            }
+        }
+
+        private void OpenFeatureOptionPicker(
+            GK2FeatureOptionControl control)
+        {
+            if (control == null ||
+                _menuRoot == null ||
+                _menuButtonLabelTemplate == null ||
+                _menuButtonSprite == null ||
+                !string.Equals(
+                    DetectContext(),
+                    "MainMenu",
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            CloseFeatureOptionPicker();
+
+            _activeFeatureOptionPickerControl =
+                control;
+            _featureOptionPickerPage = 0;
+
+            _featureOptionPickerRoot = new GameObject(
+                "GK2PlusFeatureOptionPicker",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            _featureOptionPickerRoot.transform.SetParent(
+                _menuRoot.transform,
+                false);
+            _featureOptionPickerRoot.transform.SetAsLastSibling();
+
+            RectTransform overlayRect =
+                _featureOptionPickerRoot.GetComponent<RectTransform>();
+
+            overlayRect.anchorMin = Vector2.zero;
+            overlayRect.anchorMax = Vector2.one;
+            overlayRect.offsetMin = Vector2.zero;
+            overlayRect.offsetMax = Vector2.zero;
+
+            Image dimmer =
+                _featureOptionPickerRoot.GetComponent<Image>();
+
+            dimmer.color =
+                new Color(0.02f, 0.01f, 0.02f, 0.82f);
+            dimmer.raycastTarget = true;
+
+            GameObject panel = new GameObject(
+                "Panel",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+
+            panel.transform.SetParent(
+                _featureOptionPickerRoot.transform,
+                false);
+
+            RectTransform panelRect =
+                panel.GetComponent<RectTransform>();
+
+            panelRect.anchorMin =
+                new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax =
+                new Vector2(0.5f, 0.5f);
+            panelRect.pivot =
+                new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition =
+                Vector2.zero;
+            panelRect.sizeDelta =
+                new Vector2(300f, 220f);
+
+            Image panelImage =
+                panel.GetComponent<Image>();
+
+            panelImage.color =
+                new Color(0.20f, 0.035f, 0.09f, 0.99f);
+            panelImage.raycastTarget = true;
+
+            CreateNativeTitleText(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                control.Label,
+                new Vector2(0f, -16f),
+                new Vector2(220f, 20f),
+                0.60f);
+
+            _featureOptionPickerPageText = CreateBodyText(
+                _bodyTextTemplate,
+                panel.transform,
+                "FeatureOptionPickerPage",
+                "",
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 13f),
+                new Vector2(90f, 16f),
+                8f,
+                "Center");
+
+            GameObject prev = CreateActionButton(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                _menuButtonSprite,
+                "Prev",
+                new Vector2(-92f, -190f),
+                new Vector2(58f, 18f));
+
+            prev.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                _featureOptionPickerPage =
+                    Math.Max(
+                        0,
+                        _featureOptionPickerPage - 1);
+
+                RebuildFeatureOptionPicker();
+            });
+
+            GameObject next = CreateActionButton(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                _menuButtonSprite,
+                "Next",
+                new Vector2(92f, -190f),
+                new Vector2(58f, 18f));
+
+            next.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                _featureOptionPickerPage++;
+                RebuildFeatureOptionPicker();
+            });
+
+            GameObject cancel = CreateActionButton(
+                _menuButtonLabelTemplate,
+                panel.transform,
+                _menuButtonSprite,
+                "Cancel",
+                new Vector2(0f, -190f),
+                new Vector2(68f, 18f));
+
+            cancel.GetComponent<Button>().onClick.AddListener(
+                CloseFeatureOptionPicker);
+
+            RebuildFeatureOptionPicker();
+        }
+
+        private void RebuildFeatureOptionPicker()
+        {
+            if (_featureOptionPickerRoot == null ||
+                _activeFeatureOptionPickerControl == null)
+            {
+                return;
+            }
+
+            foreach (GameObject button in _featureOptionPickerButtons)
+            {
+                if (button != null)
+                {
+                    Destroy(button);
+                }
+            }
+
+            _featureOptionPickerButtons.Clear();
+
+            Transform panel =
+                _featureOptionPickerRoot.transform.Find("Panel");
+
+            if (panel == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<GK2FeatureOption> options =
+                _activeFeatureOptionPickerControl.OptionsProvider() ??
+                Array.Empty<GK2FeatureOption>();
+
+            int pageCount =
+                Math.Max(
+                    1,
+                    (int)Math.Ceiling(
+                        options.Count /
+                        (double)FeatureOptionPickerPageSize));
+
+            _featureOptionPickerPage =
+                Mathf.Clamp(
+                    _featureOptionPickerPage,
+                    0,
+                    pageCount - 1);
+
+            int start =
+                _featureOptionPickerPage *
+                FeatureOptionPickerPageSize;
+
+            List<GK2FeatureOption> page =
+                options
+                    .Skip(start)
+                    .Take(FeatureOptionPickerPageSize)
+                    .ToList();
+
+            string currentValue =
+                _activeFeatureOptionPickerControl.ValueProvider() ??
+                string.Empty;
+
+            for (int i = 0; i < page.Count; i++)
+            {
+                GK2FeatureOption option =
+                    page[i];
+
+                bool selected =
+                    string.Equals(
+                        option.Value,
+                        currentValue,
+                        StringComparison.OrdinalIgnoreCase);
+
+                GameObject button = CreateActionButton(
+                    _menuButtonLabelTemplate,
+                    panel,
+                    _menuButtonSprite,
+                    selected
+                        ? option.Label + "  ✓"
+                        : option.Label,
+                    new Vector2(
+                        0f,
+                        -55f - (i * 21f)),
+                    new Vector2(220f, 18f));
+
+                button.GetComponent<Button>().onClick.AddListener(() =>
+                {
+                    try
+                    {
+                        _activeFeatureOptionPickerControl.ValueChanged(
+                            option.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(
+                            $"GK2+ feature option '{_activeFeatureOptionPickerControl.Id}' failed: {ex}");
+                    }
+
+                    CloseFeatureOptionPicker();
+                    RefreshFeatureOptionRows();
+                    RefreshFeatureToggleRows();
+                });
+
+                _featureOptionPickerButtons.Add(
+                    button);
+            }
+
+            if (_featureOptionPickerPageText != null)
+            {
+                SetText(
+                    _featureOptionPickerPageText,
+                    $"{_featureOptionPickerPage + 1}/{pageCount}");
+            }
+        }
+
+        private void CloseFeatureOptionPicker()
+        {
+            if (_featureOptionPickerRoot != null)
+            {
+                Destroy(_featureOptionPickerRoot);
+                _featureOptionPickerRoot = null;
+            }
+
+            _activeFeatureOptionPickerControl = null;
+            _featureOptionPickerPageText = null;
+            _featureOptionPickerButtons.Clear();
+            _featureOptionPickerPage = 0;
         }
 
         private void BuildSpawnItemRow()
@@ -2049,6 +2563,7 @@ Button close = closeButton.GetComponent<Button>();
 
             RefreshRegisteredActionButtons();
             RefreshFeatureToggleRows();
+            RefreshFeatureOptionRows();
             RefreshSpawnItemRow();
         }
 
@@ -2204,6 +2719,7 @@ Button close = closeButton.GetComponent<Button>();
 
         public void HideMenu()
         {
+            CloseFeatureOptionPicker();
             CloseItemPicker();
 
             if (_menuRoot != null)
@@ -2258,10 +2774,15 @@ Button close = closeButton.GetComponent<Button>();
             _tabButtons.Clear();
             _registeredActionButtons.Clear();
             _featureToggleRows.Clear();
+            _featureOptionRows.Clear();
             _tabNotices.Clear();
             _pageTitle = null;
             _pageText = null;
             _featureSettingsNote = null;
+            _featureOptionPickerRoot = null;
+            _activeFeatureOptionPickerControl = null;
+            _featureOptionPickerPageText = null;
+            _featureOptionPickerButtons.Clear();
             _githubButton = null;
             _nexusButton = null;
             _bugButton = null;
