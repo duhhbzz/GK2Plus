@@ -95,7 +95,9 @@ namespace GK2Plus
             );
 
             registry.Register(
-                new StackSizesFeature(Config)
+                new StackSizesFeature(
+                    Config,
+                    _services.UI)
             );
         }
 
