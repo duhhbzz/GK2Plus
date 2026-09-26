@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using BepInEx.Configuration;
@@ -139,10 +140,19 @@ namespace GK2Plus.Features.Cheats
                 "Refill Energy",
                 RefillEnergy);
 
-            RegisterCheatAction(
-                "cheats.spawn-item",
-                "Spawn Item",
-                SpawnConfiguredItem);
+            _uiService.RegisterSpawnItemControl(
+                new GK2SpawnItemControl(
+                    "Cheats",
+                    GetSpawnItemOptions,
+                    () => _spawnItemId?.Value ?? string.Empty,
+                    () => _spawnItemCount?.Value ?? 1,
+                    SelectSpawnItem,
+                    SetSpawnQuantity,
+                    () => RequestCheatExecution(
+                        "cheats.spawn-item",
+                        "Spawn Item",
+                        SpawnConfiguredItem),
+                    CanUseCheats));
 
             Logger.LogInfo(
                 "Basic Cheats enabled: Money increments, Heal Player, " +
@@ -416,6 +426,156 @@ namespace GK2Plus.Features.Cheats
 
             Logger.LogInfo(
                 $"Give Money completed: {before} -> {after} bronze units.");
+        }
+
+        private IReadOnlyList<GK2ItemOption> GetSpawnItemOptions()
+        {
+            List<GK2ItemOption> options =
+                new List<GK2ItemOption>();
+
+            GameBalance balance =
+                GameBalance.Me;
+
+            if (balance == null)
+            {
+                return options;
+            }
+
+            IEnumerable itemDefs =
+                ResolveItemDefs(balance);
+
+            if (itemDefs == null)
+            {
+                return options;
+            }
+
+            foreach (object value in itemDefs)
+            {
+                if (!(value is ItemDef itemDef) ||
+                    string.IsNullOrWhiteSpace(itemDef.id))
+                {
+                    continue;
+                }
+
+                string displayName = itemDef.id;
+
+                try
+                {
+                    string header =
+                        itemDef.GetHeader();
+
+                    if (!string.IsNullOrWhiteSpace(header))
+                    {
+                        displayName = header;
+                    }
+                }
+                catch
+                {
+                    // Fall back to the technical item id if localization/header
+                    // data is unavailable for an unusual definition.
+                }
+
+                options.Add(
+                    new GK2ItemOption(
+                        itemDef.id,
+                        displayName));
+            }
+
+            options.Sort((left, right) =>
+            {
+                int byName =
+                    string.Compare(
+                        left.DisplayName,
+                        right.DisplayName,
+                        StringComparison.OrdinalIgnoreCase);
+
+                return byName != 0
+                    ? byName
+                    : string.Compare(
+                        left.Id,
+                        right.Id,
+                        StringComparison.OrdinalIgnoreCase);
+            });
+
+            return options;
+        }
+
+        private void SelectSpawnItem(
+            string itemId)
+        {
+            if (_spawnItemId == null ||
+                string.IsNullOrWhiteSpace(itemId))
+            {
+                return;
+            }
+
+            _spawnItemId.Value =
+                itemId.Trim();
+
+            _config.Save();
+
+            Logger.LogInfo(
+                $"Spawn Item selection changed to '{_spawnItemId.Value}'.");
+        }
+
+        private void SetSpawnQuantity(
+            int quantity)
+        {
+            if (_spawnItemCount == null)
+            {
+                return;
+            }
+
+            int clamped =
+                Math.Max(
+                    1,
+                    Math.Min(
+                        10000,
+                        quantity));
+
+            if (_spawnItemCount.Value == clamped)
+            {
+                return;
+            }
+
+            _spawnItemCount.Value =
+                clamped;
+
+            _config.Save();
+        }
+
+        private static IEnumerable ResolveItemDefs(
+            GameBalance balance)
+        {
+            if (balance == null)
+            {
+                return null;
+            }
+
+            Type type =
+                balance.GetType();
+
+            FieldInfo field =
+                AccessTools.Field(
+                    type,
+                    "itemDefs");
+
+            if (field?.GetValue(balance) is IEnumerable fieldValues)
+            {
+                return fieldValues;
+            }
+
+            PropertyInfo property =
+                AccessTools.Property(
+                    type,
+                    "itemDefs");
+
+            if (property?.GetValue(balance, null) is IEnumerable propertyValues)
+            {
+                return propertyValues;
+            }
+
+            return null;
         }
 
         private void SpawnConfiguredItem()
