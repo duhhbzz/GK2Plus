@@ -27,6 +27,32 @@ GK2+ should remain a mod suite where players choose the features they want rathe
 
 ---
 
+## Roadmap and Project Documentation
+
+Before proposing or implementing a major feature, review:
+
+- [docs/FEATURES.md](docs/FEATURES.md) — canonical behavior for features that exist today;
+- [docs/ROADMAP.md](docs/ROADMAP.md) — high-confidence planned features and intended outcomes;
+- [docs/README.md](docs/README.md) — documentation index and source-of-truth guidance;
+- [AGENTS.md](AGENTS.md) — quick-start guidance for contributors and AI coding assistants;
+- [docs/GOVERNANCE.md](docs/GOVERNANCE.md) — maintainer/contributor boundaries;
+- [docs/CONFIGURATION.md](docs/CONFIGURATION.md) — settings/UI rules;
+- [docs/PERFORMANCE.md](docs/PERFORMANCE.md) and [docs/SAVE_SAFETY.md](docs/SAVE_SAFETY.md) — engineering constraints.
+
+The roadmap is a planning document, **not** an implementation specification. A roadmap item still requires current-version game reconnaissance before patches or internal API calls are written.
+
+### AI-Assisted Contributions
+
+AI-assisted development is welcome, but generated code is held to the same standards as human-written code.
+
+When using an AI coding assistant, give it the relevant source files plus `AGENTS.md`, this contribution guide, the feature catalog, roadmap, governance rules, and any applicable configuration/safety/performance documentation.
+
+Do not allow an AI tool to invent Graveyard Keeper 2 APIs, method signatures, save formats, or runtime validation. Verify game-internal targets against current recon/runtime evidence before implementation.
+
+The contributor remains responsible for reviewing, testing, licensing, attribution, and ensuring no proprietary recon output is accidentally committed.
+
+---
+
 ## Development Baseline
 
 GK2+ currently targets:
