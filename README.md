@@ -9,6 +9,7 @@
 
 <p align="center">
   <a href="CHANGELOG.md">Changelog</a> •
+  <a href="docs/ROADMAP.md">Roadmap</a> •
   <a href="CONTRIBUTING.md">Contributing</a> •
   <a href="docs/PERFORMANCE.md">Performance</a> •
   <a href="docs/SAVE_SAFETY.md">Save Safety</a> •
@@ -351,6 +352,7 @@ tools/release/
 
 Development standards:
 
+- [Feature Roadmap](docs/ROADMAP.md)
 - [Performance and Resource Standards](docs/PERFORMANCE.md)
 - [Save Safety](docs/SAVE_SAFETY.md)
 - [Release Checklist](docs/RELEASE_CHECKLIST.md)
