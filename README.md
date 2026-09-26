@@ -12,6 +12,7 @@
   <a href="CHANGELOG.md">Changelog</a> •
   <a href="CONTRIBUTING.md">Contributing</a> •
   <a href="docs/GOVERNANCE.md">Governance</a> •
+  <a href="docs/CONFIGURATION.md">Configuration</a> •
   <a href="docs/PERFORMANCE.md">Performance</a> •
   <a href="docs/SAVE_SAFETY.md">Save Safety</a> •
   <a href="docs/RELEASE_CHECKLIST.md">Release Checklist</a> •
@@ -299,6 +300,7 @@ tools/release/
 
 Development standards:
 
+- [Configuration](docs/CONFIGURATION.md)
 - [Performance and Resource Standards](docs/PERFORMANCE.md)
 - [Save Safety](docs/SAVE_SAFETY.md)
 - [Release Checklist](docs/RELEASE_CHECKLIST.md)
