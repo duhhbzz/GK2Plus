@@ -34,7 +34,10 @@ namespace GK2Plus
                 "General",
                 "Enabled",
                 true,
-                "Master switch for GK2+ gameplay features."
+                "Master switch for GK2+ gameplay features. " +
+                "For normal use, configure GK2+ from its in-game menu. " +
+                "Advanced users may edit com.duhhbzz.gk2plus.cfg directly or through a compatible mod-manager config editor. " +
+                "External config edits should be treated as next-launch changes."
             );
 
             _harmony = new Harmony(ModInfo.Guid);

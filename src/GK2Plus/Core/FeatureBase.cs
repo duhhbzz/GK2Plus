@@ -31,7 +31,10 @@ namespace GK2Plus.Core
                 Category,
                 $"{Id}.Enabled",
                 DefaultEnabled,
-                Description
+                Description +
+                " Recommended: configure this feature from the GK2+ main menu when available. " +
+                "Advanced users may edit the BepInEx config directly or through a compatible mod-manager config editor. " +
+                "External config edits should be treated as next-launch changes."
             );
 
             OnInitialize();

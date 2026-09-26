@@ -18,6 +18,12 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<string, System.Func<string>> _tabNotices =
             new Dictionary<string, System.Func<string>>();
 
+        private readonly List<GK2FeatureToggleControl> _featureToggleControls =
+            new List<GK2FeatureToggleControl>();
+
+        private readonly List<GK2FeatureOptionControl> _featureOptionControls =
+            new List<GK2FeatureOptionControl>();
+
         private ModMenuController _modMenuController;
 
         public GK2UIService(ManualLogSource logger)
@@ -43,6 +49,16 @@ namespace GK2Plus.Framework.UI
                 _modMenuController.RegisterTabNotice(
                     notice.Key,
                     notice.Value);
+            }
+
+            foreach (GK2FeatureToggleControl control in _featureToggleControls)
+            {
+                _modMenuController.RegisterFeatureToggleControl(control);
+            }
+
+            foreach (GK2FeatureOptionControl control in _featureOptionControls)
+            {
+                _modMenuController.RegisterFeatureOptionControl(control);
             }
 
             Logger.LogInfo(
@@ -84,6 +100,52 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterFeatureToggleControl(
+            GK2FeatureToggleControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            _featureToggleControls.RemoveAll(existing =>
+                string.Equals(
+                    existing.Id,
+                    control.Id,
+                    StringComparison.OrdinalIgnoreCase));
+
+            _featureToggleControls.Add(control);
+
+            if (_modMenuController != null)
+            {
+                _modMenuController.RegisterFeatureToggleControl(
+                    control);
+            }
+        }
+
+        public void RegisterFeatureOptionControl(
+            GK2FeatureOptionControl control)
+        {
+            if (control == null)
+            {
+                return;
+            }
+
+            _featureOptionControls.RemoveAll(existing =>
+                string.Equals(
+                    existing.Id,
+                    control.Id,
+                    StringComparison.OrdinalIgnoreCase));
+
+            _featureOptionControls.Add(control);
+
+            if (_modMenuController != null)
+            {
+                _modMenuController.RegisterFeatureOptionControl(
+                    control);
+            }
+        }
+
         public void RefreshMenu()
         {
             _modMenuController?.RefreshActiveTab();
@@ -109,6 +171,8 @@ namespace GK2Plus.Framework.UI
             _modMenuController = null;
             _menuActions.Clear();
             _tabNotices.Clear();
+            _featureToggleControls.Clear();
+            _featureOptionControls.Clear();
 
             base.Shutdown();
         }
