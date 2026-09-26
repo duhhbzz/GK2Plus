@@ -39,6 +39,33 @@ Only the maintainer merges official feature PRs.
 
 ## Every Release — Core Quality Gates
 
+### Branch / Pull Request Hygiene
+
+Before release preparation begins, inventory every open PR and active development branch and classify it as:
+
+- **This release** — must be merged to `main`, explicitly removed from the release, or blocked with a documented reason before publishing.
+- **Next release / future work** — may remain open, but its target milestone/intent must be clear and it must not be accidentally included in the current release.
+- **Obsolete / superseded** — close the PR and delete the branch once any needed commits have been preserved elsewhere.
+
+Checklist:
+
+- [ ] Review all open pull requests.
+- [ ] Confirm every PR intended for this release is already merged to `main` or is explicitly ready for final maintainer approval/merge.
+- [ ] Confirm no current-release feature exists only on an unmerged branch.
+- [ ] Confirm future-release PRs/branches are intentionally deferred and clearly identifiable as future work.
+- [ ] Close superseded/abandoned PRs after preserving any commits that are still needed.
+- [ ] Delete merged/superseded remote branches that are no longer needed.
+- [ ] Remove temporary integration/test branches after their work has landed in the canonical branch.
+- [ ] Confirm no duplicate branches contain divergent copies of the same feature that could cause future confusion.
+- [ ] Re-check the branch list after cleanup and confirm only `main` plus intentional active/future work remains.
+- [ ] Do not delete a branch whose commits are not safely merged, cherry-picked, tagged, or otherwise preserved.
+
+After the release is published:
+
+- [ ] Delete the completed release-preparation branch after merge.
+- [ ] Close any release-specific tracking PRs/issues that are finished.
+- [ ] Confirm branches intentionally kept for the next release are still current enough to rebase/sync cleanly later.
+
 ### Repository / Packaging
 
 - [ ] Confirm `VERSION` matches the intended release.
