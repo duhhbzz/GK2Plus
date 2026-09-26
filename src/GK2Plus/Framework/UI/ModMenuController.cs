@@ -2225,14 +2225,10 @@ Button close = closeButton.GetComponent<Button>();
 
         private static string DetectContext()
         {
-            // Prefer live player state over window visibility. GK2 can keep
-            // LazyWindow objects alive while they are no longer the active
-            // gameplay context.
-            if (MainGame.PlayerData != null)
-            {
-                return "Gameplay";
-            }
-
+            // The main-menu window is the strongest context signal. GK2 can
+            // leave MainGame.PlayerData populated after returning to the title
+            // screen, so player state alone can misclassify the main menu as
+            // gameplay.
             foreach (var behaviour in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
             {
                 if (behaviour != null &&
@@ -2243,7 +2239,12 @@ Button close = closeButton.GetComponent<Button>();
                 }
             }
 
-            return "Gameplay";
+            if (MainGame.PlayerData != null)
+            {
+                return "Gameplay";
+            }
+
+            return "MainMenu";
         }
 
         private void CleanupPartialMenu()
