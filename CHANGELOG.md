@@ -11,6 +11,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - Configurable GK2+ menu hotkey with F2 as the default.
 - In-game **Change Hotkey** control on the More tab with live input capture.
 - Native GK2 keyboard-binding conflict detection with options to keep both bindings or move the key to GK2+ and unbind the vanilla action.
+- Continuous Planting farming feature with an in-game Farming-tab toggle and live config support.
 
 ### Changed
 
@@ -19,6 +20,8 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 ### Compatibility
+
+- Continuous Planting targets the unchanged GK2 1.006 `GardenInteractionHandler.TryApplySeed` and `PlantingPlayerState.OnExit` path and restores only the same seed when inventory still contains it.
 
 ### Known Issues
 
