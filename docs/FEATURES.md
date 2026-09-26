@@ -27,6 +27,8 @@ The menu persists between the main menu and gameplay and organizes features into
 
 Where practical, features are independently configurable so players can disable an overlapping GK2+ feature without uninstalling the entire suite.
 
+Settings are ordered intentionally within each tab. Child options stay visually attached beneath their parent feature, and parent-disabled options remain visible but greyed/non-interactive so their saved values are still understandable.
+
 ---
 
 ## Manual Save
