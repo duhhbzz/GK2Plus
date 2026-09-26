@@ -250,20 +250,19 @@ namespace GK2Plus.Features.Inventory
                         widget,
                         "Inactive");
 
-                // Only count a widget as activated when we restored at least the
-                // selectable state and one native item-press callback. This
-                // fails closed if GK2 changes the widget-data shape later.
+                // Treat the widget as fully activated only when all three
+                // pieces of vanilla left-side behavior were restored:
+                // selectable state, item-press callbacks, and the normal item
+                // availability predicate. Leaving the availability predicate at
+                // vanilla's always-false value is what makes remote slots render
+                // greyed out even though their contents are visible.
                 if (state &&
-                    delegates > 0)
+                    delegates > 0 &&
+                    availability)
                 {
                     enabledWidgets++;
                     copiedDelegates += delegates;
-
-                    if (availability)
-                    {
-                        copiedAvailability++;
-                    }
-
+                    copiedAvailability++;
                     updatedStates++;
                 }
             }
@@ -471,27 +470,7 @@ namespace GK2Plus.Features.Inventory
                     memberName,
                     writable: false);
 
-            MemberInfo targetMember =
-                FindMember(
-                    target.GetType(),
-                    memberName,
-                    writable: true);
-
-            if (sourceMember == null ||
-                targetMember == null)
-            {
-                return false;
-            }
-
-            Type sourceType =
-                GetMemberType(sourceMember);
-
-            Type targetType =
-                GetMemberType(targetMember);
-
-            if (sourceType == null ||
-                targetType == null ||
-                sourceType != targetType)
+            if (sourceMember == null)
             {
                 return false;
             }
@@ -501,10 +480,61 @@ namespace GK2Plus.Features.Inventory
                     source,
                     sourceMember);
 
-            return TrySetMemberValue(
-                target,
-                targetMember,
-                value);
+            Type sourceType =
+                GetMemberType(sourceMember);
+
+            if (sourceType == null)
+            {
+                return false;
+            }
+
+            MemberInfo targetMember =
+                FindMember(
+                    target.GetType(),
+                    memberName,
+                    writable: true);
+
+            if (targetMember != null &&
+                GetMemberType(targetMember) == sourceType &&
+                TrySetMemberValue(
+                    target,
+                    targetMember,
+                    value))
+            {
+                return true;
+            }
+
+            // GK2 exposes some widget-data values through getter-only
+            // auto-properties. In that case the writable storage is the
+            // compiler-generated backing field, not the property itself.
+            FieldInfo backingField =
+                FindField(
+                    target.GetType(),
+                    $"<{memberName}>k__BackingField");
+
+            if (backingField != null &&
+                backingField.FieldType == sourceType &&
+                TrySetFieldValue(
+                    target,
+                    backingField,
+                    value))
+            {
+                return true;
+            }
+
+            // Also handle a same-named private field when the public surface is
+            // a getter-only property with a manually implemented backing field.
+            FieldInfo exactField =
+                FindField(
+                    target.GetType(),
+                    memberName);
+
+            return exactField != null &&
+                exactField.FieldType == sourceType &&
+                TrySetFieldValue(
+                    target,
+                    exactField,
+                    value);
         }
 
         private static bool SetItemRelatedWidgetState(
@@ -512,7 +542,7 @@ namespace GK2Plus.Features.Inventory
             string enumValue)
         {
             foreach (MemberInfo member in
-                GetAllWritableMembers(
+                GetAllReadableMembers(
                     target.GetType()))
             {
                 Type memberType =
@@ -540,6 +570,30 @@ namespace GK2Plus.Features.Inventory
                         target,
                         member,
                         value))
+                    {
+                        return true;
+                    }
+
+                    FieldInfo backingField =
+                        FindField(
+                            target.GetType(),
+                            $"<{member.Name}>k__BackingField");
+
+                    if (backingField != null &&
+                        backingField.FieldType == memberType &&
+                        TrySetFieldValue(
+                            target,
+                            backingField,
+                            value))
+                    {
+                        return true;
+                    }
+
+                    if (member is FieldInfo field &&
+                        TrySetFieldValue(
+                            target,
+                            field,
+                            value))
                     {
                         return true;
                     }
@@ -682,6 +736,37 @@ namespace GK2Plus.Features.Inventory
                 {
                     yield return property;
                 }
+            }
+        }
+
+        private static FieldInfo FindField(
+            Type type,
+            string fieldName)
+        {
+            return GetAllFields(type)
+                .FirstOrDefault(field =>
+                    string.Equals(
+                        field.Name,
+                        fieldName,
+                        StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool TrySetFieldValue(
+            object instance,
+            FieldInfo field,
+            object value)
+        {
+            try
+            {
+                field.SetValue(
+                    instance,
+                    value);
+
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
