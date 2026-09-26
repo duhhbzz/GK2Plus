@@ -236,6 +236,10 @@ Spawn Item is a cheat action. It uses the same first-cheat confirmation, save ch
 
 GK2+ asks GK2 to materialize the requested item through `ItemCount.CreateItems()` and add it through the player's native inventory API rather than constructing a separate inventory representation.
 
+### Current limitation
+
+Spawn Item is currently intended primarily for normal inventory items. Big carryables and world-linked definitions are still inserted through the inventory path rather than being routed through GK2's native physical world-drop/carry behavior. Native drop routing is being tested separately and is not part of v0.1.5.
+
 ### Validation completed
 
 Runtime validation confirmed item selection, quantity control, native item creation, and insertion into the player's inventory.
