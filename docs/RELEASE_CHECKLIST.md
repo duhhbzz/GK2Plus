@@ -12,6 +12,9 @@
 - [ ] Confirm only intended GK2+ files are included.
 - [ ] Record the release ZIP SHA256 printed by the packaging script.
 - [ ] Use the same version/build artifact for GitHub Releases and Nexus Mods.
+- [ ] Review `docs/ROADMAP.md` and update feature status/scope for anything that shipped, moved, or was dropped.
+- [ ] Confirm `README.md`, `docs/README.md`, and `CONTRIBUTING.md` still point contributors to the current roadmap and engineering docs.
+- [ ] Confirm player-facing behavior added in this release is represented in `CHANGELOG.md` and relevant documentation.
 
 ### Launch / UI Lifecycle
 
