@@ -72,18 +72,18 @@ namespace GK2Plus.Features.Inventory
         {
             _activeInstance = this;
 
-            LogTypeSurface(typeof(Item));
-            LogTypeSurface(typeof(ItemDef));
-            LogTypeSurface(typeof(Inventory));
-            LogTypeSurface(typeof(MultiInventory));
+            LogTypeSurface(typeof(global::Item));
+            LogTypeSurface(typeof(global::ItemDef));
+            LogTypeSurface(typeof(global::Inventory));
+            LogTypeSurface(typeof(global::MultiInventory));
 
             MethodInfo addItemMethod = AccessTools.Method(
-                typeof(Inventory),
+                typeof(global::Inventory),
                 "AddItemToInventory",
                 new[]
                 {
-                    typeof(Item),
-                    typeof(Item),
+                    typeof(global::Item),
+                    typeof(global::Item),
                     typeof(bool)
                 }
             );
