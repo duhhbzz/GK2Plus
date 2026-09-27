@@ -78,6 +78,8 @@ After the release is published:
 - [ ] Confirm only intended GK2+ files are included.
 - [ ] Record the release ZIP SHA256 printed by the packaging script.
 - [ ] Use the same version/build artifact for GitHub Releases and Nexus Mods.
+- [ ] Build the Steam Workshop staging package from that same canonical release ZIP with `tools/release/Build-SteamWorkshopPackage.ps1`.
+- [ ] Publish/update the Steam Workshop item locally with `tools/release/Publish-SteamWorkshop.ps1` and record/verify the Workshop item URL.
 - [ ] Confirm `docs/FEATURES.md` reflects the final released feature set.
 - [ ] Confirm the maintainer has finalized `CHANGELOG.md`, release notes, and public release metadata.
 - [ ] Confirm `docs/ROADMAP.md` reflects features that shipped, moved, or were dropped.
