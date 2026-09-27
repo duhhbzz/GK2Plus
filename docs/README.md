@@ -15,6 +15,7 @@ If you are contributing manually or with an AI coding assistant, start here inst
 - [Save Safety](SAVE_SAFETY.md) — persistent mutation, checkpoint, backup, and cheat-integrity rules.
 - [Release Checklist](RELEASE_CHECKLIST.md) — feature approval and release validation gates.
 - [Thunderstore](THUNDERSTORE.md) — Thunderstore / R2ModMan packaging and distribution notes.
+- [Steam Workshop](STEAM_WORKSHOP.md) — SteamCMD packaging/publishing and Workshop validation.
 - [Nexus Page](NEXUS_PAGE.md) — maintained player-facing Nexus copy/reference.
 
 ## Source-of-Truth Order
