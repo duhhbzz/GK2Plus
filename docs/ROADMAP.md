@@ -28,9 +28,9 @@ GK2+ already provides the framework needed to build the roadmap below:
 - ✅ Manual Save
 - ✅ Cheat-save tainting and achievement protection
 - ✅ Functional money / heal / energy cheat actions
-- 🧪 Shared Storage with Current Zone / Global scope and independent access/use/crafting capabilities
-- 🧪 Bigger Item Stacks with configurable multiplier
-- 🧪 Spawn Item cheat
+- ✅ Shared Storage with Current Zone / Global scope and independent access/use/crafting capabilities
+- ✅ Bigger Item Stacks with configurable multiplier
+- ✅ Spawn Item cheat
 - 🧪 Configurable GK2+ menu hotkey
 - 🧪 Continuous Planting
 

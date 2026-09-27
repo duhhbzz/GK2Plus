@@ -6,6 +6,8 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-26
+
 ### Added
 
 - **Shared Storage**: configurable Current Zone or Global access to eligible storage from normal chest windows and the character inventory while retaining GK2's native inventory behavior.
@@ -46,6 +48,10 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - Bigger Item Stacks restores only stack-limit values that still match GK2+'s last applied value, preserving later third-party changes.
 
 ### Known Issues
+
+- **Use Items From Storage** currently supports consumable Use behavior only; Equip, Plant, Fertilize, Destroy, and hotbar actions remain player-inventory only.
+- **Spawn Item** is intended primarily for normal inventory items in v0.1.5; big carryables and world-linked definitions are not yet routed through GK2's native physical drop/carry path.
+- Configurable GK2+ menu hotkey and Continuous Planting remain in development and are not included in v0.1.5.
 
 ---
 

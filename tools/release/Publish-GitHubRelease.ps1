@@ -57,7 +57,7 @@ try {
         $zipPath,
         $thunderstoreZipPath,
         '--target', 'main',
-        '--title', "GK2+ $tag - First Gameplay Release",
+        '--title', "GK2+ $tag",
         '--notes-file', $notesPath
     )
 

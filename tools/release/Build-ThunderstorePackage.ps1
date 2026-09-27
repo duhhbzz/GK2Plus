@@ -60,7 +60,7 @@ $manifest = [ordered]@{
     name = 'GK2Plus'
     version_number = $version
     website_url = 'https://github.com/duhhbzz/GK2Plus'
-    description = "Modular Graveyard Keeper 2 QoL suite with Manual Save, native-style cheats, save-safety checkpoints, and per-save achievement protection. Tested with GK2 v$gameVersion."
+    description = "Modular Graveyard Keeper 2 QoL suite with Shared Storage, inventory improvements, cheats, save safety, and native-style UI. Tested with GK2 v$gameVersion."
     dependencies = @(
         'BepInEx-BepInExPack-5.4.2305'
     )

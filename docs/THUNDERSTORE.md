@@ -18,7 +18,7 @@ VERSION
 
 The wrapper/layout differs by channel, but all channels must ship the same compiled `GK2Plus.dll`.
 
-The repository-root `GAME_VERSION` file records the Graveyard Keeper 2 version validated for the release. For v0.1.0, that is **1.006**.
+The repository-root `GAME_VERSION` file records the Graveyard Keeper 2 version validated for the release. For v0.1.5, that is **1.006**.
 
 ## Community
 
@@ -79,14 +79,14 @@ The build script generates the icon from `assets/branding/gk2plus-logo.png` so t
 
 The build script generates `manifest.json` from the repository `VERSION` file.
 
-Current v0.1.0 values:
+Current v0.1.5 values:
 
 ~~~json
 {
   "name": "GK2Plus",
-  "version_number": "0.1.0",
+  "version_number": "0.1.5",
   "website_url": "https://github.com/duhhbzz/GK2Plus",
-  "description": "Modular Graveyard Keeper 2 QoL suite with Manual Save, native-style cheats, save-safety checkpoints, and per-save achievement protection.",
+  "description": "Modular Graveyard Keeper 2 QoL suite with Shared Storage, inventory improvements, cheats, save safety, and native-style UI.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2305"
   ]
@@ -99,7 +99,7 @@ Do not manually drift the Thunderstore version away from the root `VERSION` file
 
 1. Create/select the Thunderstore Team that should permanently own GK2+.
 2. Run the Release build/package scripts.
-3. Validate `dist/GK2Plus-0.1.0-Thunderstore.zip` with Thunderstore's manifest validator.
+3. Validate `dist/GK2Plus-0.1.5-Thunderstore.zip` with Thunderstore's manifest validator.
 4. On **Upload package**, choose that ZIP.
 5. Select the Team.
 6. Select **Graveyard Keeper 2** under Communities.
