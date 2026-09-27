@@ -4,8 +4,6 @@ All notable changes to **GK2+ (Graveyard Keeper Plus)** are documented here.
 
 GK2+ follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
-
 ## [0.1.5] - 2026-09-26
 
 ### Added
