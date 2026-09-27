@@ -220,6 +220,14 @@ The v0.1.0 manifest depends on `BepInEx-BepInExPack-5.4.2305`, which provides th
 
 See [docs/THUNDERSTORE.md](docs/THUNDERSTORE.md).
 
+### Steam Workshop
+
+Graveyard Keeper 2 has a public Steam Workshop. GK2+ includes a local SteamCMD packaging/publishing flow so Steam credentials and Steam Guard remain on the maintainer's machine rather than in CI.
+
+The Workshop package uses the same canonical GK2Plus.dll as the GitHub/Nexus release.
+
+See [docs/STEAM_WORKSHOP.md](docs/STEAM_WORKSHOP.md).
+
 ---
 
 ## Compatibility Philosophy
