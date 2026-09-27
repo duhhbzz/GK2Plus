@@ -3,6 +3,21 @@ name: Publish release to mod platforms
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub release tag to publish
+        required: true
+        default: v0.1.5
+      platform:
+        description: Platform to publish
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - nexus
+          - thunderstore
 
 permissions:
   contents: read
@@ -10,6 +25,7 @@ permissions:
 jobs:
   nexus:
     name: Publish to Nexus Mods
+    if: ${{ github.event_name == 'release' || inputs.platform == 'all' || inputs.platform == 'nexus' }}
     runs-on: ubuntu-latest
     steps:
       - name: Resolve release metadata
@@ -17,9 +33,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          GAME_VERSION="$(gh api "repos/${{ github.repository }}/contents/GAME_VERSION?ref=${{ github.event.release.tag_name }}" --jq '.content' | base64 --decode | tr -d '\r\n')"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ inputs.release_tag }}"
+          fi
+          VERSION="${TAG#v}"
+          GAME_VERSION="$(gh api "repos/${{ github.repository }}/contents/GAME_VERSION?ref=${TAG}" --jq '.content' | base64 --decode | tr -d '\r\n')"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "GAME_VERSION=${GAME_VERSION}" >> "$GITHUB_ENV"
 
@@ -28,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release download "${{ github.event.release.tag_name }}" \
+          gh release download "${TAG}" \
             --repo "${{ github.repository }}" \
             --pattern "GK2Plus-${VERSION}.zip"
 
@@ -40,7 +61,7 @@ jobs:
           mod_id: ${{ vars.NEXUSMODS_MOD_ID }}
           filename: GK2Plus-${{ env.VERSION }}.zip
           version: ${{ env.VERSION }}
-          display_name: GK2+ v${{ env.VERSION }}
+          display_name: GK2 Plus v${{ env.VERSION }}
           description: GK2+ v${{ env.VERSION }} - tested with Graveyard Keeper 2 v${{ env.GAME_VERSION }}
           category: main
           archive_existing_version: true
@@ -50,6 +71,7 @@ jobs:
 
   thunderstore:
     name: Publish to Thunderstore
+    if: ${{ github.event_name == 'release' || inputs.platform == 'all' || inputs.platform == 'thunderstore' }}
     runs-on: ubuntu-latest
     steps:
       - name: Resolve release metadata
@@ -57,9 +79,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          GAME_VERSION="$(gh api "repos/${{ github.repository }}/contents/GAME_VERSION?ref=${{ github.event.release.tag_name }}" --jq '.content' | base64 --decode | tr -d '\r\n')"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ inputs.release_tag }}"
+          fi
+          VERSION="${TAG#v}"
+          GAME_VERSION="$(gh api "repos/${{ github.repository }}/contents/GAME_VERSION?ref=${TAG}" --jq '.content' | base64 --decode | tr -d '\r\n')"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "GAME_VERSION=${GAME_VERSION}" >> "$GITHUB_ENV"
 
@@ -68,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release download "${{ github.event.release.tag_name }}" \
+          gh release download "${TAG}" \
             --repo "${{ github.repository }}" \
             --pattern "GK2Plus-${VERSION}-Thunderstore.zip"
 
