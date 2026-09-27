@@ -100,7 +100,26 @@ function Escape-Vdf([string]$value) {
     return $value.Replace('\','\\').Replace('"','\"').Replace([Environment]::NewLine,'\n')
 }
 
-$description = "GK2+ - one mod, your way.\n\nModular Graveyard Keeper 2 QoL/gameplay suite.\n\nv$version: Shared Storage, Bigger Item Stacks, Spawn Item, Manual Save, cheats and save safety.\n\nRequires BepInEx 5.4.23.5. Tested with GK2 v$gameVersion.\n\nSee WORKSHOP_INSTALL.txt for installation.\nhttps://github.com/duhhbzz/GK2Plus"
+$description = @"
+GK2+ - one mod, your way.
+
+Modular Graveyard Keeper 2 QoL/gameplay suite.
+
+v$version highlights:
+- Shared Storage with Current Zone / Global scope
+- Character Inventory Access
+- Use supported consumables from Shared Storage
+- Craft/build from Global Shared Storage
+- Bigger Item Stacks
+- Spawn Item cheat
+- Manual Save and save safety
+
+Requires BepInEx 5.4.23.5.
+Tested with GK2 v$gameVersion.
+
+See WORKSHOP_INSTALL.txt for installation.
+https://github.com/duhhbzz/GK2Plus
+"@
 $vdf = @"
 "workshopitem"
 {
