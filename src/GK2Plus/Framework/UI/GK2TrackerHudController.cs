@@ -47,6 +47,23 @@ namespace GK2Plus.Framework.UI
             public GK2UiPool<HudIngredientView> IngredientPool;
         }
 
+        private sealed class HudQuestEntryData
+        {
+            public string Title;
+            public string Description;
+            public readonly List<HudMaterialData> Materials =
+                new List<HudMaterialData>();
+        }
+
+        private sealed class HudQuestEntryView
+        {
+            public GameObject Root;
+            public RectTransform Rect;
+            public TextMeshProUGUI Title;
+            public TextMeshProUGUI Description;
+            public GK2UiPool<HudIngredientView> IngredientPool;
+        }
+
         private sealed class HudPanel
         {
             public GameObject Root;
@@ -55,6 +72,7 @@ namespace GK2Plus.Framework.UI
             public TextMeshProUGUI Body;
             public GK2UiPool<HudIngredientView> IngredientPool;
             public GK2UiPool<HudCraftEntryView> CraftEntryPool;
+            public GK2UiPool<HudQuestEntryView> QuestEntryPool;
         }
 
         private ManualLogSource _logger;
@@ -326,9 +344,21 @@ namespace GK2Plus.Framework.UI
                     body);
             }
 
+            if (string.Equals(
+                    groupName,
+                    "QUESTS",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return RenderQuestPanel(
+                    panel,
+                    body);
+            }
+
             panel.Body.gameObject.SetActive(true);
             panel.CraftEntryPool?.Begin();
             panel.CraftEntryPool?.End();
+            panel.QuestEntryPool?.Begin();
+            panel.QuestEntryPool?.End();
             panel.IngredientPool?.Begin();
 
             string[] lines =
@@ -451,6 +481,8 @@ namespace GK2Plus.Framework.UI
 
             panel.IngredientPool?.Begin();
             panel.IngredientPool?.End();
+            panel.QuestEntryPool?.Begin();
+            panel.QuestEntryPool?.End();
 
             List<HudCraftEntryData> entries =
                 ParseCraftEntries(
@@ -491,6 +523,354 @@ namespace GK2Plus.Framework.UI
             return
                 cursorY +
                 GK2UiMetrics.Tracker.BodyBottomPadding;
+        }
+
+        private float RenderQuestPanel(
+            HudPanel panel,
+            string body)
+        {
+            panel.Body.text =
+                string.Empty;
+            panel.Body.gameObject.SetActive(false);
+
+            panel.IngredientPool?.Begin();
+            panel.IngredientPool?.End();
+            panel.CraftEntryPool?.Begin();
+            panel.CraftEntryPool?.End();
+
+            List<HudQuestEntryData> entries =
+                ParseQuestEntries(
+                    body);
+
+            panel.QuestEntryPool?.Begin();
+
+            float cursorY =
+                GK2UiMetrics.Tracker.BodyTopPadding;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                HudQuestEntryView view =
+                    panel.QuestEntryPool?.Rent();
+
+                if (view == null)
+                {
+                    continue;
+                }
+
+                float entryHeight =
+                    ConfigureQuestEntry(
+                        view,
+                        entries[i],
+                        cursorY);
+
+                cursorY +=
+                    entryHeight + 6f;
+            }
+
+            panel.QuestEntryPool?.End();
+
+            if (entries.Count > 0)
+            {
+                cursorY -= 6f;
+            }
+
+            return
+                cursorY +
+                GK2UiMetrics.Tracker.BodyBottomPadding;
+        }
+
+        private static List<HudQuestEntryData> ParseQuestEntries(
+            string body)
+        {
+            List<HudQuestEntryData> entries =
+                new List<HudQuestEntryData>();
+
+            HudQuestEntryData current =
+                null;
+
+            foreach (string rawLine in
+                     (body ?? string.Empty)
+                     .Replace("\r", string.Empty)
+                     .Split('\n'))
+            {
+                string line =
+                    rawLine.Trim();
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                if (TryParseQuestToken(
+                        line,
+                        out string title,
+                        out string description))
+                {
+                    current =
+                        new HudQuestEntryData
+                        {
+                            Title = title,
+                            Description = description
+                        };
+
+                    entries.Add(
+                        current);
+
+                    continue;
+                }
+
+                if (TryParseHudItemToken(
+                        line,
+                        out string itemId,
+                        out int currentCount,
+                        out int target,
+                        out _,
+                        out bool customItem) &&
+                    !customItem &&
+                    current != null)
+                {
+                    current.Materials.Add(
+                        new HudMaterialData
+                        {
+                            ItemId = itemId,
+                            Current = currentCount,
+                            Target = target
+                        });
+                }
+            }
+
+            return entries;
+        }
+
+        private static bool TryParseQuestToken(
+            string line,
+            out string title,
+            out string description)
+        {
+            title = string.Empty;
+            description = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(line) ||
+                !line.StartsWith(
+                    "[[QUEST|",
+                    StringComparison.OrdinalIgnoreCase) ||
+                !line.EndsWith(
+                    "]]",
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string payload =
+                line.Substring(
+                    2,
+                    line.Length - 4);
+
+            string[] parts =
+                payload.Split('|');
+
+            if (parts.Length < 3 ||
+                !string.Equals(
+                    parts[0],
+                    "QUEST",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            try
+            {
+                title =
+                    Uri.UnescapeDataString(
+                        parts[1] ?? string.Empty);
+
+                description =
+                    Uri.UnescapeDataString(
+                        parts[2] ?? string.Empty);
+            }
+            catch
+            {
+                title = string.Empty;
+                description = string.Empty;
+                return false;
+            }
+
+            return !string.IsNullOrWhiteSpace(
+                title);
+        }
+
+        private float ConfigureQuestEntry(
+            HudQuestEntryView view,
+            HudQuestEntryData data,
+            float cursorY)
+        {
+            if (view == null ||
+                data == null)
+            {
+                return 0f;
+            }
+
+            const float titleDescriptionGap = 1f;
+            const float descriptionItemsGap = 3f;
+            const float entryBottomPadding = 2f;
+
+            float entryWidth =
+                GK2UiMetrics.Tracker.PanelWidth -
+                (GK2UiMetrics.Tracker.BodyHorizontalPadding * 2f);
+
+            view.Root.SetActive(true);
+
+            view.Rect.anchoredPosition =
+                new Vector2(
+                    GK2UiMetrics.Tracker.BodyHorizontalPadding,
+                    -(GK2UiMetrics.Tracker.TitleHeight +
+                      cursorY));
+
+            view.Title.text =
+                data.Title ?? string.Empty;
+
+            Vector2 titlePreferred =
+                view.Title.GetPreferredValues(
+                    view.Title.text,
+                    entryWidth,
+                    0f);
+
+            float titleHeight =
+                Mathf.Max(
+                    GK2UiMetrics.Tracker.LineHeight,
+                    titlePreferred.y);
+
+            view.Title.rectTransform.anchoredPosition =
+                Vector2.zero;
+            view.Title.rectTransform.sizeDelta =
+                new Vector2(
+                    0f,
+                    titleHeight);
+
+            bool hasDescription =
+                !string.IsNullOrWhiteSpace(
+                    data.Description);
+
+            float descriptionHeight =
+                0f;
+
+            view.Description.gameObject.SetActive(
+                hasDescription);
+
+            if (hasDescription)
+            {
+                view.Description.text =
+                    data.Description;
+
+                Vector2 descriptionPreferred =
+                    view.Description.GetPreferredValues(
+                        view.Description.text,
+                        entryWidth,
+                        0f);
+
+                descriptionHeight =
+                    Mathf.Max(
+                        GK2UiMetrics.Tracker.LineHeight,
+                        descriptionPreferred.y);
+
+                view.Description.rectTransform.anchoredPosition =
+                    new Vector2(
+                        0f,
+                        -(titleHeight +
+                          titleDescriptionGap));
+
+                view.Description.rectTransform.sizeDelta =
+                    new Vector2(
+                        0f,
+                        descriptionHeight);
+            }
+            else
+            {
+                view.Description.text =
+                    string.Empty;
+            }
+
+            float materialTop =
+                titleHeight +
+                (hasDescription
+                    ? titleDescriptionGap +
+                      descriptionHeight +
+                      descriptionItemsGap
+                    : descriptionItemsGap);
+
+            int materialRows =
+                data.Materials.Count == 0
+                    ? 0
+                    : Mathf.CeilToInt(
+                        data.Materials.Count /
+                        (float)GK2UiMetrics.Tracker.IngredientColumns);
+
+            float materialHeight =
+                materialRows == 0
+                    ? 0f
+                    : (materialRows *
+                       GK2UiMetrics.Tracker.IngredientCellSize) +
+                      ((materialRows - 1) *
+                       GK2UiMetrics.Tracker.IngredientGap);
+
+            float entryHeight =
+                materialTop +
+                materialHeight +
+                entryBottomPadding;
+
+            view.Rect.sizeDelta =
+                new Vector2(
+                    entryWidth,
+                    entryHeight);
+
+            view.IngredientPool?.Begin();
+
+            for (int i = 0; i < data.Materials.Count; i++)
+            {
+                HudMaterialData material =
+                    data.Materials[i];
+
+                int row =
+                    i /
+                    GK2UiMetrics.Tracker.IngredientColumns;
+
+                int column =
+                    i %
+                    GK2UiMetrics.Tracker.IngredientColumns;
+
+                HudIngredientView ingredient =
+                    view.IngredientPool?.Rent();
+
+                if (ingredient == null)
+                {
+                    continue;
+                }
+
+                Vector2 position =
+                    new Vector2(
+                        column *
+                        (GK2UiMetrics.Tracker.IngredientCellSize +
+                         GK2UiMetrics.Tracker.IngredientGap),
+                        -(materialTop +
+                          (row *
+                           (GK2UiMetrics.Tracker.IngredientCellSize +
+                            GK2UiMetrics.Tracker.IngredientGap))));
+
+                ConfigureIngredientView(
+                    ingredient,
+                    0,
+                    0,
+                    material.ItemId,
+                    material.Current,
+                    material.Target,
+                    string.Empty,
+                    false,
+                    position);
+            }
+
+            view.IngredientPool?.End();
+
+            return entryHeight;
         }
 
         private static List<HudCraftEntryData> ParseCraftEntries(
@@ -1115,6 +1495,113 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        private HudQuestEntryView CreateQuestEntryView(
+            HudPanel panel)
+        {
+            GameObject root =
+                new GameObject(
+                    "HudQuestEntry",
+                    typeof(RectTransform));
+
+            root.transform.SetParent(
+                panel.Root.transform,
+                false);
+
+            RectTransform rect =
+                root.GetComponent<RectTransform>();
+
+            rect.anchorMin =
+                new Vector2(
+                    0f,
+                    1f);
+            rect.anchorMax =
+                new Vector2(
+                    0f,
+                    1f);
+            rect.pivot =
+                new Vector2(
+                    0f,
+                    1f);
+
+            TextMeshProUGUI title =
+                CreateText(
+                    _bodyTemplate,
+                    root.transform,
+                    "QuestTitle",
+                    GK2UiMetrics.Tracker.BodyFontSize,
+                    TextAlignmentOptions.TopLeft);
+
+            title.fontStyle =
+                FontStyles.Bold;
+            title.textWrappingMode =
+                TextWrappingModes.Normal;
+
+            RectTransform titleRect =
+                title.rectTransform;
+
+            titleRect.anchorMin =
+                new Vector2(
+                    0f,
+                    1f);
+            titleRect.anchorMax =
+                new Vector2(
+                    1f,
+                    1f);
+            titleRect.pivot =
+                new Vector2(
+                    0f,
+                    1f);
+
+            TextMeshProUGUI description =
+                CreateText(
+                    _bodyTemplate,
+                    root.transform,
+                    "QuestDescription",
+                    9f,
+                    TextAlignmentOptions.TopLeft);
+
+            description.textWrappingMode =
+                TextWrappingModes.Normal;
+
+            RectTransform descriptionRect =
+                description.rectTransform;
+
+            descriptionRect.anchorMin =
+                new Vector2(
+                    0f,
+                    1f);
+            descriptionRect.anchorMax =
+                new Vector2(
+                    1f,
+                    1f);
+            descriptionRect.pivot =
+                new Vector2(
+                    0f,
+                    1f);
+
+            HudQuestEntryView view =
+                new HudQuestEntryView
+                {
+                    Root = root,
+                    Rect = rect,
+                    Title = title,
+                    Description = description
+                };
+
+            view.IngredientPool =
+                new GK2UiPool<HudIngredientView>(
+                    () => CreateIngredientView(root.transform),
+                    (ingredient, active) =>
+                    {
+                        if (ingredient?.Root != null)
+                        {
+                            ingredient.Root.SetActive(active);
+                        }
+                    });
+
+            return view;
+        }
+
         private HudCraftEntryView CreateCraftEntryView(
             HudPanel panel)
         {
@@ -1242,6 +1729,17 @@ namespace GK2Plus.Framework.UI
             panel.CraftEntryPool =
                 new GK2UiPool<HudCraftEntryView>(
                     () => CreateCraftEntryView(panel),
+                    (view, active) =>
+                    {
+                        if (view?.Root != null)
+                        {
+                            view.Root.SetActive(active);
+                        }
+                    });
+
+            panel.QuestEntryPool =
+                new GK2UiPool<HudQuestEntryView>(
+                    () => CreateQuestEntryView(panel),
                     (view, active) =>
                     {
                         if (view?.Root != null)
