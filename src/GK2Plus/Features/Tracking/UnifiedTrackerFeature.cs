@@ -664,68 +664,146 @@ namespace GK2Plus.Features.Tracking
 
             GameObject buttonObject;
 
+            TextMeshProUGUI nameLabel =
+                Traverse.Create(widget)
+                    .Field("nameLabel")
+                    .GetValue<TextMeshProUGUI>();
+
             if (existing == null)
             {
-                global::UIDialogWindowButton nativeTemplate =
-                    Resources
-                        .FindObjectsOfTypeAll<global::UIDialogWindowButton>()
-                        .FirstOrDefault(candidate =>
-                            candidate != null &&
-                            candidate.gameObject != null &&
-                            candidate.LazyButton != null);
-
-                if (nativeTemplate == null)
-                {
-                    Logger.LogWarning(
-                        "Unified Tracker could not locate a native dialog/Get-style button template.");
-                    return;
-                }
-
                 buttonObject =
-                    UnityEngine.Object.Instantiate(
-                        nativeTemplate.gameObject,
-                        widget.transform);
+                    new GameObject(
+                        buttonName,
+                        typeof(RectTransform),
+                        typeof(CanvasRenderer),
+                        typeof(Image),
+                        typeof(Button));
 
-                buttonObject.name =
-                    buttonName;
+                buttonObject.transform.SetParent(
+                    widget.transform,
+                    false);
 
                 RectTransform rect =
-                    buttonObject.transform as RectTransform;
+                    buttonObject
+                        .GetComponent<RectTransform>();
 
-                if (rect != null)
+                // Keep the action completely out of the variable-height name/
+                // description area. This right-side gutter is directly before
+                // the native ingredient cells.
+                rect.anchorMin =
+                    new Vector2(
+                        1f,
+                        0.5f);
+                rect.anchorMax =
+                    new Vector2(
+                        1f,
+                        0.5f);
+                rect.pivot =
+                    new Vector2(
+                        1f,
+                        0.5f);
+                rect.anchoredPosition =
+                    new Vector2(
+                        -111f,
+                        0f);
+                rect.sizeDelta =
+                    new Vector2(
+                        16f,
+                        16f);
+
+                Image image =
+                    buttonObject
+                        .GetComponent<Image>();
+
+                image.color =
+                    new Color(
+                        0.18f,
+                        0.15f,
+                        0.12f,
+                        0.96f);
+
+                Button button =
+                    buttonObject
+                        .GetComponent<Button>();
+
+                button.targetGraphic =
+                    image;
+                button.transition =
+                    Selectable.Transition.ColorTint;
+
+                ColorBlock colors =
+                    button.colors;
+
+                colors.normalColor =
+                    Color.white;
+                colors.highlightedColor =
+                    new Color(
+                        1f,
+                        0.90f,
+                        0.65f,
+                        1f);
+                colors.pressedColor =
+                    new Color(
+                        0.80f,
+                        0.72f,
+                        0.58f,
+                        1f);
+                colors.selectedColor =
+                    Color.white;
+                colors.disabledColor =
+                    new Color(
+                        0.45f,
+                        0.45f,
+                        0.45f,
+                        0.65f);
+
+                button.colors =
+                    colors;
+
+                TextMeshProUGUI label =
+                    new GameObject(
+                        "Label",
+                        typeof(RectTransform),
+                        typeof(CanvasRenderer),
+                        typeof(TextMeshProUGUI))
+                    .GetComponent<TextMeshProUGUI>();
+
+                label.transform.SetParent(
+                    buttonObject.transform,
+                    false);
+
+                RectTransform labelRect =
+                    label.rectTransform;
+
+                labelRect.anchorMin =
+                    Vector2.zero;
+                labelRect.anchorMax =
+                    Vector2.one;
+                labelRect.offsetMin =
+                    Vector2.zero;
+                labelRect.offsetMax =
+                    Vector2.zero;
+
+                if (nameLabel != null)
                 {
-                    rect.anchorMin =
-                        new Vector2(
-                            0f,
-                            0.5f);
-                    rect.anchorMax =
-                        new Vector2(
-                            0f,
-                            0.5f);
-                    rect.pivot =
-                        new Vector2(
-                            0f,
-                            0.5f);
-
-                    // Place the mini native button below the building name,
-                    // matching the row location marked in the UI reference.
-                    rect.anchoredPosition =
-                        new Vector2(
-                            54f,
-                            -11f);
-
-                    // Resize the native control rather than scaling the
-                    // transform so its sprites/TMP text remain crisp.
-                    rect.sizeDelta =
-                        new Vector2(
-                            68f,
-                            17f);
-
-                    rect.localScale =
-                        Vector3.one;
-                    rect.localRotation =
-                        Quaternion.identity;
+                    label.font =
+                        nameLabel.font;
+                    label.fontSharedMaterial =
+                        nameLabel.fontSharedMaterial;
+                    label.spriteAsset =
+                        nameLabel.spriteAsset;
+                    label.color =
+                        nameLabel.color;
                 }
+
+                label.enableAutoSizing =
+                    false;
+                label.fontSize =
+                    10f;
+                label.alignment =
+                    TextAlignmentOptions.Center;
+                label.raycastTarget =
+                    false;
             }
             else
             {
@@ -733,27 +811,50 @@ namespace GK2Plus.Features.Tracking
                     existing.gameObject;
             }
 
-            buttonObject.SetActive(
-                true);
+            buttonObject.SetActive(true);
             buttonObject.transform.SetAsLastSibling();
-
-            global::UIDialogWindowButton dialogButton =
-                buttonObject
-                    .GetComponent<global::UIDialogWindowButton>();
-
-            if (dialogButton == null ||
-                dialogButton.LazyButton == null)
-            {
-                return;
-            }
 
             string planId =
                 "build:" +
                 build.Definition.id;
 
-            string labelText =
+            string planLabel =
                 LLBase.L(
                     data.Name);
+
+            Button actionButton =
+                buttonObject
+                    .GetComponent<Button>();
+
+            actionButton.onClick.RemoveAllListeners();
+
+            actionButton.onClick.AddListener(
+                () =>
+                {
+                    TogglePlanFromNative(
+                        planId,
+                        planLabel,
+                        data.GetCurrentNeedItems());
+
+                    UpdateBuildTrackIcon(
+                        buttonObject,
+                        planId);
+                });
+
+            UpdateBuildTrackIcon(
+                buttonObject,
+                planId);
+        }
+
+        private void UpdateBuildTrackIcon(
+            GameObject buttonObject,
+            string planId)
+        {
+            if (buttonObject == null ||
+                string.IsNullOrWhiteSpace(planId))
+            {
+                return;
+            }
 
             bool tracked =
                 _pins.Any(pin =>
@@ -764,46 +865,6 @@ namespace GK2Plus.Features.Tracking
                         planId,
                         StringComparison.OrdinalIgnoreCase));
 
-            string buttonText =
-                tracked
-                    ? "Tracked"
-                    : "Track";
-
-            dialogButton.Draw(
-                new global::UIDialogWindowData.ButtonData(
-                    () =>
-                    {
-                        TogglePlanFromNative(
-                            planId,
-                            labelText,
-                            data.GetCurrentNeedItems());
-
-                        // Redraw only this injected control so its label
-                        // immediately reflects the new tracking state.
-                        EnsureBuildTrackButton(
-                            widget,
-                            data,
-                            build);
-                    },
-                    buttonText,
-                    null,
-                    false,
-                    GameKey.None,
-                    string.Empty));
-
-            // The source native button can carry layout helpers sized for a
-            // full-width dialog CTA. Force this clone to the compact row size.
-            RectTransform finalRect =
-                buttonObject.transform as RectTransform;
-
-            if (finalRect != null)
-            {
-                finalRect.sizeDelta =
-                    new Vector2(
-                        68f,
-                        17f);
-            }
-
             TextMeshProUGUI label =
                 buttonObject
                     .GetComponentsInChildren<TextMeshProUGUI>(
@@ -812,12 +873,29 @@ namespace GK2Plus.Features.Tracking
 
             if (label != null)
             {
-                label.enableAutoSizing =
-                    false;
-                label.fontSize =
-                    9f;
-                label.alignment =
-                    TextAlignmentOptions.Center;
+                label.text =
+                    tracked
+                        ? "✓"
+                        : "+";
+            }
+
+            Image image =
+                buttonObject.GetComponent<Image>();
+
+            if (image != null)
+            {
+                image.color =
+                    tracked
+                        ? new Color(
+                            0.18f,
+                            0.30f,
+                            0.18f,
+                            0.96f)
+                        : new Color(
+                            0.18f,
+                            0.15f,
+                            0.12f,
+                            0.96f);
             }
         }
 
