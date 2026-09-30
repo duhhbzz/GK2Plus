@@ -14,14 +14,26 @@ namespace GK2Plus.Framework.UI
     {
         private const string HudRootName = "GK2PlusNativeTrackerHud";
 
+        private sealed class HudIngredientView
+        {
+            public GameObject Root;
+            public RectTransform Rect;
+            public Image Slot;
+            public Image Icon;
+            public TextMeshProUGUI Count;
+            public TextMeshProUGUI Label;
+            public string ItemId;
+            public bool? EnoughState;
+        }
+
         private sealed class HudPanel
         {
             public GameObject Root;
             public RectTransform Rect;
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Body;
-            public readonly List<GameObject> OverlayRows =
-                new List<GameObject>();
+            public readonly List<HudIngredientView> IngredientViews =
+                new List<HudIngredientView>();
         }
 
         private ManualLogSource _logger;
@@ -32,10 +44,17 @@ namespace GK2Plus.Framework.UI
         private RectTransform _rootRect;
         private TextMeshProUGUI _titleTemplate;
         private TextMeshProUGUI _bodyTemplate;
+        private TextMeshProUGUI _nativeCountTemplate;
+        private Sprite _nativeItemSlotSprite;
+        private Color _nativeItemIconTint = Color.white;
+        private TextStyle _nativeCountNormalStyle;
+        private TextStyle _nativeCountRedStyle;
+        private bool _nativeIngredientStyleResolved;
         private readonly Dictionary<string, HudPanel> _panels =
             new Dictionary<string, HudPanel>(StringComparer.OrdinalIgnoreCase);
 
         private string _cachedText = string.Empty;
+        private string _renderedText = string.Empty;
         private float _nextRefreshAt;
 
         public static GK2TrackerHudController Create(
@@ -111,12 +130,25 @@ namespace GK2Plus.Framework.UI
                 return;
             }
 
+            if (string.Equals(
+                    _cachedText,
+                    _renderedText,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            ResolveNativeIngredientStyle();
+
             Dictionary<string, string> groups =
                 ParseGroups(
                     _cachedText);
 
             LayoutGroups(
                 groups);
+
+            _renderedText =
+                _cachedText;
         }
 
         private bool EnsureHud()
@@ -252,16 +284,12 @@ namespace GK2Plus.Framework.UI
                     FormatTitle(
                         groupName);
 
-                int lineCount =
-                    RenderPanelBody(
-                        panel,
-                        body.Trim());
-
                 float bodyHeight =
-                    Mathf.Clamp(
-                        10f + (lineCount * 13.5f),
+                    Mathf.Max(
                         34f,
-                        210f);
+                        RenderPanelBody(
+                            panel,
+                            body.Trim()));
 
                 float panelHeight =
                     27f + bodyHeight;
@@ -280,20 +308,18 @@ namespace GK2Plus.Framework.UI
             }
         }
 
-        private int RenderPanelBody(
+        private float RenderPanelBody(
             HudPanel panel,
             string body)
         {
-            foreach (GameObject row in
-                     panel.OverlayRows)
+            foreach (HudIngredientView view in
+                     panel.IngredientViews)
             {
-                if (row != null)
+                if (view?.Root != null)
                 {
-                    Destroy(row);
+                    view.Root.SetActive(false);
                 }
             }
-
-            panel.OverlayRows.Clear();
 
             string[] lines =
                 (body ?? string.Empty)
@@ -305,6 +331,7 @@ namespace GK2Plus.Framework.UI
 
             int materialColumn = 0;
             int materialVisualLine = -1;
+            int ingredientViewIndex = 0;
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -331,22 +358,20 @@ namespace GK2Plus.Framework.UI
                         textLines.Add(string.Empty);
                         textLines.Add(string.Empty);
 
-                        GameObject itemRow =
-                            CreateHudIngredientCell(
+                        HudIngredientView itemView =
+                            GetOrCreateIngredientView(
                                 panel,
-                                visualLineIndex,
-                                0,
-                                itemId,
-                                current,
-                                target,
-                                label,
-                                true);
+                                ingredientViewIndex++);
 
-                        if (itemRow != null)
-                        {
-                            panel.OverlayRows.Add(
-                                itemRow);
-                        }
+                        ConfigureIngredientView(
+                            itemView,
+                            visualLineIndex,
+                            0,
+                            itemId,
+                            current,
+                            target,
+                            label,
+                            true);
 
                         continue;
                     }
@@ -356,29 +381,26 @@ namespace GK2Plus.Framework.UI
                         materialVisualLine =
                             textLines.Count;
 
-                        // A 41px craft-style ingredient slot is approximately
-                        // three lines tall in the compact tracker layout.
+                        // 35px slot + padding fits in three compact text lines.
                         textLines.Add(" ");
                         textLines.Add(string.Empty);
                         textLines.Add(string.Empty);
                     }
 
-                    GameObject materialCell =
-                        CreateHudIngredientCell(
+                    HudIngredientView materialView =
+                        GetOrCreateIngredientView(
                             panel,
-                            materialVisualLine,
-                            materialColumn,
-                            itemId,
-                            current,
-                            target,
-                            string.Empty,
-                            false);
+                            ingredientViewIndex++);
 
-                    if (materialCell != null)
-                    {
-                        panel.OverlayRows.Add(
-                            materialCell);
-                    }
+                    ConfigureIngredientView(
+                        materialView,
+                        materialVisualLine,
+                        materialColumn,
+                        itemId,
+                        current,
+                        target,
+                        string.Empty,
+                        false);
 
                     materialColumn++;
 
@@ -403,9 +425,10 @@ namespace GK2Plus.Framework.UI
                     "\n",
                     textLines);
 
-            return Math.Max(
-                1,
-                textLines.Count);
+            return 10f +
+                   (Math.Max(
+                       1,
+                       textLines.Count) * 13.5f);
         }
 
         private static bool TryParseHudItemToken(
@@ -483,71 +506,28 @@ namespace GK2Plus.Framework.UI
             return !string.IsNullOrWhiteSpace(itemId);
         }
 
-        private GameObject CreateHudIngredientCell(
+        private HudIngredientView GetOrCreateIngredientView(
             HudPanel panel,
-            int lineIndex,
-            int columnIndex,
-            string itemId,
-            int current,
-            int target,
-            string label,
-            bool customItem)
+            int index)
         {
-            if (global::GameBalance.Me == null ||
-                string.IsNullOrWhiteSpace(itemId))
+            while (panel.IngredientViews.Count <= index)
             {
-                return null;
+                panel.IngredientViews.Add(
+                    CreateIngredientView(
+                        panel));
             }
 
-            global::ItemDef def =
-                global::GameBalance.Me
-                    .GetDataOrNull<global::ItemDef>(
-                        itemId);
+            return panel.IngredientViews[index];
+        }
 
-            if (def == null ||
-                string.IsNullOrWhiteSpace(def.iconId))
-            {
-                return null;
-            }
-
-            Sprite iconSprite =
-                LazySingletonSO<EasySpritesCollection>
-                    .Instance?
-                    .GetSprite(
-                        def.iconId,
-                        null);
-
-            if (iconSprite == null)
-            {
-                return null;
-            }
-
-            global::UIItemCell nativeTemplate =
-                Resources
-                    .FindObjectsOfTypeAll<global::UICraftItemCell>()
-                    .Select(cell =>
-                        cell?.ItemCell)
-                    .FirstOrDefault(cell =>
-                        cell != null);
-
-            Sprite slotSprite =
-                nativeTemplate?
-                    .Background?
-                    .sprite;
-
-            TextMeshProUGUI nativeCountTemplate =
-                nativeTemplate != null
-                    ? Traverse.Create(nativeTemplate)
-                        .Field("countLabel")
-                        .GetValue<TextMeshProUGUI>()
-                    : null;
-
-            const float cellSize = 41f;
-            const float cellGap = 3f;
+        private HudIngredientView CreateIngredientView(
+            HudPanel panel)
+        {
+            const float cellSize = 35f;
 
             GameObject row =
                 new GameObject(
-                    "HudIngredient_" + itemId,
+                    "HudIngredient",
                     typeof(RectTransform));
 
             row.transform.SetParent(
@@ -569,15 +549,9 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     0f,
                     1f);
-            rowRect.anchoredPosition =
-                new Vector2(
-                    8f + (columnIndex * (cellSize + cellGap)),
-                    -31f - (lineIndex * 13.5f));
             rowRect.sizeDelta =
                 new Vector2(
-                    customItem
-                        ? 136f
-                        : cellSize,
+                    cellSize,
                     cellSize);
 
             GameObject slotObject =
@@ -617,13 +591,13 @@ namespace GK2Plus.Framework.UI
                 slotObject.GetComponent<Image>();
 
             slotImage.sprite =
-                slotSprite;
+                _nativeItemSlotSprite;
             slotImage.type =
-                slotSprite != null
+                _nativeItemSlotSprite != null
                     ? Image.Type.Sliced
                     : Image.Type.Simple;
             slotImage.color =
-                slotSprite != null
+                _nativeItemSlotSprite != null
                     ? Color.white
                     : new Color(
                         0.08f,
@@ -665,14 +639,12 @@ namespace GK2Plus.Framework.UI
                     1f);
             iconRect.sizeDelta =
                 new Vector2(
-                    34f,
-                    34f);
+                    29f,
+                    29f);
 
             Image iconImage =
                 iconObject.GetComponent<Image>();
 
-            iconImage.sprite =
-                iconSprite;
             iconImage.preserveAspect =
                 true;
             iconImage.raycastTarget =
@@ -680,11 +652,11 @@ namespace GK2Plus.Framework.UI
 
             TextMeshProUGUI countText =
                 CreateText(
-                    nativeCountTemplate ??
+                    _nativeCountTemplate ??
                     _bodyTemplate,
                     slotObject.transform,
                     "Count",
-                    9.5f,
+                    11f,
                     TextAlignmentOptions.BottomRight);
 
             RectTransform countRect =
@@ -696,63 +668,249 @@ namespace GK2Plus.Framework.UI
                 Vector2.one;
             countRect.offsetMin =
                 new Vector2(
-                    2f,
-                    1f);
+                    0f,
+                    0f);
             countRect.offsetMax =
                 new Vector2(
-                    -2f,
+                    -1f,
                     -1f);
 
-            countText.text =
-                $"{current}/{Math.Max(1, target)}";
+            TextMeshProUGUI labelText =
+                CreateText(
+                    _bodyTemplate,
+                    row.transform,
+                    "ItemLabel",
+                    9.5f,
+                    TextAlignmentOptions.Left);
 
-            countText.color =
-                current >= target
-                    ? new Color(
-                        1f,
-                        0.84f,
-                        0.18f,
-                        1f)
-                    : new Color(
-                        1f,
-                        0.25f,
-                        0.24f,
-                        1f);
+            RectTransform labelRect =
+                labelText.rectTransform;
 
-            if (customItem &&
-                !string.IsNullOrWhiteSpace(label))
+            labelRect.anchorMin =
+                new Vector2(
+                    0f,
+                    0f);
+            labelRect.anchorMax =
+                new Vector2(
+                    1f,
+                    1f);
+            labelRect.offsetMin =
+                new Vector2(
+                    40f,
+                    0f);
+            labelRect.offsetMax =
+                Vector2.zero;
+
+            labelText.gameObject.SetActive(
+                false);
+
+            return new HudIngredientView
             {
-                TextMeshProUGUI labelText =
-                    CreateText(
-                        _bodyTemplate,
-                        row.transform,
-                        "ItemLabel",
-                        9.5f,
-                        TextAlignmentOptions.Left);
+                Root = row,
+                Rect = rowRect,
+                Slot = slotImage,
+                Icon = iconImage,
+                Count = countText,
+                Label = labelText
+            };
+        }
 
-                RectTransform labelRect =
-                    labelText.rectTransform;
-
-                labelRect.anchorMin =
-                    new Vector2(
-                        0f,
-                        0f);
-                labelRect.anchorMax =
-                    new Vector2(
-                        1f,
-                        1f);
-                labelRect.offsetMin =
-                    new Vector2(
-                        46f,
-                        0f);
-                labelRect.offsetMax =
-                    Vector2.zero;
-
-                labelText.text =
-                    label;
+        private void ConfigureIngredientView(
+            HudIngredientView view,
+            int lineIndex,
+            int columnIndex,
+            string itemId,
+            int current,
+            int target,
+            string label,
+            bool customItem)
+        {
+            if (view == null ||
+                global::GameBalance.Me == null ||
+                string.IsNullOrWhiteSpace(itemId))
+            {
+                return;
             }
 
-            return row;
+            global::ItemDef def =
+                global::GameBalance.Me
+                    .GetDataOrNull<global::ItemDef>(
+                        itemId);
+
+            if (def == null ||
+                string.IsNullOrWhiteSpace(def.iconId))
+            {
+                view.Root.SetActive(false);
+                return;
+            }
+
+            Sprite iconSprite =
+                LazySingletonSO<EasySpritesCollection>
+                    .Instance?
+                    .GetSprite(
+                        def.iconId,
+                        null);
+
+            if (iconSprite == null)
+            {
+                view.Root.SetActive(false);
+                return;
+            }
+
+            const float cellSize = 35f;
+            const float cellGap = 3f;
+
+            view.Root.SetActive(true);
+
+            view.Rect.anchoredPosition =
+                new Vector2(
+                    8f + (columnIndex * (cellSize + cellGap)),
+                    -31f - (lineIndex * 13.5f));
+
+            view.Rect.sizeDelta =
+                new Vector2(
+                    customItem
+                        ? 136f
+                        : cellSize,
+                    cellSize);
+
+            if (!string.Equals(
+                    view.ItemId,
+                    itemId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                view.ItemId =
+                    itemId;
+
+                view.Icon.sprite =
+                    iconSprite;
+
+                // GK2 item sprites contain a blue replacement channel. The
+                // native UI applies this tint before drawing; doing the same
+                // removes the raw blue halo seen in the tracker prototype.
+                view.Icon.BlueColorReplace(
+                    _nativeItemIconTint);
+            }
+
+            int safeTarget =
+                Math.Max(
+                    1,
+                    target);
+
+            string count =
+                $"{current}/{safeTarget}";
+
+            if (!string.Equals(
+                    view.Count.text,
+                    count,
+                    StringComparison.Ordinal))
+            {
+                view.Count.text =
+                    count;
+            }
+
+            bool enough =
+                current >= safeTarget;
+
+            if (view.EnoughState != enough)
+            {
+                view.EnoughState =
+                    enough;
+
+                TextStyle nativeStyle =
+                    enough
+                        ? _nativeCountNormalStyle
+                        : _nativeCountRedStyle;
+
+                if (nativeStyle != null)
+                {
+                    nativeStyle.ApplyStyle(
+                        view.Count);
+                }
+                else
+                {
+                    view.Count.color =
+                        enough
+                            ? new Color(
+                                1f,
+                                0.84f,
+                                0.18f,
+                                1f)
+                            : new Color(
+                                1f,
+                                0.25f,
+                                0.24f,
+                                1f);
+                }
+            }
+
+            view.Count.fontSize =
+                11f;
+            view.Count.alignment =
+                TextAlignmentOptions.BottomRight;
+
+            view.Label.gameObject.SetActive(
+                customItem &&
+                !string.IsNullOrWhiteSpace(label));
+
+            if (view.Label.gameObject.activeSelf)
+            {
+                view.Label.text =
+                    label;
+            }
+        }
+
+        private void ResolveNativeIngredientStyle()
+        {
+            if (_nativeIngredientStyleResolved)
+            {
+                return;
+            }
+
+            global::UIItemCell nativeTemplate =
+                Resources
+                    .FindObjectsOfTypeAll<global::UIItemCell>()
+                    .FirstOrDefault(cell =>
+                        cell != null &&
+                        cell.Background != null &&
+                        cell.Icon != null);
+
+            if (nativeTemplate == null)
+            {
+                return;
+            }
+
+            _nativeItemSlotSprite =
+                nativeTemplate.Background.sprite;
+
+            _nativeCountTemplate =
+                Traverse.Create(nativeTemplate)
+                    .Field("countLabel")
+                    .GetValue<TextMeshProUGUI>();
+
+            ImageColors colors =
+                Traverse.Create(nativeTemplate)
+                    .Field("colors")
+                    .GetValue<ImageColors>();
+
+            if (colors != null)
+            {
+                _nativeItemIconTint =
+                    colors.NormalColor;
+            }
+
+            _nativeCountNormalStyle =
+                Traverse.Create(nativeTemplate)
+                    .Field("countLabelNormal")
+                    .GetValue<TextStyle>();
+
+            _nativeCountRedStyle =
+                Traverse.Create(nativeTemplate)
+                    .Field("countLabelRed")
+                    .GetValue<TextStyle>();
+
+            _nativeIngredientStyleResolved =
+                true;
         }
 
         private HudPanel GetOrCreatePanel(
@@ -1118,7 +1276,9 @@ namespace GK2Plus.Framework.UI
             {
                 panel.Root?.SetActive(false);
             }
-        }
+                    _renderedText =
+                string.Empty;
+}
 
         public void ShutdownController()
         {
