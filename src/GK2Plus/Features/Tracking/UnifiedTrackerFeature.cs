@@ -13,6 +13,7 @@ using LazyBearTechnology;
 using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
+using UnityEngine.UI;
 
 namespace GK2Plus.Features.Tracking
 {
@@ -612,7 +613,11 @@ namespace GK2Plus.Features.Tracking
         private static void BuildingWidgetRedrawPostfix(
             global::UIBuildingWidget __instance)
         {
-            if (__instance == null)
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                __instance == null)
             {
                 return;
             }
@@ -632,15 +637,204 @@ namespace GK2Plus.Features.Tracking
                 return;
             }
 
-            BindRightClick(
-                __instance.gameObject,
-                () => _activeInstance?
-                    .TogglePlanFromNative(
-                        "build:" +
-                            build.Definition.id,
-                        LLBase.L(
-                            data.Name),
-                        data.GetCurrentNeedItems()));
+            feature.EnsureBuildTrackButton(
+                __instance,
+                data,
+                build);
+        }
+
+        private void EnsureBuildTrackButton(
+            global::UIBuildingWidget widget,
+            global::UIBuildingWidgetData data,
+            global::BuildData build)
+        {
+            if (widget == null ||
+                data == null ||
+                build?.Definition == null)
+            {
+                return;
+            }
+
+            const string buttonName =
+                "GK2PlusTrackBuildButton";
+
+            Transform existing =
+                widget.transform.Find(
+                    buttonName);
+
+            GameObject buttonObject;
+
+            TextMeshProUGUI nameLabel =
+                Traverse.Create(widget)
+                    .Field("nameLabel")
+                    .GetValue<TextMeshProUGUI>();
+
+            if (existing == null)
+            {
+                buttonObject =
+                    new GameObject(
+                        buttonName,
+                        typeof(RectTransform),
+                        typeof(CanvasRenderer),
+                        typeof(Image),
+                        typeof(Button));
+
+                buttonObject.transform.SetParent(
+                    widget.transform,
+                    false);
+
+                RectTransform rect =
+                    buttonObject
+                        .GetComponent<RectTransform>();
+
+                rect.anchorMin =
+                    new Vector2(
+                        0f,
+                        0.5f);
+                rect.anchorMax =
+                    new Vector2(
+                        0f,
+                        0.5f);
+                rect.pivot =
+                    new Vector2(
+                        0f,
+                        0.5f);
+                rect.anchoredPosition =
+                    new Vector2(
+                        310f,
+                        0f);
+                rect.sizeDelta =
+                    new Vector2(
+                        52f,
+                        16f);
+
+                Image image =
+                    buttonObject
+                        .GetComponent<Image>();
+
+                image.color =
+                    new Color(
+                        0.08f,
+                        0.07f,
+                        0.06f,
+                        0.78f);
+
+                TextMeshProUGUI label =
+                    new GameObject(
+                        "Label",
+                        typeof(RectTransform),
+                        typeof(CanvasRenderer),
+                        typeof(TextMeshProUGUI))
+                    .GetComponent<TextMeshProUGUI>();
+
+                label.transform.SetParent(
+                    buttonObject.transform,
+                    false);
+
+                RectTransform labelRect =
+                    label.rectTransform;
+
+                labelRect.anchorMin =
+                    Vector2.zero;
+                labelRect.anchorMax =
+                    Vector2.one;
+                labelRect.offsetMin =
+                    Vector2.zero;
+                labelRect.offsetMax =
+                    Vector2.zero;
+
+                if (nameLabel != null)
+                {
+                    label.font =
+                        nameLabel.font;
+                    label.fontSharedMaterial =
+                        nameLabel.fontSharedMaterial;
+                    label.spriteAsset =
+                        nameLabel.spriteAsset;
+                    label.color =
+                        nameLabel.color;
+                }
+
+                label.fontSize =
+                    9f;
+                label.alignment =
+                    TextAlignmentOptions.Center;
+                label.raycastTarget =
+                    false;
+            }
+            else
+            {
+                buttonObject =
+                    existing.gameObject;
+            }
+
+            buttonObject.SetActive(true);
+            buttonObject.transform.SetAsLastSibling();
+
+            string planId =
+                "build:" +
+                build.Definition.id;
+
+            string labelText =
+                LLBase.L(
+                    data.Name);
+
+            Button button =
+                buttonObject
+                    .GetComponent<Button>();
+
+            button.onClick.RemoveAllListeners();
+
+            button.onClick.AddListener(
+                () =>
+                {
+                    TogglePlanFromNative(
+                        planId,
+                        labelText,
+                        data.GetCurrentNeedItems());
+
+                    UpdateBuildTrackButtonLabel(
+                        buttonObject,
+                        planId);
+                });
+
+            UpdateBuildTrackButtonLabel(
+                buttonObject,
+                planId);
+        }
+
+        private void UpdateBuildTrackButtonLabel(
+            GameObject buttonObject,
+            string planId)
+        {
+            if (buttonObject == null ||
+                string.IsNullOrWhiteSpace(planId))
+            {
+                return;
+            }
+
+            bool tracked =
+                _pins.Any(pin =>
+                    pin.Type ==
+                        TrackerPinType.Plan &&
+                    string.Equals(
+                        pin.Id,
+                        planId,
+                        StringComparison.OrdinalIgnoreCase));
+
+            TextMeshProUGUI label =
+                buttonObject
+                    .GetComponentsInChildren<TextMeshProUGUI>(
+                        true)
+                    .FirstOrDefault();
+
+            if (label != null)
+            {
+                label.text =
+                    tracked
+                        ? "Tracked"
+                        : "Track";
+            }
         }
 
         private static void TownBuildingWidgetRedrawPostfix(
