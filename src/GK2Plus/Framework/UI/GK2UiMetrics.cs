@@ -52,17 +52,19 @@ namespace GK2Plus.Framework.UI
 
         internal static class QuestJournal
         {
-            public const float HeaderHeight = 36f;
-            public const float OuterPadding = 12f;
-            public const float PaneGap = 10f;
-            public const float LeftPaneWidth = 250f;
-            public const float FilterHeight = 24f;
-            public const float FilterGap = 4f;
-            public const float QuestRowHeight = 48f;
-            public const float QuestRowGap = 3f;
-            public const float QuestIconSize = 34f;
+            public const float OuterPadding = 10f;
+            public const float PaneGap = 8f;
+            public const float LeftPaneWidth = 430f;
+            public const float SectionHeaderHeight = 39f;
+            public const float FilterHeight = 27f;
+            public const float FilterGap = 5f;
+            public const float QuestRowHeight = 104f;
+            public const float QuestRowGap = 5f;
+            public const float QuestIconSize = 58f;
+            public const float QuestCardPadding = 8f;
+            public const float QuestProgressHeight = 20f;
             public const float DetailPadding = 14f;
-            public const float DetailTitleSize = 17f;
+            public const float DetailTitleSize = 18f;
             public const float DetailBodySize = 11f;
             public const float DetailStatusSize = 9.5f;
             public const float ObjectiveCellSize = 44f;
