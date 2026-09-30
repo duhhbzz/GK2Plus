@@ -10,6 +10,7 @@ using GK2Plus.Framework.Saves;
 using GK2Plus.Framework.UI;
 using HarmonyLib;
 using LazyBearTechnology;
+using UnityEngine;
 
 namespace GK2Plus.Features.Tracking
 {
@@ -19,7 +20,8 @@ namespace GK2Plus.Features.Tracking
         {
             Quest,
             Craft,
-            Item
+            Item,
+            Plan
         }
 
         private sealed class TrackerPin
@@ -27,7 +29,11 @@ namespace GK2Plus.Features.Tracking
             public TrackerPinType Type;
             public string Id;
             public int Target;
+            public string Label;
+            public string Requirements;
         }
+
+        private static UnifiedTrackerFeature _activeInstance;
 
         private readonly ConfigFile _config;
         private readonly GK2UIService _uiService;
@@ -35,6 +41,8 @@ namespace GK2Plus.Features.Tracking
 
         private ConfigEntry<string> _pinsRaw;
         private ConfigEntry<bool> _hudVisible;
+        private ConfigEntry<bool> _autoTrackNewQuests;
+        private ConfigEntry<bool> _removeCompletedQuests;
         private ConfigEntry<string> _selectedQuestId;
         private ConfigEntry<string> _selectedCraftId;
         private ConfigEntry<string> _selectedItemId;
