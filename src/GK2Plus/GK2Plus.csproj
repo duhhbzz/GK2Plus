@@ -78,11 +78,6 @@
       <Private>false</Private>
     </Reference>
 
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-
   </ItemGroup>
 
   <!-- Generate compile-time mod + tested game version constants. -->
