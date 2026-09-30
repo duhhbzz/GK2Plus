@@ -303,6 +303,9 @@ namespace GK2Plus.Framework.UI
             List<string> textLines =
                 new List<string>();
 
+            int materialColumn = 0;
+            int materialVisualLine = -1;
+
             for (int i = 0; i < lines.Length; i++)
             {
                 string trimmed =
@@ -316,33 +319,80 @@ namespace GK2Plus.Framework.UI
                         out string label,
                         out bool customItem))
                 {
-                    int visualLineIndex =
-                        textLines.Count;
+                    if (customItem)
+                    {
+                        materialColumn = 0;
+                        materialVisualLine = -1;
 
-                    // Reserve roughly 41px for the compact native
-                    // ingredient cell used by the tracker HUD.
-                    textLines.Add(" ");
-                    textLines.Add(string.Empty);
-                    textLines.Add(string.Empty);
+                        int visualLineIndex =
+                            textLines.Count;
 
-                    GameObject row =
-                        CreateHudItemRow(
+                        textLines.Add(" ");
+                        textLines.Add(string.Empty);
+                        textLines.Add(string.Empty);
+
+                        GameObject itemRow =
+                            CreateHudIngredientCell(
+                                panel,
+                                visualLineIndex,
+                                0,
+                                itemId,
+                                current,
+                                target,
+                                label,
+                                true);
+
+                        if (itemRow != null)
+                        {
+                            panel.OverlayRows.Add(
+                                itemRow);
+                        }
+
+                        continue;
+                    }
+
+                    if (materialColumn == 0)
+                    {
+                        materialVisualLine =
+                            textLines.Count;
+
+                        // A 41px craft-style ingredient slot is approximately
+                        // three lines tall in the compact tracker layout.
+                        textLines.Add(" ");
+                        textLines.Add(string.Empty);
+                        textLines.Add(string.Empty);
+                    }
+
+                    GameObject materialCell =
+                        CreateHudIngredientCell(
                             panel,
-                            visualLineIndex,
+                            materialVisualLine,
+                            materialColumn,
                             itemId,
                             current,
                             target,
-                            label,
-                            customItem);
+                            string.Empty,
+                            false);
 
-                    if (row != null)
+                    if (materialCell != null)
                     {
                         panel.OverlayRows.Add(
-                            row);
+                            materialCell);
+                    }
+
+                    materialColumn++;
+
+                    if (materialColumn >= 3)
+                    {
+                        materialColumn = 0;
+                        materialVisualLine = -1;
                     }
 
                     continue;
                 }
+
+                materialColumn = 0;
+                materialVisualLine = -1;
 
                 textLines.Add(
                     lines[i]);
@@ -433,9 +483,10 @@ namespace GK2Plus.Framework.UI
             return !string.IsNullOrWhiteSpace(itemId);
         }
 
-        private GameObject CreateHudItemRow(
+        private GameObject CreateHudIngredientCell(
             HudPanel panel,
             int lineIndex,
+            int columnIndex,
             string itemId,
             int current,
             int target,
@@ -453,7 +504,20 @@ namespace GK2Plus.Framework.UI
                     .GetDataOrNull<global::ItemDef>(
                         itemId);
 
-            if (def == null)
+            if (def == null ||
+                string.IsNullOrWhiteSpace(def.iconId))
+            {
+                return null;
+            }
+
+            Sprite iconSprite =
+                LazySingletonSO<EasySpritesCollection>
+                    .Instance?
+                    .GetSprite(
+                        def.iconId,
+                        null);
+
+            if (iconSprite == null)
             {
                 return null;
             }
@@ -464,22 +528,26 @@ namespace GK2Plus.Framework.UI
                     .Select(cell =>
                         cell?.ItemCell)
                     .FirstOrDefault(cell =>
-                        cell != null &&
-                        cell.gameObject != null);
+                        cell != null);
 
-            if (nativeTemplate == null)
-            {
-                _logger?.LogWarning(
-                    "GK2+ tracker could not locate a native craft item-cell template.");
+            Sprite slotSprite =
+                nativeTemplate?
+                    .Background?
+                    .sprite;
 
-                return null;
-            }
+            TextMeshProUGUI nativeCountTemplate =
+                nativeTemplate != null
+                    ? Traverse.Create(nativeTemplate)
+                        .Field("countLabel")
+                        .GetValue<TextMeshProUGUI>()
+                    : null;
 
-            const float desiredCellSize = 41f;
+            const float cellSize = 41f;
+            const float cellGap = 3f;
 
             GameObject row =
                 new GameObject(
-                    "HudItemRow_" + itemId,
+                    "HudIngredient_" + itemId,
                     typeof(RectTransform));
 
             row.transform.SetParent(
@@ -503,98 +571,153 @@ namespace GK2Plus.Framework.UI
                     1f);
             rowRect.anchoredPosition =
                 new Vector2(
-                    9f,
+                    8f + (columnIndex * (cellSize + cellGap)),
                     -31f - (lineIndex * 13.5f));
             rowRect.sizeDelta =
                 new Vector2(
-                    134f,
-                    desiredCellSize);
+                    customItem
+                        ? 136f
+                        : cellSize,
+                    cellSize);
 
-            GameObject nativeCellObject =
-                Instantiate(
-                    nativeTemplate.gameObject,
-                    row.transform);
+            GameObject slotObject =
+                new GameObject(
+                    "Slot",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
 
-            nativeCellObject.name =
-                "NativeIngredientCell";
+            slotObject.transform.SetParent(
+                row.transform,
+                false);
 
-            global::UIItemCell nativeCell =
-                nativeCellObject
-                    .GetComponent<global::UIItemCell>();
+            RectTransform slotRect =
+                slotObject.GetComponent<RectTransform>();
 
-            if (nativeCell == null)
-            {
-                Destroy(
-                    nativeCellObject);
+            slotRect.anchorMin =
+                new Vector2(
+                    0f,
+                    0.5f);
+            slotRect.anchorMax =
+                new Vector2(
+                    0f,
+                    0.5f);
+            slotRect.pivot =
+                new Vector2(
+                    0f,
+                    0.5f);
+            slotRect.anchoredPosition =
+                Vector2.zero;
+            slotRect.sizeDelta =
+                new Vector2(
+                    cellSize,
+                    cellSize);
 
-                return null;
-            }
+            Image slotImage =
+                slotObject.GetComponent<Image>();
 
-            RectTransform nativeRect =
-                nativeCellObject.transform as RectTransform;
-
-            if (nativeRect != null)
-            {
-                nativeRect.anchorMin =
-                    new Vector2(
-                        0f,
-                        0.5f);
-                nativeRect.anchorMax =
-                    new Vector2(
-                        0f,
-                        0.5f);
-                nativeRect.pivot =
-                    new Vector2(
-                        0f,
-                        0.5f);
-                nativeRect.anchoredPosition =
-                    Vector2.zero;
-
-                float sourceSize =
-                    Mathf.Max(
-                        nativeRect.rect.width,
-                        nativeRect.rect.height);
-
-                if (sourceSize <= 0.01f)
-                {
-                    sourceSize =
-                        desiredCellSize;
-                }
-
-                float scale =
-                    desiredCellSize /
-                    sourceSize;
-
-                nativeRect.localScale =
-                    new Vector3(
-                        scale,
-                        scale,
-                        1f);
-            }
-
-            nativeCell.Draw(
-                new global::Item(
-                    itemId,
-                    Math.Max(
-                        1,
-                        target)),
-                isNeedItem: true,
-                hasItemCount: current,
-                isCraftResult: false,
-                multiplier: 1,
-                drawAsNonInteractable: false,
-                price: 0,
-                drawCounter: true,
-                forceNonEmpty: true,
-                forceDrawCounter: true,
-                customState:
-                    global::ItemRelatedWidgetState.NotSet,
-                noSelectionFrames: true);
-
-            nativeCell.ShowMouseSelectionFrame =
+            slotImage.sprite =
+                slotSprite;
+            slotImage.type =
+                slotSprite != null
+                    ? Image.Type.Sliced
+                    : Image.Type.Simple;
+            slotImage.color =
+                slotSprite != null
+                    ? Color.white
+                    : new Color(
+                        0.08f,
+                        0.09f,
+                        0.11f,
+                        0.92f);
+            slotImage.raycastTarget =
                 false;
-            nativeCell.NoSelectionFrames =
+
+            GameObject iconObject =
+                new GameObject(
+                    "Icon",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+
+            iconObject.transform.SetParent(
+                slotObject.transform,
+                false);
+
+            RectTransform iconRect =
+                iconObject.GetComponent<RectTransform>();
+
+            iconRect.anchorMin =
+                new Vector2(
+                    0.5f,
+                    0.5f);
+            iconRect.anchorMax =
+                new Vector2(
+                    0.5f,
+                    0.5f);
+            iconRect.pivot =
+                new Vector2(
+                    0.5f,
+                    0.5f);
+            iconRect.anchoredPosition =
+                new Vector2(
+                    0f,
+                    1f);
+            iconRect.sizeDelta =
+                new Vector2(
+                    34f,
+                    34f);
+
+            Image iconImage =
+                iconObject.GetComponent<Image>();
+
+            iconImage.sprite =
+                iconSprite;
+            iconImage.preserveAspect =
                 true;
+            iconImage.raycastTarget =
+                false;
+
+            TextMeshProUGUI countText =
+                CreateText(
+                    nativeCountTemplate ??
+                    _bodyTemplate,
+                    slotObject.transform,
+                    "Count",
+                    9.5f,
+                    TextAlignmentOptions.BottomRight);
+
+            RectTransform countRect =
+                countText.rectTransform;
+
+            countRect.anchorMin =
+                Vector2.zero;
+            countRect.anchorMax =
+                Vector2.one;
+            countRect.offsetMin =
+                new Vector2(
+                    2f,
+                    1f);
+            countRect.offsetMax =
+                new Vector2(
+                    -2f,
+                    -1f);
+
+            countText.text =
+                $"{current}/{Math.Max(1, target)}";
+
+            countText.color =
+                current >= target
+                    ? new Color(
+                        1f,
+                        0.84f,
+                        0.18f,
+                        1f)
+                    : new Color(
+                        1f,
+                        0.25f,
+                        0.24f,
+                        1f);
 
             if (customItem &&
                 !string.IsNullOrWhiteSpace(label))
@@ -620,7 +743,7 @@ namespace GK2Plus.Framework.UI
                         1f);
                 labelRect.offsetMin =
                     new Vector2(
-                        45f,
+                        46f,
                         0f);
                 labelRect.offsetMax =
                     Vector2.zero;
