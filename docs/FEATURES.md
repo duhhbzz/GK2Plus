@@ -16,6 +16,7 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
 | Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
+| Tracker | [Unified Tracker](#unified-tracker) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
 | Inventory | [Shared Storage](#shared-storage) |
 | Cheats | [Functional Cheats](#functional-cheats) |
@@ -96,6 +97,53 @@ The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAtta
 - Fine Tool Rack recipes continue to require the Fine Tool Rack normally;
 - disabling the option restores vanilla Tool Rack requirements;
 - unrelated extensions and workbenches are unaffected.
+
+---
+
+## Unified Tracker
+
+**Category:** Tracker  
+**Setting mode:** Pin management while a save is loaded; overall feature enable/disable from the main menu.
+
+The Unified Tracker provides one compact HUD for **active quests**, **known crafts/recipes**, and **custom item quantity targets**.
+
+### Tracker tab
+
+While a save is loaded, the Tracker tab exposes searchable selectors for:
+
+- active quests;
+- crafts/recipes currently available from GK2's game-balance/knowledge data;
+- normal item definitions;
+- common target quantities for custom item pins.
+
+Selected entries can be pinned independently. The first implementation supports up to **12 pins** and stores only GK2+ tracker metadata; it does not alter quest, crafting, or inventory state.
+
+### HUD behavior
+
+The compact HUD refreshes its displayed values four times per second rather than doing expensive game-data discovery every frame.
+
+- **Quest pins** show the localized quest name, current description/objective, and item requirements when the quest exposes them.
+- **Craft pins** show the localized/result name and the player's current count versus each recipe requirement.
+- **Item pins** show the player's current inventory count against the configured target and mark the row complete when the target is reached.
+
+Pins remain until the player removes or clears them; completing a quest or reaching an item target does not silently delete the pin.
+
+### Current scope
+
+Initial material/item counts use the **player inventory**. Shared Storage-aware tracker scopes can be added after the core tracker UX is validated.
+
+The initial HUD is intentionally a lightweight vertical slice so quest/craft/item data behavior can be runtime-tested before final native-style presentation polish.
+
+### Validation required
+
+- pin/unpin active quests;
+- search and pin a known craft;
+- search and pin several normal items with different target quantities;
+- verify counts update as items enter/leave player inventory;
+- verify quest completion/status changes update without mutating the quest;
+- save/reload and confirm tracker pins persist through GK2+ configuration;
+- confirm Clear Pins and HUD toggle behavior;
+- check common resolutions for clipping/overlap before final UI polish.
 
 ---
 
