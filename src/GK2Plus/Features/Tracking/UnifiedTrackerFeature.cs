@@ -742,8 +742,8 @@ namespace GK2Plus.Features.Tracking
                         0f);
                 rect.sizeDelta =
                     new Vector2(
-                        20f,
-                        20f);
+                        60f,
+                        60f);
 
                 Image image =
                     buttonObject
