@@ -585,6 +585,21 @@ namespace GK2Plus.Framework.UI
                 $"safeSize={safeAreaRect.rect.size}"
             );
 
+            GK2UiFactory.CreateImage(
+                window.transform,
+                "HeaderBar",
+                null,
+                Image.Type.Simple,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -8f),
+                new Vector2(
+                    GK2UiMetrics.Menu.WindowSize.x - 24f,
+                    29f),
+                _theme.HeaderBackground,
+                false);
+
             CreateNativeTitleText(
                 titleTemplate,
                 window.transform,
@@ -684,21 +699,26 @@ namespace GK2Plus.Framework.UI
                 string tab = Tabs[i];
                 float x = firstX + i * (tabWidth + gap);
 
-                GameObject button = CreateActionButton(
-                    buttonLabelTemplate,
-                    window.transform,
-                    redButtonSprite,
-                    tab,
-                    new Vector2(
-                        x,
-                        GK2UiMetrics.Menu.TabY),
-                    new Vector2(tabWidth, tabHeight)
-                );
+                Button tabButton =
+                    GK2UiFactory.CreateFlatButton(
+                        window.transform,
+                        tab + "TabButton",
+                        _theme,
+                        tab,
+                        new Vector2(
+                            x,
+                            GK2UiMetrics.Menu.TabY),
+                        new Vector2(
+                            tabWidth,
+                            tabHeight),
+                        () => SetActiveTab(tab),
+                        string.Equals(
+                            tab,
+                            _activeTab,
+                            StringComparison.OrdinalIgnoreCase));
 
-                Button tabButton = button.GetComponent<Button>();
-                tabButton.onClick.AddListener(() => SetActiveTab(tab));
-
-                _tabButtons[tab] = button;
+                _tabButtons[tab] =
+                    tabButton.gameObject;
             }
 
             if (dividerSprite != null)
@@ -3272,10 +3292,10 @@ Button close = closeButton.GetComponent<Button>();
                 }
 
                 image.color = kvp.Key == tabName
-                    ? (_theme?.ButtonSelected ??
-                       new Color(0.92f, 0.76f, 0.52f, 1f))
-                    : (_theme?.ButtonNeutral ??
-                       new Color(0.62f, 0.57f, 0.52f, 0.92f));
+                    ? (_theme?.TabSelected ??
+                       new Color(0.38f, 0.30f, 0.20f, 0.98f))
+                    : (_theme?.TabNeutral ??
+                       new Color(0.15f, 0.17f, 0.21f, 0.96f));
             }
 
             SetText(_pageTitle, tabName);
