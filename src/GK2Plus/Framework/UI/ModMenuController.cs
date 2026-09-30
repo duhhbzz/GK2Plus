@@ -28,6 +28,7 @@ namespace GK2Plus.Framework.UI
         };
 
         private ManualLogSource _logger;
+        private GK2UiTheme _theme;
         private GameObject _menuRoot;
         private GameObject _pageTitle;
         private GameObject _pageText;
@@ -83,8 +84,11 @@ namespace GK2Plus.Framework.UI
 
         private const int ItemPickerPageSize = 6;
 
-        private const float BodyViewportTopOffset = 33f;
-        private const float BodyViewportHeight = 143f;
+        private static float BodyViewportTopOffset =>
+            GK2UiMetrics.Menu.BodyViewportTopOffset;
+
+        private static float BodyViewportHeight =>
+            GK2UiMetrics.Menu.BodyViewportHeight;
 
         private readonly Dictionary<string, GameObject> _tabButtons =
             new Dictionary<string, GameObject>();
@@ -412,23 +416,36 @@ namespace GK2Plus.Framework.UI
                 Destroy(old.gameObject);
             }
 
-            Sprite frameSprite = FindSprite("comm-frame_1-border");
-            Sprite bgSprite = FindSprite("titlescreen-menu-bg");
-            Sprite dividerSprite = FindSprite("widget_perks-text_decor-drk_1");
-            Sprite redButtonSprite = FindSprite("comm-btn-simple_red-active");
+            _theme =
+                GK2UiTheme.Resolve(
+                    _logger,
+                    bodyTemplate,
+                    buttonLabelTemplate);
+
+            Sprite frameSprite =
+                _theme?.WindowFrameSprite;
+            Sprite bgSprite =
+                _theme?.WindowBackgroundSprite;
+            Sprite dividerSprite =
+                _theme?.DividerSprite;
+            Sprite redButtonSprite =
+                _theme?.ButtonSprite;
 
             GameObject titleTemplate =
-                ResolveInventoryHeaderTemplate() ??
+                _theme?.TitleTextTemplate?.gameObject ??
                 buttonLabelTemplate;
 
             GameObject listTextTemplate =
-                ResolveNativeListTextTemplate() ??
+                _theme?.BodyTextTemplate?.gameObject ??
                 bodyTemplate;
 
-            if (frameSprite == null || bgSprite == null || redButtonSprite == null)
+            if (_theme == null ||
+                frameSprite == null ||
+                bgSprite == null ||
+                redButtonSprite == null)
             {
                 throw new InvalidOperationException(
-                    "Required native GK2 window/button sprites are not loaded.");
+                    "Required native GK2 UI theme assets are not loaded.");
             }
 
             GameObject overlay = new GameObject(
@@ -493,7 +510,8 @@ namespace GK2Plus.Framework.UI
             windowRect.anchorMax = new Vector2(0.5f, 0.5f);
             windowRect.pivot = new Vector2(0.5f, 0.5f);
             windowRect.anchoredPosition = Vector2.zero;
-            windowRect.sizeDelta = new Vector2(440f, 300f);
+            windowRect.sizeDelta =
+                GK2UiMetrics.Menu.WindowSize;
 
             GameObject solidBacking = CreateImage(
                 window.transform,
@@ -507,7 +525,7 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero
             );
             solidBacking.GetComponent<Image>().color =
-                new Color(0.10f, 0.11f, 0.13f, 0.99f);
+                _theme.PanelBackground;
 
             GameObject background = CreateStretchImage(
                 window.transform,
@@ -537,12 +555,8 @@ namespace GK2Plus.Framework.UI
             //
             // At the current PixelSize 2 these correspond approximately to:
             // left/right 18 px and top/bottom 14 px before inner padding.
-            Vector4 frameInsetsUi = new Vector4(
-                9f,   // left
-                7f,   // bottom
-                9f,   // right
-                7f    // top
-            );
+            Vector4 frameInsetsUi =
+                GK2UiMetrics.Menu.FrameInsets;
 
             GameObject safeArea = new GameObject(
                 "ContentSafeArea",
@@ -575,9 +589,11 @@ namespace GK2Plus.Framework.UI
                 titleTemplate,
                 window.transform,
                 "GK2+ Mod Menu",
-                new Vector2(0f, -16f),
-                new Vector2(210f, 20f),
-                0.72f
+                new Vector2(
+                    0f,
+                    GK2UiMetrics.Menu.HeaderTitleY),
+                new Vector2(250f, 22f),
+                GK2UiMetrics.Menu.HeaderFontScale
             );
 
             CreateBodyText(
@@ -632,16 +648,36 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
-                    new Vector2(0f, -35f),
-                    new Vector2(390f, 5f)
+                    new Vector2(
+                        0f,
+                        GK2UiMetrics.Menu.HeaderDividerY),
+                    new Vector2(
+                        GK2UiMetrics.Menu.WindowSize.x - 54f,
+                        5f)
                 );
             }
 
-            float tabWidth = Tabs.Length > 7 ? 48f : 54f;
-            float tabHeight = 18f;
-            float gap = 2f;
-            float rowWidth = (Tabs.Length * tabWidth) + ((Tabs.Length - 1) * gap);
-            float firstX = -rowWidth / 2f + tabWidth / 2f;
+            float gap =
+                GK2UiMetrics.Menu.TabGap;
+
+            float availableTabWidth =
+                GK2UiMetrics.Menu.WindowSize.x - 40f;
+
+            float tabWidth =
+                (availableTabWidth -
+                 ((Tabs.Length - 1) * gap)) /
+                Tabs.Length;
+
+            float tabHeight =
+                GK2UiMetrics.Menu.TabHeight;
+
+            float rowWidth =
+                (Tabs.Length * tabWidth) +
+                ((Tabs.Length - 1) * gap);
+
+            float firstX =
+                -rowWidth / 2f +
+                tabWidth / 2f;
 
             for (int i = 0; i < Tabs.Length; i++)
             {
@@ -653,7 +689,9 @@ namespace GK2Plus.Framework.UI
                     window.transform,
                     redButtonSprite,
                     tab,
-                    new Vector2(x, -52f),
+                    new Vector2(
+                        x,
+                        GK2UiMetrics.Menu.TabY),
                     new Vector2(tabWidth, tabHeight)
                 );
 
@@ -673,8 +711,12 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
-                    new Vector2(0f, -69f),
-                    new Vector2(390f, 5f)
+                    new Vector2(
+                        0f,
+                        GK2UiMetrics.Menu.ContentTopY + 8f),
+                    new Vector2(
+                        GK2UiMetrics.Menu.WindowSize.x - 54f,
+                        5f)
                 );
             }
 
@@ -688,11 +730,16 @@ namespace GK2Plus.Framework.UI
             contentRect.anchorMin = new Vector2(0.5f, 1f);
             contentRect.anchorMax = new Vector2(0.5f, 1f);
             contentRect.pivot = new Vector2(0.5f, 1f);
-            contentRect.anchoredPosition = new Vector2(0f, -77f);
-            contentRect.sizeDelta = new Vector2(392f, 176f);
+            contentRect.anchoredPosition =
+                new Vector2(
+                    0f,
+                    GK2UiMetrics.Menu.ContentTopY);
+            contentRect.sizeDelta =
+                GK2UiMetrics.Menu.ContentSize;
 
             Image contentBg = content.AddComponent<Image>();
-            contentBg.color = new Color(0.08f, 0.09f, 0.11f, 0.92f);
+            contentBg.color =
+                _theme.ContentBackground;
             contentBg.raycastTarget = false;
 
             GameObject bodyViewport = new GameObject(
@@ -713,7 +760,9 @@ namespace GK2Plus.Framework.UI
             bodyViewportRect.anchoredPosition =
                 new Vector2(0f, -BodyViewportTopOffset);
             bodyViewportRect.sizeDelta =
-                new Vector2(388f, BodyViewportHeight);
+                new Vector2(
+                    GK2UiMetrics.Menu.ContentSize.x - 4f,
+                    BodyViewportHeight);
 
             Image bodyViewportImage =
                 bodyViewport.GetComponent<Image>();
@@ -851,9 +900,9 @@ namespace GK2Plus.Framework.UI
                 titleTemplate,
                 content.transform,
                 "General",
-                new Vector2(0f, -13f),
-                new Vector2(190f, 20f),
-                0.62f
+                new Vector2(0f, -14f),
+                new Vector2(230f, 20f),
+                GK2UiMetrics.Menu.SectionTitleScale
             );
 
             _pageText = CreateBodyText(
@@ -865,8 +914,10 @@ namespace GK2Plus.Framework.UI
                 new Vector2(1f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, BodyY(-40f)),
-                new Vector2(350f, 102f),
-                10f,
+                new Vector2(
+                    GK2UiMetrics.Menu.BodyContentWidth,
+                    GK2UiMetrics.Menu.PageTextWideHeight),
+                GK2UiMetrics.Menu.BodyFontSize,
                 "Center"
             );
 
@@ -1167,9 +1218,14 @@ Button close = closeButton.GetComponent<Button>();
         private Dictionary<string, float> BuildFeatureControlLayout(
             string tab)
         {
-            const float firstRowY = -88f;
-            const float childStep = 23f;
-            const float featureGapStep = 34f;
+            float firstRowY =
+                GK2UiMetrics.Menu.ControlFirstRowY;
+
+            float childStep =
+                GK2UiMetrics.Menu.ControlChildStep;
+
+            float featureGapStep =
+                GK2UiMetrics.Menu.ControlFeatureGap;
 
             Dictionary<string, float> positions =
                 new Dictionary<string, float>(
@@ -1310,7 +1366,9 @@ Button close = closeButton.GetComponent<Button>();
                     rowRect.anchoredPosition =
                         new Vector2(0f, BodyY(rowY));
                     rowRect.sizeDelta =
-                        new Vector2(350f, 20f);
+                        new Vector2(
+                            GK2UiMetrics.Menu.BodyContentWidth,
+                            GK2UiMetrics.Menu.ControlRowHeight);
 
                     CreateBodyText(
                         _bodyTextTemplate,
@@ -1321,7 +1379,9 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f),
                         new Vector2(0.5f, 1f),
                         new Vector2(-60f, 0f),
-                        new Vector2(210f, 20f),
+                        new Vector2(
+                            GK2UiMetrics.Menu.ControlLabelWidth,
+                            GK2UiMetrics.Menu.ControlRowHeight),
                         9f,
                         "Left");
 
@@ -1332,7 +1392,9 @@ Button close = closeButton.GetComponent<Button>();
                             _menuButtonSprite,
                             "OFF",
                             new Vector2(124f, 0f),
-                            new Vector2(82f, 20f));
+                            new Vector2(
+                                GK2UiMetrics.Menu.ControlButtonWidth,
+                                GK2UiMetrics.Menu.ControlRowHeight));
 
                     toggleButton.name =
                         "ToggleButton";
@@ -3112,7 +3174,9 @@ Button close = closeButton.GetComponent<Button>();
             Image image = obj.GetComponent<Image>();
             image.sprite = sprite;
             image.type = Image.Type.Sliced;
-            image.color = new Color(0.72f, 0.58f, 0.46f, 1f);
+            image.color =
+                _theme?.ButtonNeutral ??
+                new Color(0.62f, 0.57f, 0.52f, 0.92f);
             image.raycastTarget = true;
 
             Button button = obj.GetComponent<Button>();
@@ -3136,7 +3200,7 @@ Button close = closeButton.GetComponent<Button>();
                 textTemplate,
                 obj.transform,
                 text,
-                0.55f
+                GK2UiMetrics.Menu.ButtonFontScale
             );
 
             return obj;
@@ -3189,56 +3253,6 @@ Button close = closeButton.GetComponent<Button>();
 
             return clone;
         }
-        private static GameObject ResolveInventoryHeaderTemplate()
-        {
-            foreach (InventoryHeaderWidget widget in
-                     Resources.FindObjectsOfTypeAll<InventoryHeaderWidget>())
-            {
-                if (widget == null)
-                {
-                    continue;
-                }
-
-                TextMeshProUGUI header =
-                    Traverse.Create(widget)
-                        .Field("header")
-                        .GetValue<TextMeshProUGUI>();
-
-                if (header != null &&
-                    header.font != null)
-                {
-                    return header.gameObject;
-                }
-            }
-
-            return null;
-        }
-
-        private static GameObject ResolveNativeListTextTemplate()
-        {
-            foreach (UIBuildingWidget widget in
-                     Resources.FindObjectsOfTypeAll<UIBuildingWidget>())
-            {
-                if (widget == null)
-                {
-                    continue;
-                }
-
-                TextMeshProUGUI label =
-                    Traverse.Create(widget)
-                        .Field("nameLabel")
-                        .GetValue<TextMeshProUGUI>();
-
-                if (label != null &&
-                    label.font != null)
-                {
-                    return label.gameObject;
-                }
-            }
-
-            return null;
-        }
-
         private void SetActiveTab(string tabName)
         {
             bool tabChanged =
@@ -3258,8 +3272,10 @@ Button close = closeButton.GetComponent<Button>();
                 }
 
                 image.color = kvp.Key == tabName
-                    ? new Color(0.92f, 0.76f, 0.52f, 1f)
-                    : new Color(0.58f, 0.48f, 0.42f, 0.90f);
+                    ? (_theme?.ButtonSelected ??
+                       new Color(0.92f, 0.76f, 0.52f, 1f))
+                    : (_theme?.ButtonNeutral ??
+                       new Color(0.62f, 0.57f, 0.52f, 0.92f));
             }
 
             SetText(_pageTitle, tabName);
@@ -3382,8 +3398,12 @@ Button close = closeButton.GetComponent<Button>();
                 new Vector2(0f, BodyY(-40f));
 
             rect.sizeDelta = compact
-                ? new Vector2(350f, 36f)
-                : new Vector2(350f, 102f);
+                ? new Vector2(
+                    GK2UiMetrics.Menu.BodyContentWidth,
+                    GK2UiMetrics.Menu.PageTextCompactHeight)
+                : new Vector2(
+                    GK2UiMetrics.Menu.BodyContentWidth,
+                    GK2UiMetrics.Menu.PageTextWideHeight);
         }
 
         private string GetPlaceholderText(string tab)
@@ -3575,6 +3595,7 @@ Button close = closeButton.GetComponent<Button>();
             _bodyTextTemplate = null;
             _menuButtonLabelTemplate = null;
             _menuButtonSprite = null;
+            _theme = null;
             _spawnItemRow = null;
             _spawnItemButton = null;
             _spawnQuantityInput = null;
