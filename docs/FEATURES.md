@@ -119,7 +119,7 @@ The primary tracking flow now lives in GK2's normal gameplay UI:
 
 The Tracker tab remains the management/fallback UI. While a save is loaded it exposes searchable selectors for active quests, known crafts/recipes, normal item definitions, and common target quantities for custom item pins.
 
-The first implementation supports up to **12 pins** and stores only GK2+ tracker metadata; it does not alter quest, crafting, building, or inventory state.
+The tracker supports up to **6 total pins across Quests, Crafts, and Items** so the combined HUD remains compact and does not grow into a full-screen sidebar. It stores only GK2+ tracker metadata; it does not alter quest, crafting, building, or inventory state.
 
 ### HUD behavior
 
