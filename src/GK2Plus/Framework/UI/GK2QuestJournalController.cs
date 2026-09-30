@@ -1,0 +1,1445 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using BepInEx.Logging;
+using GK2Plus.Features.Tracking;
+using HarmonyLib;
+using LazyBearTechnology;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace GK2Plus.Framework.UI
+{
+    internal sealed class GK2QuestJournalController
+    {
+        private enum JournalFilter
+        {
+            Active,
+            Completed
+        }
+
+        private sealed class QuestRowView
+        {
+            public GameObject Root;
+            public RectTransform Rect;
+            public Image Background;
+            public Image Icon;
+            public TextMeshProUGUI Title;
+            public TextMeshProUGUI Status;
+            public Button SelectButton;
+            public Button PinButton;
+            public Image PinIcon;
+            public QuestData Quest;
+        }
+
+        private readonly ManualLogSource _logger;
+
+        private QuestTreePageWidget _host;
+        private LazyScrollRect _nativeScrollRect;
+        private GK2UiTheme _theme;
+
+        private GameObject _root;
+        private RectTransform _rootRect;
+
+        private Button _activeFilterButton;
+        private Button _completedFilterButton;
+        private TextMeshProUGUI _activeFilterLabel;
+        private TextMeshProUGUI _completedFilterLabel;
+
+        private ScrollRect _questScroll;
+        private RectTransform _questListContent;
+        private GK2UiPool<QuestRowView> _questRowPool;
+
+        private ScrollRect _detailScroll;
+        private RectTransform _detailContent;
+        private TextMeshProUGUI _detailTitle;
+        private TextMeshProUGUI _detailStatus;
+        private TextMeshProUGUI _detailDescription;
+        private TextMeshProUGUI _objectivesTitle;
+        private Image _detailIcon;
+        private Button _trackButton;
+        private Image _trackPinIcon;
+        private TextMeshProUGUI _trackButtonLabel;
+        private GK2UiPool<GK2UiItemRequirementView> _objectivePool;
+
+        private JournalFilter _filter =
+            JournalFilter.Active;
+
+        private string _selectedQuestId =
+            string.Empty;
+
+        internal GK2QuestJournalController(
+            ManualLogSource logger)
+        {
+            _logger =
+                logger;
+        }
+
+        internal bool TryShow(
+            QuestTreePageWidget host,
+            string focusOnQuest)
+        {
+            if (host == null ||
+                MainGame.Instance?.GameSave?.questSystemData?.questCollection == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                _host =
+                    host;
+
+                _theme =
+                    GK2UiTheme.Resolve(
+                        _logger);
+
+                if (_theme == null ||
+                    _theme.BodyTextTemplate == null ||
+                    _theme.TitleTextTemplate == null)
+                {
+                    return false;
+                }
+
+                ResolveNativeScrollRect(
+                    host);
+
+                if (_nativeScrollRect != null)
+                {
+                    _nativeScrollRect.gameObject.SetActive(
+                        false);
+                }
+
+                EnsureUi(
+                    host);
+
+                if (_root == null)
+                {
+                    return false;
+                }
+
+                _root.SetActive(
+                    true);
+                _root.transform.SetAsLastSibling();
+
+                if (!string.IsNullOrWhiteSpace(
+                        focusOnQuest))
+                {
+                    _selectedQuestId =
+                        focusOnQuest;
+                }
+
+                Refresh();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(
+                    $"Quest Journal failed to open: {ex}");
+
+                RestoreNativeTree();
+                return false;
+            }
+        }
+
+        internal void Hide()
+        {
+            if (_root != null)
+            {
+                _root.SetActive(
+                    false);
+            }
+        }
+
+        internal void RestoreNativeTree()
+        {
+            Hide();
+
+            if (_nativeScrollRect != null)
+            {
+                _nativeScrollRect.gameObject.SetActive(
+                    true);
+            }
+        }
+
+        internal void RefreshIfVisible()
+        {
+            if (_root != null &&
+                _root.activeInHierarchy)
+            {
+                Refresh();
+            }
+        }
+
+        private void ResolveNativeScrollRect(
+            QuestTreePageWidget host)
+        {
+            if (_nativeScrollRect != null)
+            {
+                return;
+            }
+
+            _nativeScrollRect =
+                Traverse.Create(host)
+                    .Field("scrollRect")
+                    .GetValue<LazyScrollRect>();
+        }
+
+        private void EnsureUi(
+            QuestTreePageWidget host)
+        {
+            if (_root != null &&
+                _root.transform.parent ==
+                    host.transform)
+            {
+                return;
+            }
+
+            if (_root != null)
+            {
+                UnityEngine.Object.Destroy(
+                    _root);
+            }
+
+            _root =
+                GK2UiFactory.CreateImage(
+                    host.transform,
+                    "GK2PlusQuestJournal",
+                    null,
+                    Image.Type.Simple,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    _theme.ContentBackground,
+                    true);
+
+            _rootRect =
+                _root.GetComponent<RectTransform>();
+
+            _rootRect.offsetMin =
+                Vector2.zero;
+            _rootRect.offsetMax =
+                Vector2.zero;
+
+            BuildHeader();
+            BuildQuestList();
+            BuildDetails();
+
+            _logger?.LogInfo(
+                "GK2+ Quest Journal mounted into native Quests tab.");
+        }
+
+        private void BuildHeader()
+        {
+            GameObject header =
+                GK2UiFactory.CreateImage(
+                    _root.transform,
+                    "JournalHeader",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    new Vector2(
+                        0f,
+                        GK2UiMetrics.QuestJournal.HeaderHeight),
+                    _theme.HeaderBackground);
+
+            RectTransform headerRect =
+                header.GetComponent<RectTransform>();
+
+            headerRect.offsetMin =
+                new Vector2(
+                    0f,
+                    -GK2UiMetrics.QuestJournal.HeaderHeight);
+            headerRect.offsetMax =
+                Vector2.zero;
+
+            TextMeshProUGUI title =
+                GK2UiFactory.CreateText(
+                    header.transform,
+                    "Title",
+                    _theme.TitleTextTemplate,
+                    "Quest Journal",
+                    17f,
+                    TextAlignmentOptions.Center,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            title.rectTransform.offsetMin =
+                Vector2.zero;
+            title.rectTransform.offsetMax =
+                Vector2.zero;
+            title.color =
+                _theme.AccentText;
+        }
+
+        private void BuildQuestList()
+        {
+            float top =
+                GK2UiMetrics.QuestJournal.HeaderHeight +
+                GK2UiMetrics.QuestJournal.OuterPadding;
+
+            float left =
+                GK2UiMetrics.QuestJournal.OuterPadding;
+
+            float width =
+                GK2UiMetrics.QuestJournal.LeftPaneWidth;
+
+            GameObject pane =
+                GK2UiFactory.CreateImage(
+                    _root.transform,
+                    "QuestListPane",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(
+                        left,
+                        -top),
+                    new Vector2(
+                        width,
+                        -(top +
+                          GK2UiMetrics.QuestJournal.OuterPadding)),
+                    _theme.PanelBackground);
+
+            RectTransform paneRect =
+                pane.GetComponent<RectTransform>();
+
+            paneRect.anchorMin =
+                new Vector2(0f, 0f);
+            paneRect.anchorMax =
+                new Vector2(0f, 1f);
+            paneRect.pivot =
+                new Vector2(0f, 1f);
+            paneRect.offsetMin =
+                new Vector2(
+                    left,
+                    GK2UiMetrics.QuestJournal.OuterPadding);
+            paneRect.offsetMax =
+                new Vector2(
+                    left + width,
+                    -top);
+
+            float halfFilterWidth =
+                (width -
+                 (GK2UiMetrics.QuestJournal.OuterPadding * 2f) -
+                 GK2UiMetrics.QuestJournal.FilterGap) /
+                2f;
+
+            _activeFilterButton =
+                GK2UiFactory.CreateFlatButton(
+                    pane.transform,
+                    "ActiveFilter",
+                    _theme,
+                    "Active",
+                    new Vector2(
+                        GK2UiMetrics.QuestJournal.OuterPadding +
+                        (halfFilterWidth / 2f),
+                        -GK2UiMetrics.QuestJournal.OuterPadding),
+                    new Vector2(
+                        halfFilterWidth,
+                        GK2UiMetrics.QuestJournal.FilterHeight),
+                    () =>
+                    {
+                        _filter =
+                            JournalFilter.Active;
+                        _selectedQuestId =
+                            string.Empty;
+                        Refresh();
+                    },
+                    true);
+
+            RectTransform activeRect =
+                _activeFilterButton.GetComponent<RectTransform>();
+
+            activeRect.anchorMin =
+                new Vector2(0f, 1f);
+            activeRect.anchorMax =
+                new Vector2(0f, 1f);
+            activeRect.pivot =
+                new Vector2(0.5f, 1f);
+
+            _activeFilterLabel =
+                _activeFilterButton
+                    .GetComponentInChildren<TextMeshProUGUI>(
+                        true);
+
+            _completedFilterButton =
+                GK2UiFactory.CreateFlatButton(
+                    pane.transform,
+                    "CompletedFilter",
+                    _theme,
+                    "Completed",
+                    new Vector2(
+                        GK2UiMetrics.QuestJournal.OuterPadding +
+                        halfFilterWidth +
+                        GK2UiMetrics.QuestJournal.FilterGap +
+                        (halfFilterWidth / 2f),
+                        -GK2UiMetrics.QuestJournal.OuterPadding),
+                    new Vector2(
+                        halfFilterWidth,
+                        GK2UiMetrics.QuestJournal.FilterHeight),
+                    () =>
+                    {
+                        _filter =
+                            JournalFilter.Completed;
+                        _selectedQuestId =
+                            string.Empty;
+                        Refresh();
+                    },
+                    false);
+
+            RectTransform completedRect =
+                _completedFilterButton.GetComponent<RectTransform>();
+
+            completedRect.anchorMin =
+                new Vector2(0f, 1f);
+            completedRect.anchorMax =
+                new Vector2(0f, 1f);
+            completedRect.pivot =
+                new Vector2(0.5f, 1f);
+
+            _completedFilterLabel =
+                _completedFilterButton
+                    .GetComponentInChildren<TextMeshProUGUI>(
+                        true);
+
+            GameObject viewport =
+                GK2UiFactory.CreateImage(
+                    pane.transform,
+                    "QuestViewport",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(0f, 0f, 0f, 0.001f),
+                    true);
+
+            RectTransform viewportRect =
+                viewport.GetComponent<RectTransform>();
+
+            float listTop =
+                GK2UiMetrics.QuestJournal.OuterPadding +
+                GK2UiMetrics.QuestJournal.FilterHeight +
+                GK2UiMetrics.QuestJournal.FilterGap;
+
+            viewportRect.offsetMin =
+                new Vector2(
+                    GK2UiMetrics.QuestJournal.OuterPadding,
+                    GK2UiMetrics.QuestJournal.OuterPadding);
+            viewportRect.offsetMax =
+                new Vector2(
+                    -GK2UiMetrics.QuestJournal.OuterPadding,
+                    -listTop);
+
+            Mask mask =
+                viewport.AddComponent<Mask>();
+
+            mask.showMaskGraphic =
+                false;
+
+            GameObject content =
+                GK2UiFactory.CreateRect(
+                    viewport.transform,
+                    "QuestListContent",
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            _questListContent =
+                content.GetComponent<RectTransform>();
+
+            _questScroll =
+                pane.AddComponent<ScrollRect>();
+
+            _questScroll.viewport =
+                viewportRect;
+            _questScroll.content =
+                _questListContent;
+            _questScroll.horizontal =
+                false;
+            _questScroll.vertical =
+                true;
+            _questScroll.movementType =
+                ScrollRect.MovementType.Clamped;
+            _questScroll.scrollSensitivity =
+                22f;
+
+            _questRowPool =
+                new GK2UiPool<QuestRowView>(
+                    CreateQuestRow,
+                    (view, active) =>
+                    {
+                        if (view?.Root != null)
+                        {
+                            view.Root.SetActive(
+                                active);
+                        }
+                    });
+        }
+
+        private QuestRowView CreateQuestRow()
+        {
+            GameObject root =
+                GK2UiFactory.CreateImage(
+                    _questListContent,
+                    "QuestRow",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    new Vector2(
+                        0f,
+                        GK2UiMetrics.QuestJournal.QuestRowHeight),
+                    _theme.RowBackground,
+                    true);
+
+            RectTransform rect =
+                root.GetComponent<RectTransform>();
+
+            Image background =
+                root.GetComponent<Image>();
+
+            Button select =
+                root.AddComponent<Button>();
+
+            select.targetGraphic =
+                background;
+            select.transition =
+                Selectable.Transition.ColorTint;
+
+            GameObject iconObject =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "QuestIcon",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0.5f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(
+                        6f,
+                        0f),
+                    new Vector2(
+                        GK2UiMetrics.QuestJournal.QuestIconSize,
+                        GK2UiMetrics.QuestJournal.QuestIconSize),
+                    Color.white);
+
+            Image icon =
+                iconObject.GetComponent<Image>();
+
+            icon.preserveAspect =
+                true;
+
+            TextMeshProUGUI title =
+                GK2UiFactory.CreateText(
+                    root.transform,
+                    "QuestTitle",
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    10f,
+                    TextAlignmentOptions.Left,
+                    new Vector2(0f, 0.5f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(46f, -3f),
+                    new Vector2(-80f, 22f));
+
+            title.textWrappingMode =
+                TextWrappingModes.NoWrap;
+            title.overflowMode =
+                TextOverflowModes.Ellipsis;
+
+            TextMeshProUGUI status =
+                GK2UiFactory.CreateText(
+                    root.transform,
+                    "QuestStatus",
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    8.5f,
+                    TextAlignmentOptions.Left,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(46f, 3f),
+                    new Vector2(-80f, 18f));
+
+            status.color =
+                new Color(0.72f, 0.72f, 0.70f, 1f);
+
+            GameObject pinObject =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "PinButton",
+                    UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi(),
+                    Image.Type.Simple,
+                    new Vector2(1f, 0.5f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(-7f, 0f),
+                    new Vector2(28f, 28f),
+                    Color.white,
+                    true);
+
+            Image pinIcon =
+                pinObject.GetComponent<Image>();
+
+            pinIcon.preserveAspect =
+                true;
+
+            Button pinButton =
+                pinObject.AddComponent<Button>();
+
+            pinButton.targetGraphic =
+                pinIcon;
+            pinButton.transition =
+                Selectable.Transition.ColorTint;
+
+            return new QuestRowView
+            {
+                Root = root,
+                Rect = rect,
+                Background = background,
+                Icon = icon,
+                Title = title,
+                Status = status,
+                SelectButton = select,
+                PinButton = pinButton,
+                PinIcon = pinIcon
+            };
+        }
+
+        private void BuildDetails()
+        {
+            float left =
+                GK2UiMetrics.QuestJournal.OuterPadding +
+                GK2UiMetrics.QuestJournal.LeftPaneWidth +
+                GK2UiMetrics.QuestJournal.PaneGap;
+
+            float top =
+                GK2UiMetrics.QuestJournal.HeaderHeight +
+                GK2UiMetrics.QuestJournal.OuterPadding;
+
+            GameObject pane =
+                GK2UiFactory.CreateImage(
+                    _root.transform,
+                    "QuestDetailsPane",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    _theme.PanelBackground);
+
+            RectTransform paneRect =
+                pane.GetComponent<RectTransform>();
+
+            paneRect.offsetMin =
+                new Vector2(
+                    left,
+                    GK2UiMetrics.QuestJournal.OuterPadding);
+            paneRect.offsetMax =
+                new Vector2(
+                    -GK2UiMetrics.QuestJournal.OuterPadding,
+                    -top);
+
+            GameObject viewport =
+                GK2UiFactory.CreateImage(
+                    pane.transform,
+                    "DetailsViewport",
+                    null,
+                    Image.Type.Simple,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(0f, 0f, 0f, 0.001f),
+                    true);
+
+            RectTransform viewportRect =
+                viewport.GetComponent<RectTransform>();
+
+            viewportRect.offsetMin =
+                new Vector2(
+                    GK2UiMetrics.QuestJournal.DetailPadding,
+                    GK2UiMetrics.QuestJournal.DetailPadding);
+            viewportRect.offsetMax =
+                new Vector2(
+                    -GK2UiMetrics.QuestJournal.DetailPadding,
+                    -GK2UiMetrics.QuestJournal.DetailPadding);
+
+            Mask mask =
+                viewport.AddComponent<Mask>();
+
+            mask.showMaskGraphic =
+                false;
+
+            GameObject content =
+                GK2UiFactory.CreateRect(
+                    viewport.transform,
+                    "DetailsContent",
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            _detailContent =
+                content.GetComponent<RectTransform>();
+
+            _detailScroll =
+                pane.AddComponent<ScrollRect>();
+
+            _detailScroll.viewport =
+                viewportRect;
+            _detailScroll.content =
+                _detailContent;
+            _detailScroll.horizontal =
+                false;
+            _detailScroll.vertical =
+                true;
+            _detailScroll.movementType =
+                ScrollRect.MovementType.Clamped;
+            _detailScroll.scrollSensitivity =
+                22f;
+
+            _detailTitle =
+                GK2UiFactory.CreateText(
+                    _detailContent,
+                    "DetailTitle",
+                    _theme.TitleTextTemplate,
+                    string.Empty,
+                    GK2UiMetrics.QuestJournal.DetailTitleSize,
+                    TextAlignmentOptions.TopLeft,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    new Vector2(-70f, 30f));
+
+            _detailTitle.color =
+                _theme.AccentText;
+            _detailTitle.textWrappingMode =
+                TextWrappingModes.Normal;
+
+            _detailIcon =
+                GK2UiFactory.CreateImage(
+                    _detailContent,
+                    "DetailQuestIcon",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    Vector2.zero,
+                    new Vector2(54f, 54f),
+                    Color.white)
+                    .GetComponent<Image>();
+
+            _detailIcon.preserveAspect =
+                true;
+
+            _detailStatus =
+                GK2UiFactory.CreateText(
+                    _detailContent,
+                    "DetailStatus",
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    GK2UiMetrics.QuestJournal.DetailStatusSize,
+                    TextAlignmentOptions.TopLeft,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    new Vector2(-70f, 18f));
+
+            _detailDescription =
+                GK2UiFactory.CreateText(
+                    _detailContent,
+                    "DetailDescription",
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    GK2UiMetrics.QuestJournal.DetailBodySize,
+                    TextAlignmentOptions.TopLeft,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    new Vector2(0f, 80f));
+
+            _detailDescription.textWrappingMode =
+                TextWrappingModes.Normal;
+
+            _objectivesTitle =
+                GK2UiFactory.CreateText(
+                    _detailContent,
+                    "ObjectivesTitle",
+                    _theme.TitleTextTemplate,
+                    "Objectives",
+                    13f,
+                    TextAlignmentOptions.TopLeft,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    new Vector2(0f, 22f));
+
+            _objectivesTitle.color =
+                _theme.AccentText;
+
+            _trackButton =
+                GK2UiFactory.CreateFlatButton(
+                    _detailContent,
+                    "TrackQuestButton",
+                    _theme,
+                    "Track Quest",
+                    Vector2.zero,
+                    new Vector2(126f, 28f),
+                    () =>
+                    {
+                        QuestData quest =
+                            ResolveSelectedQuest();
+
+                        if (quest == null)
+                        {
+                            return;
+                        }
+
+                        UnifiedTrackerFeature.ToggleQuestFromExternalUi(
+                            quest);
+
+                        Refresh();
+                    },
+                    false);
+
+            _trackButtonLabel =
+                _trackButton
+                    .GetComponentInChildren<TextMeshProUGUI>(
+                        true);
+
+            if (_trackButtonLabel != null)
+            {
+                _trackButtonLabel.rectTransform.offsetMin =
+                    new Vector2(28f, 0f);
+            }
+
+            GameObject pin =
+                GK2UiFactory.CreateImage(
+                    _trackButton.transform,
+                    "TrackerPin",
+                    UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi(),
+                    Image.Type.Simple,
+                    new Vector2(0f, 0.5f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(5f, 0f),
+                    new Vector2(24f, 24f),
+                    Color.white);
+
+            _trackPinIcon =
+                pin.GetComponent<Image>();
+
+            _trackPinIcon.preserveAspect =
+                true;
+
+            _objectivePool =
+                new GK2UiPool<GK2UiItemRequirementView>(
+                    () =>
+                        GK2UiItemRequirementBuilder.Create(
+                            _detailContent,
+                            _theme,
+                            GK2UiMetrics.QuestJournal.ObjectiveCellSize),
+                    (view, active) =>
+                    {
+                        if (view?.Root != null)
+                        {
+                            view.Root.SetActive(
+                                active);
+                        }
+                    });
+        }
+
+        private void Refresh()
+        {
+            List<QuestData> allVisible =
+                GetVisibleQuests();
+
+            int activeCount =
+                allVisible.Count(quest =>
+                    quest.IsActiveQuest);
+
+            int completedCount =
+                allVisible.Count(quest =>
+                    quest.status ==
+                    QuestStatus.Completed);
+
+            if (_activeFilterLabel != null)
+            {
+                _activeFilterLabel.text =
+                    $"Active ({activeCount})";
+            }
+
+            if (_completedFilterLabel != null)
+            {
+                _completedFilterLabel.text =
+                    $"Completed ({completedCount})";
+            }
+
+            GK2UiFactory.SetButtonTone(
+                _activeFilterButton,
+                _theme,
+                _filter == JournalFilter.Active
+                    ? GK2UiButtonTone.Selected
+                    : GK2UiButtonTone.Neutral);
+
+            GK2UiFactory.SetButtonTone(
+                _completedFilterButton,
+                _theme,
+                _filter == JournalFilter.Completed
+                    ? GK2UiButtonTone.Selected
+                    : GK2UiButtonTone.Neutral);
+
+            List<QuestData> filtered =
+                allVisible
+                    .Where(quest =>
+                        _filter ==
+                        JournalFilter.Active
+                            ? quest.IsActiveQuest
+                            : quest.status ==
+                              QuestStatus.Completed)
+                    .OrderBy(quest =>
+                        quest.Definition?.phase ??
+                        0)
+                    .ThenBy(GetQuestTitle)
+                    .ToList();
+
+            if (filtered.Count == 0)
+            {
+                _selectedQuestId =
+                    string.Empty;
+            }
+            else if (!filtered.Any(quest =>
+                         string.Equals(
+                             quest.id,
+                             _selectedQuestId,
+                             StringComparison.OrdinalIgnoreCase)))
+            {
+                _selectedQuestId =
+                    filtered[0].id;
+            }
+
+            _questRowPool.Begin();
+
+            for (int i = 0; i < filtered.Count; i++)
+            {
+                QuestRowView row =
+                    _questRowPool.Rent();
+
+                ConfigureQuestRow(
+                    row,
+                    filtered[i],
+                    i);
+            }
+
+            _questRowPool.End();
+
+            float rowStep =
+                GK2UiMetrics.QuestJournal.QuestRowHeight +
+                GK2UiMetrics.QuestJournal.QuestRowGap;
+
+            _questListContent.sizeDelta =
+                new Vector2(
+                    0f,
+                    Mathf.Max(
+                        0f,
+                        (filtered.Count * rowStep) -
+                        GK2UiMetrics.QuestJournal.QuestRowGap));
+
+            RenderSelectedQuest();
+
+            Canvas.ForceUpdateCanvases();
+        }
+
+        private List<QuestData> GetVisibleQuests()
+        {
+            List<QuestData> quests =
+                MainGame.Instance?
+                    .GameSave?
+                    .questSystemData?
+                    .questCollection?
+                    .quests;
+
+            if (quests == null)
+            {
+                return new List<QuestData>();
+            }
+
+            return quests
+                .Where(quest =>
+                    quest != null &&
+                    !quest.isHidden &&
+                    !quest.isUnknown &&
+                    quest.status !=
+                        QuestStatus.Canceled)
+                .ToList();
+        }
+
+        private void ConfigureQuestRow(
+            QuestRowView row,
+            QuestData quest,
+            int index)
+        {
+            if (row == null ||
+                quest == null)
+            {
+                return;
+            }
+
+            row.Root.SetActive(
+                true);
+
+            row.Quest =
+                quest;
+
+            float step =
+                GK2UiMetrics.QuestJournal.QuestRowHeight +
+                GK2UiMetrics.QuestJournal.QuestRowGap;
+
+            row.Rect.anchoredPosition =
+                new Vector2(
+                    0f,
+                    -(index * step));
+
+            bool selected =
+                string.Equals(
+                    quest.id,
+                    _selectedQuestId,
+                    StringComparison.OrdinalIgnoreCase);
+
+            row.Background.color =
+                selected
+                    ? _theme.TabSelected
+                    : _theme.RowBackground;
+
+            row.Title.text =
+                GetQuestTitle(
+                    quest);
+
+            row.Status.text =
+                GetQuestStatusText(
+                    quest);
+
+            try
+            {
+                row.Icon.sprite =
+                    quest.Definition?.Icon;
+            }
+            catch
+            {
+                row.Icon.sprite =
+                    null;
+            }
+
+            row.SelectButton.onClick.RemoveAllListeners();
+            row.SelectButton.onClick.AddListener(
+                () =>
+                {
+                    _selectedQuestId =
+                        quest.id;
+                    Refresh();
+                });
+
+            bool canTrack =
+                quest.IsActiveQuest &&
+                UnifiedTrackerFeature.CanTrackQuestFromExternalUi();
+
+            row.PinButton.gameObject.SetActive(
+                canTrack);
+
+            if (canTrack)
+            {
+                bool tracked =
+                    UnifiedTrackerFeature.IsQuestTrackedFromExternalUi(
+                        quest.id);
+
+                row.PinIcon.sprite =
+                    UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi();
+
+                row.PinIcon.color =
+                    tracked
+                        ? Color.white
+                        : new Color(
+                            1f,
+                            1f,
+                            1f,
+                            0.42f);
+
+                row.PinButton.onClick.RemoveAllListeners();
+                row.PinButton.onClick.AddListener(
+                    () =>
+                    {
+                        UnifiedTrackerFeature.ToggleQuestFromExternalUi(
+                            quest);
+                        Refresh();
+                    });
+            }
+        }
+
+        private void RenderSelectedQuest()
+        {
+            QuestData quest =
+                ResolveSelectedQuest();
+
+            if (quest == null)
+            {
+                _detailTitle.text =
+                    _filter == JournalFilter.Active
+                        ? "No Active Quests"
+                        : "No Completed Quests";
+                _detailStatus.text =
+                    string.Empty;
+                _detailDescription.text =
+                    string.Empty;
+                _detailIcon.gameObject.SetActive(
+                    false);
+                _objectivesTitle.gameObject.SetActive(
+                    false);
+                _trackButton.gameObject.SetActive(
+                    false);
+
+                _objectivePool.Begin();
+                _objectivePool.End();
+
+                _detailContent.sizeDelta =
+                    new Vector2(0f, 100f);
+
+                return;
+            }
+
+            float width =
+                Mathf.Max(
+                    240f,
+                    _detailScroll.viewport.rect.width);
+
+            float contentWidth =
+                width;
+
+            float y = 0f;
+
+            _detailTitle.text =
+                GetQuestTitle(
+                    quest);
+
+            Vector2 titlePreferred =
+                _detailTitle.GetPreferredValues(
+                    _detailTitle.text,
+                    contentWidth - 70f,
+                    0f);
+
+            float titleHeight =
+                Mathf.Max(
+                    28f,
+                    titlePreferred.y);
+
+            _detailTitle.rectTransform.anchoredPosition =
+                new Vector2(0f, -y);
+            _detailTitle.rectTransform.sizeDelta =
+                new Vector2(-70f, titleHeight);
+
+            try
+            {
+                Sprite sprite =
+                    quest.Definition?.Portrait ??
+                    quest.Definition?.Icon;
+
+                _detailIcon.sprite =
+                    sprite;
+                _detailIcon.gameObject.SetActive(
+                    sprite != null);
+            }
+            catch
+            {
+                _detailIcon.gameObject.SetActive(
+                    false);
+            }
+
+            _detailIcon.rectTransform.anchoredPosition =
+                new Vector2(0f, -y);
+
+            y +=
+                titleHeight + 2f;
+
+            _detailStatus.text =
+                GetQuestStatusText(
+                    quest);
+
+            _detailStatus.rectTransform.anchoredPosition =
+                new Vector2(0f, -y);
+            _detailStatus.rectTransform.sizeDelta =
+                new Vector2(-70f, 18f);
+
+            y += 24f;
+
+            _detailDescription.text =
+                quest.Description ??
+                string.Empty;
+
+            Vector2 descriptionPreferred =
+                _detailDescription.GetPreferredValues(
+                    _detailDescription.text,
+                    contentWidth,
+                    0f);
+
+            float descriptionHeight =
+                Mathf.Max(
+                    38f,
+                    descriptionPreferred.y);
+
+            _detailDescription.rectTransform.anchoredPosition =
+                new Vector2(0f, -y);
+            _detailDescription.rectTransform.sizeDelta =
+                new Vector2(0f, descriptionHeight);
+
+            y +=
+                descriptionHeight + 12f;
+
+            bool canTrack =
+                quest.IsActiveQuest &&
+                UnifiedTrackerFeature.CanTrackQuestFromExternalUi();
+
+            _trackButton.gameObject.SetActive(
+                canTrack);
+
+            if (canTrack)
+            {
+                bool tracked =
+                    UnifiedTrackerFeature.IsQuestTrackedFromExternalUi(
+                        quest.id);
+
+                _trackButtonLabel.text =
+                    tracked
+                        ? "Tracked"
+                        : "Track Quest";
+
+                _trackPinIcon.color =
+                    tracked
+                        ? Color.white
+                        : new Color(
+                            1f,
+                            1f,
+                            1f,
+                            0.50f);
+
+                RectTransform trackRect =
+                    _trackButton.GetComponent<RectTransform>();
+
+                trackRect.anchorMin =
+                    new Vector2(0f, 1f);
+                trackRect.anchorMax =
+                    new Vector2(0f, 1f);
+                trackRect.pivot =
+                    new Vector2(0f, 1f);
+                trackRect.anchoredPosition =
+                    new Vector2(0f, -y);
+
+                y += 36f;
+            }
+
+            List<QuestPhraseRequirement> itemRequirements =
+                quest.Definition?
+                    .finishCheck?
+                    .phraseReqs?
+                    .Where(requirement =>
+                        requirement != null &&
+                        requirement.entity ==
+                            QuestPhraseRequirement.Entity.Item &&
+                        requirement.itemCount != null &&
+                        !string.IsNullOrWhiteSpace(
+                            requirement.itemCount.itemId))
+                    .ToList() ??
+                new List<QuestPhraseRequirement>();
+
+            bool showObjectives =
+                quest.status !=
+                    QuestStatus.Completed &&
+                itemRequirements.Count > 0;
+
+            _objectivesTitle.gameObject.SetActive(
+                showObjectives);
+
+            _objectivePool.Begin();
+
+            if (showObjectives)
+            {
+                _objectivesTitle.rectTransform.anchoredPosition =
+                    new Vector2(0f, -y);
+
+                y += 28f;
+
+                int columns =
+                    Mathf.Max(
+                        1,
+                        GK2UiMetrics.QuestJournal.ObjectiveColumns);
+
+                for (int i = 0; i < itemRequirements.Count; i++)
+                {
+                    QuestPhraseRequirement requirement =
+                        itemRequirements[i];
+
+                    GK2UiItemRequirementView view =
+                        _objectivePool.Rent();
+
+                    int row =
+                        i / columns;
+
+                    int column =
+                        i % columns;
+
+                    view.Rect.anchorMin =
+                        new Vector2(0f, 1f);
+                    view.Rect.anchorMax =
+                        new Vector2(0f, 1f);
+                    view.Rect.pivot =
+                        new Vector2(0f, 1f);
+                    view.Rect.anchoredPosition =
+                        new Vector2(
+                            column *
+                            (GK2UiMetrics.QuestJournal.ObjectiveCellSize +
+                             GK2UiMetrics.QuestJournal.ObjectiveCellGap),
+                            -(y +
+                              (row *
+                               (GK2UiMetrics.QuestJournal.ObjectiveCellSize +
+                                GK2UiMetrics.QuestJournal.ObjectiveCellGap))));
+
+                    int current =
+                        MainGame.PlayerData?
+                            .Inventory?
+                            .Data?
+                            .GetTotalCountInInventory(
+                                requirement.itemCount.itemId,
+                                null,
+                                false) ??
+                        0;
+
+                    GK2UiItemRequirementBuilder.Bind(
+                        view,
+                        _theme,
+                        requirement.itemCount.itemId,
+                        current,
+                        requirement.itemCount.count);
+                }
+
+                int rows =
+                    Mathf.CeilToInt(
+                        itemRequirements.Count /
+                        (float)columns);
+
+                y +=
+                    (rows *
+                     GK2UiMetrics.QuestJournal.ObjectiveCellSize) +
+                    ((rows - 1) *
+                     GK2UiMetrics.QuestJournal.ObjectiveCellGap);
+            }
+
+            _objectivePool.End();
+
+            _detailContent.sizeDelta =
+                new Vector2(
+                    0f,
+                    y + 20f);
+        }
+
+        private QuestData ResolveSelectedQuest()
+        {
+            if (string.IsNullOrWhiteSpace(
+                    _selectedQuestId))
+            {
+                return null;
+            }
+
+            QuestCollectionData collection =
+                MainGame.Instance?
+                    .GameSave?
+                    .questSystemData?
+                    .questCollection;
+
+            if (collection?.questsCache == null ||
+                !collection.questsCache.TryGetValue(
+                    _selectedQuestId,
+                    out QuestData quest))
+            {
+                return null;
+            }
+
+            return quest;
+        }
+
+        private static string GetQuestTitle(
+            QuestData quest)
+        {
+            if (quest == null)
+            {
+                return string.Empty;
+            }
+
+            string localized =
+                LLBase.L(
+                    quest.id);
+
+            return string.IsNullOrWhiteSpace(
+                       localized)
+                ? quest.id
+                : localized;
+        }
+
+        private static string GetQuestStatusText(
+            QuestData quest)
+        {
+            if (quest == null)
+            {
+                return string.Empty;
+            }
+
+            switch (quest.status)
+            {
+                case QuestStatus.Available:
+                    return "Available";
+
+                case QuestStatus.Awaiting:
+                    return "Awaiting";
+
+                case QuestStatus.InProgress:
+                    return "In Progress";
+
+                case QuestStatus.Completed:
+                    return "Completed";
+
+                case QuestStatus.Canceled:
+                    return "Canceled";
+
+                default:
+                    return quest.status.ToString();
+            }
+        }
+    }
+}
