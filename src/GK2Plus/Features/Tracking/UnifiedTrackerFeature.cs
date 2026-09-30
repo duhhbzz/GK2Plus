@@ -453,7 +453,7 @@ namespace GK2Plus.Features.Tracking
                     .TogglePlanFromNative(
                         "build:" +
                             build.Definition.id,
-                        global::LLBase.L(
+                        LLBase.L(
                             data.Name),
                         data.GetCurrentNeedItems()));
         }
