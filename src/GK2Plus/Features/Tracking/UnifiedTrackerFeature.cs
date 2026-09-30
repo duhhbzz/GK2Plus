@@ -60,7 +60,10 @@ namespace GK2Plus.Features.Tracking
         private readonly List<TrackerPin> _pins =
             new List<TrackerPin>();
 
-        private const int MaxPins = 12;
+        // Keep the combined Quests + Crafts + Items HUD intentionally bounded.
+        // Six pins is enough to be useful without turning the tracker into a
+        // permanent right-side inventory panel.
+        private const int MaxPins = 6;
 
         public UnifiedTrackerFeature(
             ConfigFile config,
@@ -1817,7 +1820,7 @@ namespace GK2Plus.Features.Tracking
             }
 
             return
-                $"Pinned {_pins.Count}/{MaxPins} · Right-click native quest/recipe/build entries to toggle tracking.\n" +
+                $"Pinned {_pins.Count}/{MaxPins} total · The HUD is limited across Quests, Crafts, and Items.\n" +
                 BuildSnapshotText(
                     compact: true);
         }
