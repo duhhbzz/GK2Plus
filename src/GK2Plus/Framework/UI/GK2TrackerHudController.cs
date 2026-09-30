@@ -316,12 +316,20 @@ namespace GK2Plus.Framework.UI
                         out string label,
                         out bool customItem))
                 {
+                    int visualLineIndex =
+                        textLines.Count;
+
+                    // Reserve roughly one native ingredient-cell height so
+                    // the 48px item icon does not collide with following text.
                     textLines.Add(" ");
+                    textLines.Add(string.Empty);
+                    textLines.Add(string.Empty);
+                    textLines.Add(string.Empty);
 
                     GameObject row =
                         CreateHudItemRow(
                             panel,
-                            i,
+                            visualLineIndex,
                             itemId,
                             current,
                             target,
@@ -348,7 +356,7 @@ namespace GK2Plus.Framework.UI
 
             return Math.Max(
                 1,
-                lines.Length);
+                textLines.Count);
         }
 
         private static bool TryParseHudItemToken(
@@ -489,7 +497,7 @@ namespace GK2Plus.Framework.UI
             rowRect.sizeDelta =
                 new Vector2(
                     134f,
-                    14f);
+                    48f);
 
             GameObject iconObject =
                 new GameObject(
@@ -521,8 +529,8 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero;
             iconRect.sizeDelta =
                 new Vector2(
-                    12f,
-                    12f);
+                    48f,
+                    48f);
 
             Image image =
                 iconObject.GetComponent<Image>();
@@ -539,7 +547,7 @@ namespace GK2Plus.Framework.UI
                     _bodyTemplate,
                     row.transform,
                     "Count",
-                    9.5f,
+                    10.5f,
                     TextAlignmentOptions.Left);
 
             RectTransform countRect =
@@ -555,7 +563,7 @@ namespace GK2Plus.Framework.UI
                     1f);
             countRect.offsetMin =
                 new Vector2(
-                    16f,
+                    52f,
                     0f);
             countRect.offsetMax =
                 Vector2.zero;
