@@ -99,6 +99,28 @@ The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAtta
 
 ---
 
+## Sprinting
+
+**Category:** Movement  
+**Setting mode:** Main-menu enable/disable, sprint-key selection, and speed multiplier; read-only status during gameplay.
+
+Sprinting temporarily increases the player's normal free-movement speed while the configured key is held.
+
+Default sprint key: **Left Shift**. Available in-menu keys include left/right Shift, left/right Ctrl, and Caps Lock. Speed presets range from **1.25x to 3x**.
+
+The implementation only wraps `FreePlayerState.FixedUpdate`, temporarily scaling the native `PlayerPhysicalBody.SpeedMultiplier` for that free-movement call and restoring the exact previous value afterward. This avoids changing planting, combat, scripted movement, ladders, knockback, or other non-free player states.
+
+### Validation status
+
+Runtime validation is required before merge:
+
+- hold/release sprint during ordinary walking and verify immediate speed change/restoration;
+- verify configured key and multiplier persist after restart;
+- verify planting, combat, ladders, cutscenes, and scripted movement are unaffected;
+- verify any existing native speed modifier is preserved rather than overwritten.
+
+---
+
 ## Bigger Item Stacks
 
 **Category:** Inventory  
