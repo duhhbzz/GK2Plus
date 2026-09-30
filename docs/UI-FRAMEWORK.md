@@ -67,6 +67,23 @@ Creates modal GK2+ window chrome:
 
 The F2 mod menu now uses this builder.
 
+### `GK2UiListRowBuilder`
+
+Creates a consistent settings/list row with:
+
+- native list typography
+- shared row/child-row colors
+- standard label indentation
+- right-aligned action control
+- centralized row/button sizing
+
+Feature toggles and options in the F2 menu use this builder.
+
+### `GK2UiSectionPanelBuilder`
+
+Creates compact titled panels for HUD widgets and other small in-game surfaces.
+The Tracker's Quests / Crafts / Items sections use this builder.
+
 ### `GK2UiPool<T>`
 
 Small reusable view pool. Runtime HUDs and future dynamic lists should use it
@@ -96,6 +113,7 @@ The shell now uses:
 - centralized menu metrics
 - shared modal window builder
 - shared flat tab controls
+- reusable native settings rows
 - shared action-button creation
 
 This gives the menu a darker GK2-style slate body, parchment/brown header,
