@@ -107,20 +107,23 @@ The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAtta
 
 The Unified Tracker provides one compact HUD for **active quests**, **known crafts/recipes**, and **custom item quantity targets**.
 
-### Tracker tab
+### Native tracking + Tracker tab
 
-While a save is loaded, the Tracker tab exposes searchable selectors for:
+The primary tracking flow now lives in GK2's normal gameplay UI:
 
-- active quests;
-- crafts/recipes currently available from GK2's game-balance/knowledge data;
-- normal item definitions;
-- common target quantities for custom item pins.
+- **right-click an active quest in the quest tree** to track or untrack it;
+- **right-click a supported craft/recipe row** to track or untrack it;
+- **right-click supported construction/town-building rows** to add or remove that plan;
+- optionally enable **Auto-track New Quests** so a quest is pinned when GK2 starts it;
+- optionally enable **Remove Completed Quests** so completed quest pins clean themselves up.
 
-Selected entries can be pinned independently. The first implementation supports up to **12 pins** and stores only GK2+ tracker metadata; it does not alter quest, crafting, or inventory state.
+The Tracker tab remains the management/fallback UI. While a save is loaded it exposes searchable selectors for active quests, known crafts/recipes, normal item definitions, and common target quantities for custom item pins.
+
+The first implementation supports up to **12 pins** and stores only GK2+ tracker metadata; it does not alter quest, crafting, building, or inventory state.
 
 ### HUD behavior
 
-The compact HUD refreshes its displayed values four times per second rather than doing expensive game-data discovery every frame.
+The compact HUD refreshes its displayed values four times per second rather than doing expensive game-data discovery every frame. The original IMGUI prototype has been replaced with a persistent Unity/TMP panel using GK2's loaded fonts, frame/background sprites, and rich-text/sprite rendering.
 
 - **Quest pins** show the localized quest name, current description/objective, and item requirements when the quest exposes them.
 - **Craft pins** show the localized/result name and the player's current count versus each recipe requirement.
@@ -136,7 +139,10 @@ The initial HUD is intentionally a lightweight vertical slice so quest/craft/ite
 
 ### Validation required
 
-- pin/unpin active quests;
+- right-click active quest nodes to track/untrack;
+- enable Auto-track New Quests and start a new quest;
+- complete a tracked quest with Remove Completed Quests enabled;
+- right-click supported craft/build rows to track/untrack;
 - search and pin a known craft;
 - search and pin several normal items with different target quantities;
 - verify counts update as items enter/leave player inventory;
