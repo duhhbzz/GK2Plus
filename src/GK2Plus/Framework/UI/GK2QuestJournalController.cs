@@ -1196,14 +1196,37 @@ namespace GK2Plus.Framework.UI
                     _selectedQuestId,
                     StringComparison.OrdinalIgnoreCase);
 
+            Sprite cardSprite =
+                quest.status ==
+                    QuestStatus.Completed
+                    ? (_theme.InspirationCardCompletedSprite ??
+                       _theme.InspirationCardSprite)
+                    : _theme.InspirationCardSprite;
+
+            if (cardSprite != null)
+            {
+                row.Background.sprite =
+                    cardSprite;
+                row.Background.type =
+                    Image.Type.Sliced;
+            }
+
             row.Background.color =
                 selected
-                    ? _theme.TabSelected
-                    : _theme.RowBackground;
+                    ? new Color(
+                        1f,
+                        0.92f,
+                        0.72f,
+                        1f)
+                    : Color.white;
 
             row.Title.text =
                 GetQuestTitle(
                     quest);
+
+            row.Description.text =
+                quest.Description ??
+                string.Empty;
 
             row.Status.text =
                 GetQuestStatusText(
@@ -1213,12 +1236,51 @@ namespace GK2Plus.Framework.UI
             {
                 row.Icon.sprite =
                     quest.Definition?.Icon;
+
+                if (row.Icon.sprite != null)
+                {
+                    row.Icon.BlueColorReplace(
+                        _theme.ItemIconTint);
+                }
             }
             catch
             {
                 row.Icon.sprite =
                     null;
             }
+
+            List<QuestPhraseRequirement> requirements =
+                GetItemRequirements(
+                    quest);
+
+            GetQuestProgress(
+                requirements,
+                out int current,
+                out int target,
+                out float progress01);
+
+            RectTransform fillRect =
+                row.ProgressFill.rectTransform;
+
+            fillRect.anchorMin =
+                Vector2.zero;
+            fillRect.anchorMax =
+                new Vector2(
+                    Mathf.Clamp01(progress01),
+                    1f);
+            fillRect.offsetMin =
+                Vector2.zero;
+            fillRect.offsetMax =
+                Vector2.zero;
+
+            row.ProgressLabel.text =
+                target > 0
+                    ? $"{current}/{target}"
+                    : GetQuestStatusText(
+                        quest);
+
+            row.ProgressRoot.SetActive(
+                true);
 
             row.SelectButton.onClick.RemoveAllListeners();
             row.SelectButton.onClick.AddListener(
@@ -1272,6 +1334,8 @@ namespace GK2Plus.Framework.UI
 
             if (quest == null)
             {
+                _detailPaneHeaderTitle.text =
+                    "Quest Details";
                 _detailTitle.text =
                     _filter == JournalFilter.Active
                         ? "No Active Quests"
@@ -1282,7 +1346,9 @@ namespace GK2Plus.Framework.UI
                     string.Empty;
                 _detailIcon.gameObject.SetActive(
                     false);
-                _objectivesTitle.gameObject.SetActive(
+                _descriptionHeaderRect.gameObject.SetActive(
+                    false);
+                _objectivesHeaderRect.gameObject.SetActive(
                     false);
                 _trackButton.gameObject.SetActive(
                     false);
@@ -1295,6 +1361,9 @@ namespace GK2Plus.Framework.UI
 
                 return;
             }
+
+            _detailPaneHeaderTitle.text =
+                "Quest Details";
 
             float width =
                 Mathf.Max(
@@ -1313,18 +1382,20 @@ namespace GK2Plus.Framework.UI
             Vector2 titlePreferred =
                 _detailTitle.GetPreferredValues(
                     _detailTitle.text,
-                    contentWidth - 70f,
+                    contentWidth - 82f,
                     0f);
 
             float titleHeight =
                 Mathf.Max(
-                    28f,
+                    30f,
                     titlePreferred.y);
 
             _detailTitle.rectTransform.anchoredPosition =
                 new Vector2(0f, -y);
             _detailTitle.rectTransform.sizeDelta =
-                new Vector2(-70f, titleHeight);
+                new Vector2(
+                    -82f,
+                    titleHeight);
 
             try
             {
@@ -1336,6 +1407,12 @@ namespace GK2Plus.Framework.UI
                     sprite;
                 _detailIcon.gameObject.SetActive(
                     sprite != null);
+
+                if (sprite != null)
+                {
+                    _detailIcon.BlueColorReplace(
+                        _theme.ItemIconTint);
+                }
             }
             catch
             {
@@ -1347,7 +1424,7 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0f, -y);
 
             y +=
-                titleHeight + 2f;
+                titleHeight + 3f;
 
             _detailStatus.text =
                 GetQuestStatusText(
@@ -1356,32 +1433,7 @@ namespace GK2Plus.Framework.UI
             _detailStatus.rectTransform.anchoredPosition =
                 new Vector2(0f, -y);
             _detailStatus.rectTransform.sizeDelta =
-                new Vector2(-70f, 18f);
-
-            y += 24f;
-
-            _detailDescription.text =
-                quest.Description ??
-                string.Empty;
-
-            Vector2 descriptionPreferred =
-                _detailDescription.GetPreferredValues(
-                    _detailDescription.text,
-                    contentWidth,
-                    0f);
-
-            float descriptionHeight =
-                Mathf.Max(
-                    38f,
-                    descriptionPreferred.y);
-
-            _detailDescription.rectTransform.anchoredPosition =
-                new Vector2(0f, -y);
-            _detailDescription.rectTransform.sizeDelta =
-                new Vector2(0f, descriptionHeight);
-
-            y +=
-                descriptionHeight + 12f;
+                new Vector2(-82f, 18f);
 
             bool canTrack =
                 quest.IsActiveQuest &&
@@ -1414,47 +1466,76 @@ namespace GK2Plus.Framework.UI
                     _trackButton.GetComponent<RectTransform>();
 
                 trackRect.anchorMin =
-                    new Vector2(0f, 1f);
+                    new Vector2(1f, 1f);
                 trackRect.anchorMax =
-                    new Vector2(0f, 1f);
+                    new Vector2(1f, 1f);
                 trackRect.pivot =
-                    new Vector2(0f, 1f);
+                    new Vector2(1f, 1f);
                 trackRect.anchoredPosition =
-                    new Vector2(0f, -y);
-
-                y += 36f;
+                    new Vector2(
+                        -76f,
+                        -44f);
             }
 
+            y =
+                Mathf.Max(
+                    y + 25f,
+                    74f);
+
+            _descriptionHeaderRect.gameObject.SetActive(
+                true);
+            _descriptionHeaderRect.anchoredPosition =
+                new Vector2(0f, -y);
+            _descriptionHeaderRect.sizeDelta =
+                new Vector2(0f, 30f);
+
+            y += 36f;
+
+            _detailDescription.text =
+                quest.Description ??
+                string.Empty;
+
+            Vector2 descriptionPreferred =
+                _detailDescription.GetPreferredValues(
+                    _detailDescription.text,
+                    contentWidth,
+                    0f);
+
+            float descriptionHeight =
+                Mathf.Max(
+                    44f,
+                    descriptionPreferred.y);
+
+            _detailDescription.rectTransform.anchoredPosition =
+                new Vector2(0f, -y);
+            _detailDescription.rectTransform.sizeDelta =
+                new Vector2(0f, descriptionHeight);
+
+            y +=
+                descriptionHeight + 14f;
+
             List<QuestPhraseRequirement> itemRequirements =
-                quest.Definition?
-                    .finishCheck?
-                    .phraseReqs?
-                    .Where(requirement =>
-                        requirement != null &&
-                        requirement.entity ==
-                            QuestPhraseRequirement.Entity.Item &&
-                        requirement.itemCount != null &&
-                        !string.IsNullOrWhiteSpace(
-                            requirement.itemCount.itemId))
-                    .ToList() ??
-                new List<QuestPhraseRequirement>();
+                GetItemRequirements(
+                    quest);
 
             bool showObjectives =
                 quest.status !=
                     QuestStatus.Completed &&
                 itemRequirements.Count > 0;
 
-            _objectivesTitle.gameObject.SetActive(
+            _objectivesHeaderRect.gameObject.SetActive(
                 showObjectives);
 
             _objectivePool.Begin();
 
             if (showObjectives)
             {
-                _objectivesTitle.rectTransform.anchoredPosition =
+                _objectivesHeaderRect.anchoredPosition =
                     new Vector2(0f, -y);
+                _objectivesHeaderRect.sizeDelta =
+                    new Vector2(0f, 30f);
 
-                y += 28f;
+                y += 37f;
 
                 int columns =
                     Mathf.Max(
@@ -1469,7 +1550,7 @@ namespace GK2Plus.Framework.UI
                     GK2UiItemRequirementView view =
                         _objectivePool.Rent();
 
-                    int row =
+                    int objectiveRow =
                         i / columns;
 
                     int column =
@@ -1487,19 +1568,13 @@ namespace GK2Plus.Framework.UI
                             (GK2UiMetrics.QuestJournal.ObjectiveCellSize +
                              GK2UiMetrics.QuestJournal.ObjectiveCellGap),
                             -(y +
-                              (row *
+                              (objectiveRow *
                                (GK2UiMetrics.QuestJournal.ObjectiveCellSize +
                                 GK2UiMetrics.QuestJournal.ObjectiveCellGap))));
 
                     int current =
-                        MainGame.PlayerData?
-                            .Inventory?
-                            .Data?
-                            .GetTotalCountInInventory(
-                                requirement.itemCount.itemId,
-                                null,
-                                false) ??
-                        0;
+                        GetInventoryCount(
+                            requirement.itemCount.itemId);
 
                     GK2UiItemRequirementBuilder.Bind(
                         view,
@@ -1527,6 +1602,89 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     0f,
                     y + 20f);
+        }
+
+        private static List<QuestPhraseRequirement> GetItemRequirements(
+            QuestData quest)
+        {
+            return quest?
+                       .Definition?
+                       .finishCheck?
+                       .phraseReqs?
+                       .Where(requirement =>
+                           requirement != null &&
+                           requirement.entity ==
+                               QuestPhraseRequirement.Entity.Item &&
+                           requirement.itemCount != null &&
+                           !string.IsNullOrWhiteSpace(
+                               requirement.itemCount.itemId))
+                       .ToList() ??
+                   new List<QuestPhraseRequirement>();
+        }
+
+        private static int GetInventoryCount(
+            string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    itemId))
+            {
+                return 0;
+            }
+
+            return
+                MainGame.PlayerData?
+                    .Inventory?
+                    .Data?
+                    .GetTotalCountInInventory(
+                        itemId,
+                        null,
+                        false) ??
+                0;
+        }
+
+        private static void GetQuestProgress(
+            List<QuestPhraseRequirement> requirements,
+            out int current,
+            out int target,
+            out float progress01)
+        {
+            current = 0;
+            target = 0;
+
+            if (requirements != null)
+            {
+                foreach (QuestPhraseRequirement requirement in
+                         requirements)
+                {
+                    if (requirement?.itemCount == null)
+                    {
+                        continue;
+                    }
+
+                    int need =
+                        Mathf.Max(
+                            1,
+                            requirement.itemCount.count);
+
+                    int have =
+                        GetInventoryCount(
+                            requirement.itemCount.itemId);
+
+                    target +=
+                        need;
+                    current +=
+                        Mathf.Min(
+                            have,
+                            need);
+                }
+            }
+
+            progress01 =
+                target <= 0
+                    ? 0f
+                    : Mathf.Clamp01(
+                        current /
+                        (float)target);
         }
 
         private QuestData ResolveSelectedQuest()
