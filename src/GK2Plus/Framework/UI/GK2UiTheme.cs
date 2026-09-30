@@ -87,6 +87,29 @@ namespace GK2Plus.Framework.UI
             if (_current != null &&
                 _current.IsReady)
             {
+                TextMeshProUGUI nativeTitle =
+                    ResolveInventoryHeaderTemplate();
+
+                if (nativeTitle != null)
+                {
+                    _current.TitleTextTemplate =
+                        nativeTitle;
+                }
+
+                TextMeshProUGUI nativeBody =
+                    ResolveBuildingListTemplate();
+
+                if (nativeBody != null)
+                {
+                    _current.BodyTextTemplate =
+                        nativeBody;
+                }
+                else if (_current.BodyTextTemplate == null)
+                {
+                    _current.BodyTextTemplate =
+                        FindTmp(bodyFallback);
+                }
+
                 TextMeshProUGUI laterButtonTemplate =
                     FindTmp(buttonFallback);
 
@@ -96,14 +119,9 @@ namespace GK2Plus.Framework.UI
                         laterButtonTemplate;
                 }
 
-                if (_current.BodyTextTemplate == null)
-                {
-                    _current.BodyTextTemplate =
-                        FindTmp(bodyFallback);
-                }
-
                 if (_current.CountTextTemplate == null ||
-                    _current.ItemSlotSprite == null)
+                    _current.ItemSlotSprite == null ||
+                    _current.ItemIconMaterial == null)
                 {
                     _current.ResolveItemCellStyle();
                 }
