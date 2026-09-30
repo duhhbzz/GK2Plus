@@ -1969,8 +1969,20 @@ namespace GK2Plus.Features.Tracking
                         CountPlayerItem(itemId);
 
                     builder.AppendLine();
-                    builder.Append(
-                        $"  {GetItemDisplayName(itemId)}  {current}/{target}");
+
+                    if (compact)
+                    {
+                        builder.Append(
+                            $"  {GetItemDisplayName(itemId)}  {current}/{target}");
+                    }
+                    else
+                    {
+                        AppendHudMaterialToken(
+                            builder,
+                            itemId,
+                            current,
+                            target);
+                    }
                 }
             }
         }
@@ -2018,8 +2030,20 @@ namespace GK2Plus.Features.Tracking
                         need);
 
                 builder.AppendLine();
-                builder.Append(
-                    $"  {GetNeedDisplayName(need)}  {current}/{target}");
+
+                if (compact)
+                {
+                    builder.Append(
+                        $"  {GetNeedDisplayName(need)}  {current}/{target}");
+                }
+                else
+                {
+                    AppendHudMaterialToken(
+                        builder,
+                        ResolveNeedIconItemId(need),
+                        current,
+                        target);
+                }
             }
         }
 
@@ -2037,12 +2061,8 @@ namespace GK2Plus.Features.Tracking
                     pin.Id);
 
             builder.Append(
-                $"<b>{GetItemDisplayName(pin.Id)}</b>  {current}/{target}");
-
-            if (current >= target)
-            {
-                builder.Append("  ✓");
-            }
+                $"[[ITEM|{Uri.EscapeDataString(pin.Id)}|{current}|{target}|" +
+                $"{Uri.EscapeDataString(GetItemDisplayName(pin.Id))}]]");
         }
 
         private void AppendPlan(
@@ -2107,9 +2127,112 @@ namespace GK2Plus.Features.Tracking
                         : $"Any {id}";
 
                 builder.AppendLine();
-                builder.Append(
-                    $"  {name}  {current}/{Math.Max(1, target)}");
+
+                if (compact)
+                {
+                    builder.Append(
+                        $"  {name}  {current}/{Math.Max(1, target)}");
+                }
+                else
+                {
+                    AppendHudMaterialToken(
+                        builder,
+                        ResolveSnapshotIconItemId(
+                            groupType,
+                            id),
+                        current,
+                        Math.Max(1, target));
+                }
             }
+        }
+
+        private static void AppendHudMaterialToken(
+            StringBuilder builder,
+            string itemId,
+            int current,
+            int target)
+        {
+            builder.Append(
+                $"[[MAT|{Uri.EscapeDataString(itemId ?? string.Empty)}|" +
+                $"{current}|{Math.Max(1, target)}]]");
+        }
+
+        private static string ResolveNeedIconItemId(
+            global::NeedItemData need)
+        {
+            if (need == null)
+            {
+                return string.Empty;
+            }
+
+            if (!need.IsGroup)
+            {
+                return need.Id;
+            }
+
+            if (need.TryGetGroupItemDefs(
+                    out List<global::ItemDef> defs) &&
+                defs != null)
+            {
+                global::ItemDef first =
+                    defs.FirstOrDefault(def =>
+                        def != null &&
+                        !string.IsNullOrWhiteSpace(def.id));
+
+                if (first != null)
+                {
+                    return first.id;
+                }
+            }
+
+            return need.Id;
+        }
+
+        private static string ResolveSnapshotIconItemId(
+            global::ItemGroup groupType,
+            string id)
+        {
+            if (groupType ==
+                global::ItemGroup.None)
+            {
+                return id;
+            }
+
+            if (global::GameBalance.Me == null)
+            {
+                return id;
+            }
+
+            List<global::ItemDef> defs =
+                null;
+
+            if (groupType ==
+                global::ItemGroup.Common)
+            {
+                global::GameBalance.Me
+                    .groupItemsCache
+                    .TryGetValue(
+                        id,
+                        out defs);
+            }
+            else if (groupType ==
+                     global::ItemGroup.Star)
+            {
+                global::GameBalance.Me
+                    .starGroupItemsCache
+                    .TryGetValue(
+                        id,
+                        out defs);
+            }
+
+            global::ItemDef first =
+                defs?
+                    .FirstOrDefault(def =>
+                        def != null &&
+                        !string.IsNullOrWhiteSpace(def.id));
+
+            return first?.id ??
+                   id;
         }
 
         private static int CountSnapshotNeed(
