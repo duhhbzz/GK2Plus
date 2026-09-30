@@ -55,6 +55,18 @@ namespace GK2Plus.Framework.UI
         public Color ButtonSelected =>
             new Color(0.92f, 0.76f, 0.52f, 1f);
 
+        public Color HeaderBackground =>
+            new Color(0.43f, 0.33f, 0.20f, 0.97f);
+
+        public Color TabNeutral =>
+            new Color(0.15f, 0.17f, 0.21f, 0.96f);
+
+        public Color TabSelected =>
+            new Color(0.38f, 0.30f, 0.20f, 0.98f);
+
+        public Color TabBorder =>
+            new Color(0.34f, 0.36f, 0.40f, 0.85f);
+
         public bool IsReady =>
             TitleTextTemplate != null &&
             BodyTextTemplate != null &&
