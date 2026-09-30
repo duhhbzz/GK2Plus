@@ -2134,6 +2134,27 @@ Button close = closeButton.GetComponent<Button>();
                 _activeFeatureOptionPickerControl.OptionsProvider() ??
                 Array.Empty<GK2FeatureOption>();
 
+            string search =
+                _lastFeatureOptionPickerSearch ??
+                string.Empty;
+
+            if (_activeFeatureOptionPickerControl.Searchable &&
+                !string.IsNullOrWhiteSpace(search))
+            {
+                options =
+                    options
+                        .Where(option =>
+                            (!string.IsNullOrWhiteSpace(option.Label) &&
+                             option.Label.IndexOf(
+                                 search,
+                                 StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrWhiteSpace(option.Value) &&
+                             option.Value.IndexOf(
+                                 search,
+                                 StringComparison.OrdinalIgnoreCase) >= 0))
+                        .ToList();
+            }
+
             int pageCount =
                 Math.Max(
                     1,
@@ -2181,7 +2202,10 @@ Button close = closeButton.GetComponent<Button>();
                         : option.Label,
                     new Vector2(
                         0f,
-                        -55f - (i * 21f)),
+                        (_activeFeatureOptionPickerControl.Searchable
+                            ? -76f
+                            : -55f) -
+                        (i * 21f)),
                     new Vector2(220f, 18f));
 
                 button.GetComponent<Button>().onClick.AddListener(() =>
@@ -2224,8 +2248,41 @@ Button close = closeButton.GetComponent<Button>();
 
             _activeFeatureOptionPickerControl = null;
             _featureOptionPickerPageText = null;
+            _featureOptionPickerSearchInput = null;
+            _lastFeatureOptionPickerSearch = string.Empty;
             _featureOptionPickerButtons.Clear();
             _featureOptionPickerPage = 0;
+        }
+
+        private void UpdateFeatureOptionPickerSearch()
+        {
+            if (_featureOptionPickerRoot == null ||
+                _activeFeatureOptionPickerControl == null ||
+                !_activeFeatureOptionPickerControl.Searchable ||
+                _featureOptionPickerSearchInput == null)
+            {
+                return;
+            }
+
+            string current =
+                GetStringProperty(
+                    _featureOptionPickerSearchInput,
+                    "text") ??
+                string.Empty;
+
+            if (string.Equals(
+                    current,
+                    _lastFeatureOptionPickerSearch,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _lastFeatureOptionPickerSearch =
+                current;
+
+            _featureOptionPickerPage = 0;
+            RebuildFeatureOptionPicker();
         }
 
         private void BuildSpawnItemRow()
@@ -3440,6 +3497,8 @@ Button close = closeButton.GetComponent<Button>();
             _featureOptionPickerRoot = null;
             _activeFeatureOptionPickerControl = null;
             _featureOptionPickerPageText = null;
+            _featureOptionPickerSearchInput = null;
+            _lastFeatureOptionPickerSearch = string.Empty;
             _featureOptionPickerButtons.Clear();
             _githubButton = null;
             _nexusButton = null;
