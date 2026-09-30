@@ -31,6 +31,17 @@ namespace GK2Plus.Framework.UI
         public Sprite ItemSlotSprite { get; private set; }
         public Material ItemIconMaterial { get; private set; }
 
+        public Sprite SectionHeaderSprite { get; private set; }
+        public Sprite SectionHeaderInactiveSprite { get; private set; }
+        public TextStyle SectionHeaderTextStyle { get; private set; }
+
+        public Sprite InspirationCardSprite { get; private set; }
+        public Sprite InspirationCardCompletedSprite { get; private set; }
+        public Sprite InspirationIconFrameSprite { get; private set; }
+        public TextMeshProUGUI InspirationTitleTemplate { get; private set; }
+        public TextMeshProUGUI InspirationDescriptionTemplate { get; private set; }
+        public TextMeshProUGUI InspirationProgressTemplate { get; private set; }
+
         public Color ItemIconTint { get; private set; } = Color.white;
         public TextStyle CountNormalStyle { get; private set; }
         public TextStyle CountRedStyle { get; private set; }
@@ -126,6 +137,17 @@ namespace GK2Plus.Framework.UI
                     _current.ResolveItemCellStyle();
                 }
 
+                if (_current.SectionHeaderSprite == null)
+                {
+                    _current.ResolveSectionHeaderStyle();
+                }
+
+                if (_current.InspirationCardSprite == null ||
+                    _current.InspirationTitleTemplate == null)
+                {
+                    _current.ResolveInspirationCardStyle();
+                }
+
                 return _current;
             }
 
@@ -184,6 +206,8 @@ namespace GK2Plus.Framework.UI
                 fallback;
 
             theme.ResolveItemCellStyle();
+            theme.ResolveSectionHeaderStyle();
+            theme.ResolveInspirationCardStyle();
 
             _current =
                 theme;
@@ -245,6 +269,86 @@ namespace GK2Plus.Framework.UI
                 Traverse.Create(itemCell)
                     .Field("countLabelRed")
                     .GetValue<TextStyle>();
+        }
+
+        private void ResolveSectionHeaderStyle()
+        {
+            InventoryHeaderWidget widget =
+                Resources
+                    .FindObjectsOfTypeAll<InventoryHeaderWidget>()
+                    .FirstOrDefault(candidate =>
+                        candidate != null);
+
+            if (widget == null)
+            {
+                return;
+            }
+
+            SectionHeaderSprite =
+                Traverse.Create(widget)
+                    .Field("headerBackgroundActiveSprite")
+                    .GetValue<Sprite>();
+
+            SectionHeaderInactiveSprite =
+                Traverse.Create(widget)
+                    .Field("headerBackgroundInactiveSprite")
+                    .GetValue<Sprite>();
+
+            SectionHeaderTextStyle =
+                Traverse.Create(widget)
+                    .Field("headerActiveStyle")
+                    .GetValue<TextStyle>();
+        }
+
+        private void ResolveInspirationCardStyle()
+        {
+            InspirationWidget widget =
+                Resources
+                    .FindObjectsOfTypeAll<InspirationWidget>()
+                    .FirstOrDefault(candidate =>
+                        candidate != null);
+
+            if (widget == null)
+            {
+                return;
+            }
+
+            InspirationCardSprite =
+                Traverse.Create(widget)
+                    .Field("backNotCompletedSprite")
+                    .GetValue<Sprite>();
+
+            InspirationCardCompletedSprite =
+                Traverse.Create(widget)
+                    .Field("backCompletedSprite")
+                    .GetValue<Sprite>();
+
+            Sprite[] frames =
+                Traverse.Create(widget)
+                    .Field("framesSprites")
+                    .GetValue<Sprite[]>();
+
+            if (frames != null &&
+                frames.Length > 0)
+            {
+                InspirationIconFrameSprite =
+                    frames[0];
+            }
+
+            InspirationTitleTemplate =
+                Traverse.Create(widget)
+                    .Field("idLabel")
+                    .GetValue<TextMeshProUGUI>();
+
+            InspirationDescriptionTemplate =
+                Traverse.Create(widget)
+                    .Field("descriptionLabel")
+                    .GetValue<TextMeshProUGUI>();
+
+            InspirationProgressTemplate =
+                Traverse.Create(widget)
+                    .Field("progressLabel")
+                    .GetValue<TextMeshProUGUI>();
         }
 
         private static TextMeshProUGUI ResolveInventoryHeaderTemplate()
