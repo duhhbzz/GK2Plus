@@ -850,6 +850,45 @@ namespace GK2Plus.Features.Tracking
                 planId);
         }
 
+        internal static bool CanTrackQuestFromExternalUi()
+        {
+            return _activeInstance?.CanManageTracker() == true;
+        }
+
+        internal static bool IsQuestTrackedFromExternalUi(
+            string questId)
+        {
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                string.IsNullOrWhiteSpace(questId))
+            {
+                return false;
+            }
+
+            return feature._pins.Any(pin =>
+                pin.Type ==
+                    TrackerPinType.Quest &&
+                string.Equals(
+                    pin.Id,
+                    questId,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        internal static void ToggleQuestFromExternalUi(
+            global::QuestData quest)
+        {
+            _activeInstance?
+                .ToggleQuestFromNative(
+                    quest);
+        }
+
+        internal static Sprite GetTrackerPinSpriteForExternalUi()
+        {
+            return GetTrackerPinSprite();
+        }
+
         private static Sprite GetTrackerPinSprite()
         {
             if (_trackerPinSprite != null)
