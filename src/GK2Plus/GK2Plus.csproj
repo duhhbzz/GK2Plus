@@ -78,6 +78,16 @@
       <Private>false</Private>
     </Reference>
 
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\UI\tracker_pin.png"
+                      LogicalName="GK2Plus.Assets.UI.tracker_pin.png" />
   </ItemGroup>
 
   <!-- Generate compile-time mod + tested game version constants. -->
