@@ -57,6 +57,8 @@ namespace GK2Plus.Framework.UI
         private GameObject _featureOptionPickerRoot;
         private GK2FeatureOptionControl _activeFeatureOptionPickerControl;
         private GameObject _featureOptionPickerPageText;
+        private Component _featureOptionPickerSearchInput;
+        private string _lastFeatureOptionPickerSearch = string.Empty;
         private readonly List<GameObject> _featureOptionPickerButtons =
             new List<GameObject>();
         private int _featureOptionPickerPage;
@@ -334,6 +336,7 @@ namespace GK2Plus.Framework.UI
             {
                 UpdateSpawnQuantityFromInput();
                 UpdateItemPickerSearch();
+                UpdateFeatureOptionPickerSearch();
             }
         }
 
