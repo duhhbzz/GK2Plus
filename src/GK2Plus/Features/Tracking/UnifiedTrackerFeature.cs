@@ -136,7 +136,8 @@ namespace GK2Plus.Features.Tracking
                     parentFeatureId: Id,
                     order: 20,
                     enabledProvider: CanManageTracker,
-                    allowInGameEditing: true));
+                    allowInGameEditing: true,
+                    searchable: true));
 
             _uiService.RegisterFeatureOptionControl(
                 new GK2FeatureOptionControl(
@@ -151,7 +152,8 @@ namespace GK2Plus.Features.Tracking
                     parentFeatureId: Id,
                     order: 30,
                     enabledProvider: CanManageTracker,
-                    allowInGameEditing: true));
+                    allowInGameEditing: true,
+                    searchable: true));
 
             _uiService.RegisterFeatureOptionControl(
                 new GK2FeatureOptionControl(
@@ -166,7 +168,8 @@ namespace GK2Plus.Features.Tracking
                     parentFeatureId: Id,
                     order: 40,
                     enabledProvider: CanManageTracker,
-                    allowInGameEditing: true));
+                    allowInGameEditing: true,
+                    searchable: true));
 
             _uiService.RegisterFeatureOptionControl(
                 new GK2FeatureOptionControl(
