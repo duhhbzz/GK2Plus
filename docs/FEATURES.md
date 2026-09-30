@@ -15,6 +15,7 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
+| Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
 | Inventory | [Shared Storage](#shared-storage) |
 | Cheats | [Functional Cheats](#functional-cheats) |
@@ -59,6 +60,42 @@ Last saved: 10 minutes ago (4:26 AM).
 ~~~
 
 The value comes from native save metadata and updates after a successful save.
+
+---
+
+## Backwards Compatible Extensions
+
+**Category:** Crafting  
+**Setting mode:** Main-menu enable/disable; read-only status during gameplay.
+
+Backwards Compatible Extensions lets a supported upgraded workstation extension satisfy recipes that require its lower-tier predecessor.
+
+The initial compatibility rule is:
+
+~~~text
+Fine Tool Rack
+  counts as Fine Tool Rack
+  + counts as Tool Rack for recipe requirements
+~~~
+
+This means a correctly attached **Fine Tool Rack** can satisfy recipes that still list the basic **Tool Rack** requirement, so players do not need to keep both rack tiers beside the same compatible workbench solely for older recipes.
+
+The feature is **OFF by default** to preserve vanilla behavior unless the player opts in from the GK2+ **Crafting** tab.
+
+### Native behavior and compatibility
+
+GK2+ does not create fake workstation links and does not change which extensions a workbench can physically accept. The game must already recognize the Fine Tool Rack as a valid attached extension for that workbench.
+
+GK2+ only relaxes GK2's final recipe-extension eligibility check when a recipe requires `tool_rack` and a valid attached `tool_rack_fine` is present. All other recipe requirements, progression, mastery, tools, ingredients, energy, queues, and crafting behavior remain native.
+
+### Validation status
+
+The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAttachedExtensions` path and the game's own attached-workbench-extension links. Runtime validation is still required before release, specifically:
+
+- Fine Tool Rack satisfies a Tool Rack recipe on a compatible workbench when enabled;
+- Fine Tool Rack recipes continue to require the Fine Tool Rack normally;
+- disabling the option restores vanilla Tool Rack requirements;
+- unrelated extensions and workbenches are unaffected.
 
 ---
 
