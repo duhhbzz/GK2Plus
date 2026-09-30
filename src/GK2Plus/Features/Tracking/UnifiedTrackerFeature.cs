@@ -2002,25 +2002,38 @@ namespace GK2Plus.Features.Tracking
                 return;
             }
 
-            builder.Append(
-                $"<b>{LocalizeQuestName(quest)}</b>");
+            string questName =
+                LocalizeQuestName(
+                    quest);
+
+            if (compact)
+            {
+                builder.Append(
+                    $"<b>{questName}</b>");
+            }
+            else
+            {
+                string description =
+                    string.IsNullOrWhiteSpace(
+                        quest.Description)
+                        ? string.Empty
+                        : SingleLine(
+                            quest.Description,
+                            120);
+
+                builder.Append(
+                    $"[[QUEST|{Uri.EscapeDataString(questName)}|" +
+                    $"{Uri.EscapeDataString(description)}]]");
+            }
 
             if (quest.status == global::QuestStatus.Completed)
             {
-                builder.Append("  ✓");
-                return;
-            }
+                if (compact)
+                {
+                    builder.Append("  ✓");
+                }
 
-            if (!compact &&
-                !string.IsNullOrWhiteSpace(
-                    quest.Description))
-            {
-                builder.AppendLine();
-                builder.Append(
-                    "  " +
-                    SingleLine(
-                        quest.Description,
-                        90));
+                return;
             }
 
             if (quest.Definition?
