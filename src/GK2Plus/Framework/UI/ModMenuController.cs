@@ -451,8 +451,17 @@ namespace GK2Plus.Framework.UI
             GameObject window =
                 shell.Window;
 
+            RectTransform windowRect =
+                shell.WindowRect;
+
+            GameObject safeArea =
+                shell.SafeArea;
+
             RectTransform safeAreaRect =
                 shell.SafeAreaRect;
+
+            Canvas overlayCanvas =
+                overlay.GetComponent<Canvas>();
 
             _menuRoot =
                 overlay;
