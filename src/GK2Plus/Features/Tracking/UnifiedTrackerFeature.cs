@@ -11,6 +11,8 @@ using GK2Plus.Framework.UI;
 using HarmonyLib;
 using LazyBearTechnology;
 using UnityEngine;
+using UnityEngine.Events;
+using TMPro;
 
 namespace GK2Plus.Features.Tracking
 {
@@ -349,9 +351,9 @@ namespace GK2Plus.Features.Tracking
                 nameof(QuestTreeRedrawPostfix));
 
             PatchPostfix(
-                typeof(global::UICraftWidget),
+                typeof(global::UICraftSelectionWindow),
                 "Redraw",
-                nameof(CraftWidgetRedrawPostfix));
+                nameof(CraftSelectionWindowRedrawPostfix));
 
             PatchPostfix(
                 typeof(global::UIBuildingWidget),
@@ -423,23 +425,179 @@ namespace GK2Plus.Features.Tracking
                         quest));
         }
 
-        private static void CraftWidgetRedrawPostfix(
-            global::UICraftWidget __instance)
+        private static void CraftSelectionWindowRedrawPostfix(
+            global::UICraftSelectionWindow __instance)
         {
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
             global::CraftDef craft =
                 __instance?.CraftDef;
 
-            if (__instance == null ||
+            if (feature == null ||
+                __instance == null ||
+                craft == null ||
+                string.IsNullOrWhiteSpace(craft.id))
+            {
+                return;
+            }
+
+            feature.EnsureCraftTrackButton(
+                __instance,
+                craft);
+        }
+
+        private void EnsureCraftTrackButton(
+            global::UICraftSelectionWindow window,
+            global::CraftDef craft)
+        {
+            if (window == null ||
                 craft == null)
             {
                 return;
             }
 
-            BindRightClick(
-                __instance.gameObject,
-                () => _activeInstance?
-                    .ToggleCraftFromNative(
-                        craft));
+            Transform existing =
+                window.transform.Find(
+                    "GK2PlusTrackCraftButton");
+
+            LazyButton sourceButton =
+                Traverse.Create(window)
+                    .Field("startCraftButton")
+                    .GetValue<LazyButton>();
+
+            if (sourceButton == null)
+            {
+                Logger.LogWarning(
+                    "Unified Tracker could not locate the native craft button template.");
+                return;
+            }
+
+            GameObject buttonObject;
+
+            if (existing == null)
+            {
+                buttonObject =
+                    UnityEngine.Object.Instantiate(
+                        sourceButton.gameObject,
+                        window.transform);
+
+                buttonObject.name =
+                    "GK2PlusTrackCraftButton";
+
+                RectTransform sourceRect =
+                    sourceButton.transform as RectTransform;
+
+                RectTransform buttonRect =
+                    buttonObject.transform as RectTransform;
+
+                if (sourceRect != null &&
+                    buttonRect != null)
+                {
+                    buttonRect.anchorMin =
+                        sourceRect.anchorMin;
+                    buttonRect.anchorMax =
+                        sourceRect.anchorMax;
+                    buttonRect.pivot =
+                        sourceRect.pivot;
+                    buttonRect.sizeDelta =
+                        sourceRect.sizeDelta;
+                    buttonRect.anchoredPosition =
+                        sourceRect.anchoredPosition +
+                        new Vector2(
+                            0f,
+                            28f);
+                }
+            }
+            else
+            {
+                buttonObject =
+                    existing.gameObject;
+            }
+
+            buttonObject.SetActive(
+                true);
+
+            LazyButton button =
+                buttonObject.GetComponent<LazyButton>();
+
+            if (button == null)
+            {
+                return;
+            }
+
+            button.LazyUIElementId =
+                string.Empty;
+
+            button.onClick.RemoveAllListeners();
+            button.onEnter.RemoveAllListeners();
+            button.onExit.RemoveAllListeners();
+            button.onDown.RemoveAllListeners();
+            button.onUp.RemoveAllListeners();
+
+            string craftId =
+                craft.id;
+
+            button.onClick.AddListener(
+                new UnityAction(
+                    () =>
+                    {
+                        global::CraftDef current =
+                            window.CraftDef;
+
+                        if (current == null ||
+                            !string.Equals(
+                                current.id,
+                                craftId,
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            return;
+                        }
+
+                        ToggleCraftFromNative(
+                            current);
+
+                        UpdateCraftTrackButtonLabel(
+                            buttonObject,
+                            current.id);
+                    }));
+
+            UpdateCraftTrackButtonLabel(
+                buttonObject,
+                craft.id);
+        }
+
+        private void UpdateCraftTrackButtonLabel(
+            GameObject buttonObject,
+            string craftId)
+        {
+            if (buttonObject == null)
+            {
+                return;
+            }
+
+            bool tracked =
+                _pins.Any(pin =>
+                    pin.Type ==
+                        TrackerPinType.Craft &&
+                    string.Equals(
+                        pin.Id,
+                        craftId,
+                        StringComparison.OrdinalIgnoreCase));
+
+            TextMeshProUGUI label =
+                buttonObject
+                    .GetComponentsInChildren<TextMeshProUGUI>(
+                        true)
+                    .FirstOrDefault();
+
+            if (label != null)
+            {
+                label.text =
+                    tracked
+                        ? "Tracked"
+                        : "Track";
+            }
         }
 
         private static void BuildingWidgetRedrawPostfix(
