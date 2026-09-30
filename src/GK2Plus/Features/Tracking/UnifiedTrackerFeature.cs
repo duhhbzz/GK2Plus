@@ -290,6 +290,413 @@ namespace GK2Plus.Features.Tracking
             PatchNativeTrackerHooks();
         }
 
+        private static IReadOnlyList<GK2FeatureOption>
+            GetBinaryOptions()
+        {
+            return new[]
+            {
+                new GK2FeatureOption("Off", "Off"),
+                new GK2FeatureOption("On", "On")
+            };
+        }
+
+        private void SetBooleanOption(
+            ConfigEntry<bool> entry,
+            string value)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            entry.Value =
+                string.Equals(
+                    value,
+                    "On",
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    value,
+                    "True",
+                    StringComparison.OrdinalIgnoreCase);
+
+            _config.Save();
+            _uiService.RefreshMenu();
+        }
+
+        private void PatchNativeTrackerHooks()
+        {
+            PatchPostfix(
+                typeof(global::QuestTreeElementWidget),
+                "Redraw",
+                nameof(QuestTreeRedrawPostfix));
+
+            PatchPostfix(
+                typeof(global::UICraftWidget),
+                "Redraw",
+                nameof(CraftWidgetRedrawPostfix));
+
+            PatchPostfix(
+                typeof(global::UIBuildingWidget),
+                "Redraw",
+                nameof(BuildingWidgetRedrawPostfix));
+
+            PatchPostfix(
+                typeof(global::UITownBuildingWidget),
+                "Redraw",
+                nameof(TownBuildingWidgetRedrawPostfix));
+
+            PatchPostfix(
+                typeof(global::QuestSystemData),
+                "StartQuest",
+                nameof(QuestStartedPostfix));
+
+            PatchPostfix(
+                typeof(global::QuestSystemData),
+                "CompleteQuest",
+                nameof(QuestCompletedPostfix));
+        }
+
+        private void PatchPostfix(
+            Type type,
+            string methodName,
+            string postfixName)
+        {
+            MethodInfo original =
+                AccessTools.Method(
+                    type,
+                    methodName);
+
+            MethodInfo postfix =
+                AccessTools.Method(
+                    typeof(UnifiedTrackerFeature),
+                    postfixName);
+
+            if (original == null ||
+                postfix == null)
+            {
+                Logger.LogWarning(
+                    $"Unified Tracker could not hook {type.Name}.{methodName}.");
+                return;
+            }
+
+            Harmony.Patch(
+                original,
+                postfix:
+                    new HarmonyMethod(
+                        postfix));
+        }
+
+        private static void QuestTreeRedrawPostfix(
+            global::QuestTreeElementWidget __instance)
+        {
+            global::QuestData quest =
+                __instance?.Data?.questData;
+
+            if (__instance == null ||
+                quest == null)
+            {
+                return;
+            }
+
+            BindRightClick(
+                __instance.gameObject,
+                () => _activeInstance?
+                    .ToggleQuestFromNative(
+                        quest));
+        }
+
+        private static void CraftWidgetRedrawPostfix(
+            global::UICraftWidget __instance)
+        {
+            global::CraftDef craft =
+                __instance?.CraftDef;
+
+            if (__instance == null ||
+                craft == null)
+            {
+                return;
+            }
+
+            BindRightClick(
+                __instance.gameObject,
+                () => _activeInstance?
+                    .ToggleCraftFromNative(
+                        craft));
+        }
+
+        private static void BuildingWidgetRedrawPostfix(
+            global::UIBuildingWidget __instance)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            global::UIBuildingWidgetData data =
+                Traverse.Create(
+                    __instance)
+                    .Field("data")
+                    .GetValue<global::UIBuildingWidgetData>();
+
+            global::BuildData build =
+                data?.BuildData;
+
+            if (build == null ||
+                build.Definition == null)
+            {
+                return;
+            }
+
+            BindRightClick(
+                __instance.gameObject,
+                () => _activeInstance?
+                    .TogglePlanFromNative(
+                        "build:" +
+                            build.Definition.id,
+                        global::LLBase.L(
+                            data.Name),
+                        data.GetCurrentNeedItems()));
+        }
+
+        private static void TownBuildingWidgetRedrawPostfix(
+            global::UITownBuildingWidget __instance)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            global::UITownBuildingWidgetData data =
+                Traverse.Create(
+                    __instance)
+                    .Field("data")
+                    .GetValue<global::UITownBuildingWidgetData>();
+
+            global::TownBuildingDef definition =
+                data?.TownBuildingDef;
+
+            if (definition == null)
+            {
+                return;
+            }
+
+            BindRightClick(
+                __instance.gameObject,
+                () => _activeInstance?
+                    .TogglePlanFromNative(
+                        "town:" +
+                            definition.id,
+                        data.Name,
+                        data.GetCurrentNeedItems()));
+        }
+
+        private static void QuestStartedPostfix(
+            global::QuestSystemData __instance,
+            string id)
+        {
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
+            if (feature?.Enabled?.Value != true ||
+                feature._autoTrackNewQuests?.Value != true ||
+                __instance?
+                    .questCollection?
+                    .questsCache == null ||
+                string.IsNullOrWhiteSpace(id) ||
+                !__instance.questCollection.questsCache
+                    .TryGetValue(
+                        id,
+                        out global::QuestData quest) ||
+                quest == null ||
+                !quest.IsActiveQuest)
+            {
+                return;
+            }
+
+            feature.AddOrUpdatePin(
+                TrackerPinType.Quest,
+                quest.id,
+                0);
+
+            feature.Logger.LogInfo(
+                $"Unified Tracker auto-tracked quest '{quest.id}'.");
+        }
+
+        private static void QuestCompletedPostfix(
+            string id)
+        {
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
+            if (feature?.Enabled?.Value != true ||
+                feature._removeCompletedQuests?.Value != true ||
+                string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            int removed =
+                feature._pins.RemoveAll(pin =>
+                    pin.Type ==
+                        TrackerPinType.Quest &&
+                    string.Equals(
+                        pin.Id,
+                        id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (removed > 0)
+            {
+                feature.SavePins();
+
+                feature.Logger.LogInfo(
+                    $"Unified Tracker removed completed quest '{id}'.");
+            }
+        }
+
+        private static void BindRightClick(
+            GameObject target,
+            Action toggleAction)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            TrackerRightClickTarget handler =
+                target.GetComponent<TrackerRightClickTarget>();
+
+            if (handler == null)
+            {
+                handler =
+                    target.AddComponent<TrackerRightClickTarget>();
+            }
+
+            handler.Bind(
+                toggleAction);
+        }
+
+        private void ToggleQuestFromNative(
+            global::QuestData quest)
+        {
+            if (!CanManageTracker() ||
+                quest == null ||
+                string.IsNullOrWhiteSpace(quest.id))
+            {
+                return;
+            }
+
+            TrackerPin existing =
+                _pins.FirstOrDefault(pin =>
+                    pin.Type ==
+                        TrackerPinType.Quest &&
+                    string.Equals(
+                        pin.Id,
+                        quest.id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                _pins.Remove(existing);
+                SavePins();
+
+                Logger.LogInfo(
+                    $"Unified Tracker untracked quest '{quest.id}' from the native quest UI.");
+                return;
+            }
+
+            if (!quest.IsActiveQuest)
+            {
+                return;
+            }
+
+            AddOrUpdatePin(
+                TrackerPinType.Quest,
+                quest.id,
+                0);
+
+            Logger.LogInfo(
+                $"Unified Tracker tracked quest '{quest.id}' from the native quest UI.");
+        }
+
+        private void ToggleCraftFromNative(
+            global::CraftDef craft)
+        {
+            if (!CanManageTracker() ||
+                craft == null ||
+                string.IsNullOrWhiteSpace(craft.id))
+            {
+                return;
+            }
+
+            TrackerPin existing =
+                _pins.FirstOrDefault(pin =>
+                    pin.Type ==
+                        TrackerPinType.Craft &&
+                    string.Equals(
+                        pin.Id,
+                        craft.id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                _pins.Remove(existing);
+                SavePins();
+
+                Logger.LogInfo(
+                    $"Unified Tracker untracked craft '{craft.id}' from the native crafting UI.");
+                return;
+            }
+
+            AddOrUpdatePin(
+                TrackerPinType.Craft,
+                craft.id,
+                0);
+
+            Logger.LogInfo(
+                $"Unified Tracker tracked craft '{craft.id}' from the native crafting UI.");
+        }
+
+        private void TogglePlanFromNative(
+            string id,
+            string label,
+            IEnumerable<global::NeedItemData> needs)
+        {
+            if (!CanManageTracker() ||
+                string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            TrackerPin existing =
+                _pins.FirstOrDefault(pin =>
+                    pin.Type ==
+                        TrackerPinType.Plan &&
+                    string.Equals(
+                        pin.Id,
+                        id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                _pins.Remove(existing);
+                SavePins();
+
+                Logger.LogInfo(
+                    $"Unified Tracker untracked plan '{id}' from the native build UI.");
+                return;
+            }
+
+            AddOrUpdatePin(
+                TrackerPinType.Plan,
+                id,
+                0,
+                label,
+                SerializeNeeds(needs));
+
+            Logger.LogInfo(
+                $"Unified Tracker tracked plan '{id}' from the native build UI.");
+        }
+
         private void RegisterAction(
             string id,
             string label,
