@@ -16,6 +16,7 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
 | Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
+| Farming | [Continuous Planting](#continuous-planting) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
 | Inventory | [Shared Storage](#shared-storage) |
 | Cheats | [Functional Cheats](#functional-cheats) |
@@ -96,6 +97,28 @@ The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAtta
 - Fine Tool Rack recipes continue to require the Fine Tool Rack normally;
 - disabling the option restores vanilla Tool Rack requirements;
 - unrelated extensions and workbenches are unaffected.
+
+---
+
+## Continuous Planting
+
+**Category:** Farming  
+**Setting mode:** Main-menu enable/disable; read-only status during gameplay.
+
+Continuous Planting keeps the currently selected seed active after a successful planting action while more of the same seed remains in the player's inventory.
+
+Vanilla cancellation still wins: pressing the normal Action/Menu/Tab cancellation controls clears the selected seed and GK2+ does not restore it.
+
+The feature only restores the exact seed id that was successfully planted and stops when the player's remaining count reaches zero.
+
+### Validation status
+
+The current implementation targets GK2's native `GardenInteractionHandler.TryApplySeed` success path and `PlantingPlayerState.OnExit` cleanup path. Runtime validation is required before merge:
+
+- plant several adjacent compatible plots without reselecting the seed;
+- confirm the final seed clears normally when the stack is exhausted;
+- confirm Action/Menu/Tab cancellation still clears selection;
+- disable the feature and confirm vanilla behavior returns.
 
 ---
 
