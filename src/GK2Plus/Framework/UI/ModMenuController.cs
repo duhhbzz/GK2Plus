@@ -19,6 +19,7 @@ namespace GK2Plus.Framework.UI
             "Inventory",
             "Crafting",
             "Farming",
+            "Tracker",
             "Zombies",
             "Cheats",
             "More"
@@ -623,7 +624,7 @@ namespace GK2Plus.Framework.UI
                 );
             }
 
-            float tabWidth = 54f;
+            float tabWidth = Tabs.Length > 7 ? 48f : 54f;
             float tabHeight = 18f;
             float gap = 2f;
             float rowWidth = (Tabs.Length * tabWidth) + ((Tabs.Length - 1) * gap);
@@ -1584,10 +1585,13 @@ Button close = closeButton.GetComponent<Button>();
                         .onClick
                         .AddListener(() =>
                         {
-                            if (!string.Equals(
+                            bool mainMenuContext = string.Equals(
                                 DetectContext(),
                                 "MainMenu",
-                                StringComparison.Ordinal))
+                                StringComparison.Ordinal);
+
+                            if (!mainMenuContext &&
+                                !control.AllowInGameEditing)
                             {
                                 return;
                             }
@@ -1672,7 +1676,7 @@ Button close = closeButton.GetComponent<Button>();
                         ? "Select"
                         : label;
 
-                if (mainMenu &&
+                if ((mainMenu || control.AllowInGameEditing) &&
                     !IsBinaryFeatureOptionControl(
                         control,
                         options))
@@ -1688,7 +1692,7 @@ Button close = closeButton.GetComponent<Button>();
                     control.EnabledProvider();
 
                 button.interactable =
-                    mainMenu &&
+                    (mainMenu || control.AllowInGameEditing) &&
                     enabled;
 
                 Transform labelTransform =
