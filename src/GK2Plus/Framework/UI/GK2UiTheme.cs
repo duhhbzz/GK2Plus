@@ -68,6 +68,12 @@ namespace GK2Plus.Framework.UI
         public Color TabBorder =>
             new Color(0.34f, 0.36f, 0.40f, 0.85f);
 
+        public Color RowBackground =>
+            new Color(0.12f, 0.13f, 0.16f, 0.88f);
+
+        public Color ChildRowBackground =>
+            new Color(0.095f, 0.105f, 0.13f, 0.82f);
+
         public bool IsReady =>
             TitleTextTemplate != null &&
             BodyTextTemplate != null &&
