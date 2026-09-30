@@ -1037,8 +1037,19 @@ Button close = closeButton.GetComponent<Button>();
                 const int maxPerRow = 4;
                 const float maxRowWidth = 350f;
                 const float gap = 6f;
-                const float firstRowY = -82f;
                 const float rowGap = 24f;
+
+                float firstRowY = -82f;
+                Dictionary<string, float> featurePositions =
+                    BuildFeatureControlLayout(group.Key);
+
+                if (featurePositions.Count > 0)
+                {
+                    firstRowY =
+                        Math.Min(
+                            firstRowY,
+                            featurePositions.Values.Min() - 30f);
+                }
 
                 for (int i = 0; i < count; i++)
                 {
@@ -3208,6 +3219,19 @@ Button close = closeButton.GetComponent<Button>();
                 ? "Follow development on GitHub or download GK2+ from Nexus Mods."
                 : "Follow development on GitHub. The Nexus Mods page is coming soon.";
 
+            if (_tabNotices.TryGetValue(
+                    tab,
+                    out Func<string> dynamicNoticeProvider))
+            {
+                string dynamicNotice =
+                    dynamicNoticeProvider();
+
+                if (!string.IsNullOrWhiteSpace(dynamicNotice))
+                {
+                    return dynamicNotice;
+                }
+            }
+
             if (HasFeatureControlsForTab(tab))
             {
                 return string.Equals(
@@ -3248,19 +3272,6 @@ Button close = closeButton.GetComponent<Button>();
                         "Planned: a central zombie manager, stats overview, and equipment tools.\n\n" +
                         followText;
                 case "Cheats":
-                    if (_tabNotices.TryGetValue(
-                        "Cheats",
-                        out Func<string> cheatsNotice))
-                    {
-                        string dynamicNotice =
-                            cheatsNotice();
-
-                        if (!string.IsNullOrWhiteSpace(dynamicNotice))
-                        {
-                            return dynamicNotice;
-                        }
-                    }
-
                     return
                         "Money cheats use a save-safety checkpoint.\n" +
                         "Health and stamina refills use native player systems.";
