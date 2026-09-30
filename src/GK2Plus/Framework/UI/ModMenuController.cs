@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using BepInEx.Logging;
 using GK2Plus.Core;
+using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -415,6 +416,14 @@ namespace GK2Plus.Framework.UI
             Sprite dividerSprite = FindSprite("widget_perks-text_decor-drk_1");
             Sprite redButtonSprite = FindSprite("comm-btn-simple_red-active");
 
+            GameObject titleTemplate =
+                ResolveInventoryHeaderTemplate() ??
+                buttonLabelTemplate;
+
+            GameObject listTextTemplate =
+                ResolveNativeListTextTemplate() ??
+                bodyTemplate;
+
             if (frameSprite == null || bgSprite == null || redButtonSprite == null)
             {
                 throw new InvalidOperationException(
@@ -467,7 +476,7 @@ namespace GK2Plus.Framework.UI
             );
 
             Image dimmerImage = dimmer.GetComponent<Image>();
-            dimmerImage.color = new Color(0.03f, 0.01f, 0.03f, 0.18f);
+            dimmerImage.color = new Color(0f, 0f, 0f, 0.26f);
             dimmerImage.raycastTarget = true;
             dimmer.transform.SetAsFirstSibling();
 
@@ -497,7 +506,7 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero
             );
             solidBacking.GetComponent<Image>().color =
-                new Color(0.24f, 0.05f, 0.13f, 0.99f);
+                new Color(0.10f, 0.11f, 0.13f, 0.99f);
 
             GameObject background = CreateStretchImage(
                 window.transform,
@@ -562,7 +571,7 @@ namespace GK2Plus.Framework.UI
             );
 
             CreateNativeTitleText(
-                buttonLabelTemplate,
+                titleTemplate,
                 window.transform,
                 "GK2+ Mod Menu",
                 new Vector2(0f, -16f),
@@ -682,7 +691,7 @@ namespace GK2Plus.Framework.UI
             contentRect.sizeDelta = new Vector2(392f, 176f);
 
             Image contentBg = content.AddComponent<Image>();
-            contentBg.color = new Color(0.12f, 0.02f, 0.07f, 0.86f);
+            contentBg.color = new Color(0.08f, 0.09f, 0.11f, 0.92f);
             contentBg.raycastTarget = false;
 
             GameObject bodyViewport = new GameObject(
@@ -774,7 +783,7 @@ namespace GK2Plus.Framework.UI
             Image scrollbarTrack =
                 scrollbarObject.GetComponent<Image>();
             scrollbarTrack.color =
-                new Color(0.08f, 0.01f, 0.04f, 0.72f);
+                new Color(0.05f, 0.05f, 0.06f, 0.82f);
             scrollbarTrack.raycastTarget = true;
 
             GameObject handle = new GameObject(
@@ -833,12 +842,12 @@ namespace GK2Plus.Framework.UI
             _bodyContentRect = bodyContentRect;
             _bodyScrollRect = bodyScroll;
             _bodyScrollbar = bodyScrollbar;
-            _bodyTextTemplate = bodyTemplate;
+            _bodyTextTemplate = listTextTemplate;
             _menuButtonLabelTemplate = buttonLabelTemplate;
             _menuButtonSprite = redButtonSprite;
 
             _pageTitle = CreateNativeTitleText(
-                buttonLabelTemplate,
+                titleTemplate,
                 content.transform,
                 "General",
                 new Vector2(0f, -13f),
@@ -847,7 +856,7 @@ namespace GK2Plus.Framework.UI
             );
 
             _pageText = CreateBodyText(
-                bodyTemplate,
+                listTextTemplate,
                 _contentRoot.transform,
                 "PageText",
                 "",
@@ -867,7 +876,7 @@ namespace GK2Plus.Framework.UI
             SetProperty(pageTmp, "wordSpacing", 1.25f);
 
             _featureSettingsNote = CreateBodyText(
-                bodyTemplate,
+                listTextTemplate,
                 _contentRoot.transform,
                 "FeatureSettingsNote",
                 "Return to the main menu to change feature settings safely.",
@@ -3102,6 +3111,7 @@ Button close = closeButton.GetComponent<Button>();
             Image image = obj.GetComponent<Image>();
             image.sprite = sprite;
             image.type = Image.Type.Sliced;
+            image.color = new Color(0.72f, 0.58f, 0.46f, 1f);
             image.raycastTarget = true;
 
             Button button = obj.GetComponent<Button>();
@@ -3178,6 +3188,56 @@ Button close = closeButton.GetComponent<Button>();
 
             return clone;
         }
+        private static GameObject ResolveInventoryHeaderTemplate()
+        {
+            foreach (InventoryHeaderWidget widget in
+                     Resources.FindObjectsOfTypeAll<InventoryHeaderWidget>())
+            {
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                TextMeshProUGUI header =
+                    Traverse.Create(widget)
+                        .Field("header")
+                        .GetValue<TextMeshProUGUI>();
+
+                if (header != null &&
+                    header.font != null)
+                {
+                    return header.gameObject;
+                }
+            }
+
+            return null;
+        }
+
+        private static GameObject ResolveNativeListTextTemplate()
+        {
+            foreach (UIBuildingWidget widget in
+                     Resources.FindObjectsOfTypeAll<UIBuildingWidget>())
+            {
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                TextMeshProUGUI label =
+                    Traverse.Create(widget)
+                        .Field("nameLabel")
+                        .GetValue<TextMeshProUGUI>();
+
+                if (label != null &&
+                    label.font != null)
+                {
+                    return label.gameObject;
+                }
+            }
+
+            return null;
+        }
+
         private void SetActiveTab(string tabName)
         {
             bool tabChanged =
@@ -3197,8 +3257,8 @@ Button close = closeButton.GetComponent<Button>();
                 }
 
                 image.color = kvp.Key == tabName
-                    ? Color.white
-                    : new Color(0.72f, 0.72f, 0.78f, 0.88f);
+                    ? new Color(0.92f, 0.76f, 0.52f, 1f)
+                    : new Color(0.58f, 0.48f, 0.42f, 0.90f);
             }
 
             SetText(_pageTitle, tabName);
