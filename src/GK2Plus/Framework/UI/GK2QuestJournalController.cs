@@ -29,9 +29,6 @@ namespace GK2Plus.Framework.UI
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Description;
             public TextMeshProUGUI Status;
-            public GameObject ProgressRoot;
-            public Image ProgressFill;
-            public TextMeshProUGUI ProgressLabel;
             public Button SelectButton;
             public Button PinButton;
             public Image PinIcon;
@@ -610,94 +607,34 @@ namespace GK2Plus.Framework.UI
                     "QuestDescription",
                     _theme.BodyTextTemplate,
                     string.Empty,
-                    9.5f,
+                    9.25f,
                     TextAlignmentOptions.TopLeft,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
-                    new Vector2(
-                        pad +
-                        GK2UiMetrics.QuestJournal.QuestIconSize +
-                        18f,
-                        -32f),
-                    new Vector2(
-                        -(pad + 6f),
-                        43f));
+                    Vector2.zero,
+                    Vector2.zero);
+
+            RectTransform descriptionRect =
+                description.rectTransform;
+
+            descriptionRect.offsetMin =
+                new Vector2(
+                    pad +
+                    GK2UiMetrics.QuestJournal.QuestIconSize +
+                    18f,
+                    -96f);
+            descriptionRect.offsetMax =
+                new Vector2(
+                    -(pad + 7f),
+                    -31f);
 
             description.textWrappingMode =
                 TextWrappingModes.Normal;
             description.overflowMode =
-                TextOverflowModes.Ellipsis;
-
-            GameObject progressRoot =
-                GK2UiFactory.CreateImage(
-                    root.transform,
-                    "Progress",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(1f, 0f),
-                    new Vector2(0.5f, 0f),
-                    new Vector2(
-                        0f,
-                        6f),
-                    new Vector2(
-                        -16f,
-                        GK2UiMetrics.QuestJournal.QuestProgressHeight),
-                    new Color(
-                        0.10f,
-                        0.11f,
-                        0.08f,
-                        0.95f));
-
-            RectTransform progressRect =
-                progressRoot.GetComponent<RectTransform>();
-
-            progressRect.offsetMin =
-                new Vector2(8f, 6f);
-            progressRect.offsetMax =
-                new Vector2(-8f, 6f +
-                    GK2UiMetrics.QuestJournal.QuestProgressHeight);
-
-            GameObject fillObject =
-                GK2UiFactory.CreateImage(
-                    progressRoot.transform,
-                    "Fill",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    new Color(
-                        0.30f,
-                        0.54f,
-                        0.04f,
-                        1f));
-
-            Image progressFill =
-                fillObject.GetComponent<Image>();
-
-            TextMeshProUGUI progressLabel =
-                GK2UiFactory.CreateText(
-                    progressRoot.transform,
-                    "ProgressLabel",
-                    _theme.CountTextTemplate ??
-                    _theme.BodyTextTemplate,
-                    string.Empty,
-                    10f,
-                    TextAlignmentOptions.Center,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero);
-
-            progressLabel.rectTransform.offsetMin =
-                Vector2.zero;
-            progressLabel.rectTransform.offsetMax =
-                Vector2.zero;
+                TextOverflowModes.Truncate;
+            description.maxVisibleLines =
+                4;
 
             TextMeshProUGUI status =
                 GK2UiFactory.CreateText(
@@ -712,7 +649,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(
                         -38f,
-                        -7f),
+                        -9f),
                     new Vector2(
                         110f,
                         18f));
@@ -731,7 +668,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(
                         -8f,
-                        -31f),
+                        -38f),
                     new Vector2(30f, 30f),
                     Color.white,
                     true);
@@ -760,9 +697,6 @@ namespace GK2Plus.Framework.UI
                 Title = title,
                 Description = description,
                 Status = status,
-                ProgressRoot = progressRoot,
-                ProgressFill = progressFill,
-                ProgressLabel = progressLabel,
                 SelectButton = select,
                 PinButton = pinButton,
                 PinIcon = pinIcon
@@ -1304,39 +1238,6 @@ namespace GK2Plus.Framework.UI
                 row.Icon.sprite =
                     null;
             }
-
-            List<QuestPhraseRequirement> requirements =
-                GetItemRequirements(
-                    quest);
-
-            GetQuestProgress(
-                requirements,
-                out int current,
-                out int target,
-                out float progress01);
-
-            RectTransform fillRect =
-                row.ProgressFill.rectTransform;
-
-            fillRect.anchorMin =
-                Vector2.zero;
-            fillRect.anchorMax =
-                new Vector2(
-                    Mathf.Clamp01(progress01),
-                    1f);
-            fillRect.offsetMin =
-                Vector2.zero;
-            fillRect.offsetMax =
-                Vector2.zero;
-
-            row.ProgressLabel.text =
-                target > 0
-                    ? $"{current}/{target}"
-                    : GetQuestStatusText(
-                        quest);
-
-            row.ProgressRoot.SetActive(
-                true);
 
             row.SelectButton.onClick.RemoveAllListeners();
             row.SelectButton.onClick.AddListener(
