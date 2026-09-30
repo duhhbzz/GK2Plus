@@ -788,7 +788,7 @@ namespace GK2Plus.Features.Tracking
                     buttonText,
                     null,
                     false,
-                    global::GameKey.None,
+                    GameKey.None,
                     string.Empty));
 
             // The source native button can carry layout helpers sized for a
