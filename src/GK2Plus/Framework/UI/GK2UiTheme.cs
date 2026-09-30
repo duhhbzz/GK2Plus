@@ -68,6 +68,27 @@ namespace GK2Plus.Framework.UI
             if (_current != null &&
                 _current.IsReady)
             {
+                TextMeshProUGUI laterButtonTemplate =
+                    FindTmp(buttonFallback);
+
+                if (laterButtonTemplate != null)
+                {
+                    _current.ButtonTextTemplate =
+                        laterButtonTemplate;
+                }
+
+                if (_current.BodyTextTemplate == null)
+                {
+                    _current.BodyTextTemplate =
+                        FindTmp(bodyFallback);
+                }
+
+                if (_current.CountTextTemplate == null ||
+                    _current.ItemSlotSprite == null)
+                {
+                    _current.ResolveItemCellStyle();
+                }
+
                 return _current;
             }
 
