@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using TMPro;
@@ -11,14 +12,24 @@ namespace GK2Plus.Framework.UI
     {
         private const string HudRootName = "GK2PlusNativeTrackerHud";
 
+        private sealed class HudPanel
+        {
+            public GameObject Root;
+            public RectTransform Rect;
+            public TextMeshProUGUI Title;
+            public TextMeshProUGUI Body;
+        }
+
         private ManualLogSource _logger;
         private Func<bool> _visibleProvider;
         private Func<string> _textProvider;
 
         private GameObject _hudRoot;
-        private RectTransform _panelRect;
-        private TextMeshProUGUI _titleText;
-        private TextMeshProUGUI _bodyText;
+        private RectTransform _rootRect;
+        private TextMeshProUGUI _textTemplate;
+        private readonly Dictionary<string, HudPanel> _panels =
+            new Dictionary<string, HudPanel>(StringComparer.OrdinalIgnoreCase);
+
         private string _cachedText = string.Empty;
         private float _nextRefreshAt;
 
@@ -69,13 +80,7 @@ namespace GK2Plus.Framework.UI
 
             if (!visible)
             {
-                _cachedText = string.Empty;
-
-                if (_hudRoot != null)
-                {
-                    _hudRoot.SetActive(false);
-                }
-
+                HideAll();
                 return;
             }
 
@@ -87,63 +92,33 @@ namespace GK2Plus.Framework.UI
             }
             catch (Exception ex)
             {
-                _cachedText = string.Empty;
+                _cachedText =
+                    string.Empty;
+
                 _logger?.LogError(
                     $"GK2+ tracker HUD refresh failed: {ex}");
             }
 
-            if (string.IsNullOrWhiteSpace(_cachedText))
+            if (string.IsNullOrWhiteSpace(_cachedText) ||
+                !EnsureHud())
             {
-                if (_hudRoot != null)
-                {
-                    _hudRoot.SetActive(false);
-                }
-
+                HideAll();
                 return;
             }
 
-            if (!EnsureHud())
-            {
-                return;
-            }
+            Dictionary<string, string> groups =
+                ParseGroups(
+                    _cachedText);
 
-            _hudRoot.SetActive(true);
-            _bodyText.text = _cachedText;
-
-            int lineCount =
-                Math.Max(
-                    1,
-                    _cachedText.Split('\n').Length);
-
-            float height =
-                Mathf.Clamp(
-                    46f + (lineCount * 14f),
-                    86f,
-                    330f);
-
-            _panelRect.sizeDelta =
-                new Vector2(
-                    300f,
-                    height);
-
-            RectTransform bodyRect =
-                _bodyText.rectTransform;
-
-            bodyRect.offsetMin =
-                new Vector2(
-                    14f,
-                    10f);
-
-            bodyRect.offsetMax =
-                new Vector2(
-                    -14f,
-                    -34f);
+            LayoutGroups(
+                groups);
         }
 
         private bool EnsureHud()
         {
             if (_hudRoot != null &&
-                _bodyText != null)
+                _rootRect != null &&
+                _textTemplate != null)
             {
                 return true;
             }
@@ -157,25 +132,20 @@ namespace GK2Plus.Framework.UI
                 return false;
             }
 
-            TextMeshProUGUI template =
+            _textTemplate =
                 Resources
                     .FindObjectsOfTypeAll<TextMeshProUGUI>()
                     .FirstOrDefault(text =>
                         text != null &&
                         text.font != null &&
-                        text.gameObject.activeInHierarchy);
+                        text.gameObject.activeInHierarchy) ??
+                Resources
+                    .FindObjectsOfTypeAll<TextMeshProUGUI>()
+                    .FirstOrDefault(text =>
+                        text != null &&
+                        text.font != null);
 
-            if (template == null)
-            {
-                template =
-                    Resources
-                        .FindObjectsOfTypeAll<TextMeshProUGUI>()
-                        .FirstOrDefault(text =>
-                            text != null &&
-                            text.font != null);
-            }
-
-            if (template == null)
+            if (_textTemplate == null)
             {
                 return false;
             }
@@ -201,202 +171,248 @@ namespace GK2Plus.Framework.UI
 
             _hudRoot.transform.SetAsLastSibling();
 
-            RectTransform rootRect =
+            _rootRect =
                 _hudRoot.GetComponent<RectTransform>();
 
-            rootRect.anchorMin =
+            _rootRect.anchorMin =
                 Vector2.one;
-            rootRect.anchorMax =
+            _rootRect.anchorMax =
                 Vector2.one;
-            rootRect.pivot =
+            _rootRect.pivot =
                 Vector2.one;
-            rootRect.anchoredPosition =
+            _rootRect.anchoredPosition =
                 new Vector2(
-                    -18f,
-                    -54f);
-            rootRect.sizeDelta =
+                    -20f,
+                    -56f);
+            _rootRect.sizeDelta =
                 new Vector2(
-                    300f,
-                    100f);
-
-            _panelRect =
-                rootRect;
-
-            Sprite backgroundSprite =
-                FindSprite(
-                    "titlescreen-menu-bg");
-
-            Sprite frameSprite =
-                FindSprite(
-                    "comm-frame_1-border");
-
-            GameObject backing =
-                CreateImage(
-                    _hudRoot.transform,
-                    "Backing",
-                    backgroundSprite,
-                    Image.Type.Sliced);
-
-            Image backingImage =
-                backing.GetComponent<Image>();
-
-            backingImage.color =
-                new Color(
-                    0.16f,
-                    0.17f,
-                    0.21f,
-                    0.94f);
-            backingImage.raycastTarget =
-                false;
-
-            if (frameSprite != null)
-            {
-                GameObject frame =
-                    CreateImage(
-                        _hudRoot.transform,
-                        "Frame",
-                        frameSprite,
-                        Image.Type.Sliced);
-
-                Image frameImage =
-                    frame.GetComponent<Image>();
-
-                frameImage.color =
-                    new Color(
-                        0.78f,
-                        0.78f,
-                        0.82f,
-                        0.95f);
-                frameImage.raycastTarget =
-                    false;
-            }
-
-            GameObject titleBacking =
-                new GameObject(
-                    "TitleBacking",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(Image));
-
-            titleBacking.transform.SetParent(
-                _hudRoot.transform,
-                false);
-
-            RectTransform titleRect =
-                titleBacking.GetComponent<RectTransform>();
-
-            titleRect.anchorMin =
-                new Vector2(
-                    0f,
-                    1f);
-            titleRect.anchorMax =
-                Vector2.one;
-            titleRect.pivot =
-                new Vector2(
-                    0.5f,
-                    1f);
-            titleRect.offsetMin =
-                new Vector2(
-                    5f,
-                    -30f);
-            titleRect.offsetMax =
-                new Vector2(
-                    -5f,
-                    -5f);
-
-            Image titleImage =
-                titleBacking.GetComponent<Image>();
-
-            titleImage.color =
-                new Color(
-                    0.25f,
-                    0.20f,
-                    0.14f,
-                    0.96f);
-            titleImage.raycastTarget =
-                false;
-
-            _titleText =
-                CreateText(
-                    template,
-                    titleBacking.transform,
-                    "Title",
-                    15f,
-                    TextAlignmentOptions.Center);
-
-            _titleText.text =
-                "Tracked";
-
-            _titleText.color =
-                new Color(
-                    1f,
-                    0.84f,
-                    0.48f,
-                    1f);
-
-            _bodyText =
-                CreateText(
-                    template,
-                    _hudRoot.transform,
-                    "Body",
-                    12f,
-                    TextAlignmentOptions.TopLeft);
-
-            _bodyText.enableWordWrapping =
-                true;
-            _bodyText.richText =
-                true;
+                    250f,
+                    600f);
 
             _logger?.LogInfo(
-                "GK2+ native-style tracker HUD initialized.");
+                "GK2+ compact grouped tracker HUD initialized.");
 
             return true;
         }
 
-        private static GameObject CreateImage(
-            Transform parent,
-            string name,
-            Sprite sprite,
-            Image.Type type)
+        private void LayoutGroups(
+            IReadOnlyDictionary<string, string> groups)
         {
-            GameObject obj =
+            string[] order =
+            {
+                "QUESTS",
+                "CRAFTS",
+                "ITEMS"
+            };
+
+            float y = 0f;
+
+            foreach (string groupName in order)
+            {
+                if (!groups.TryGetValue(
+                        groupName,
+                        out string body) ||
+                    string.IsNullOrWhiteSpace(body))
+                {
+                    if (_panels.TryGetValue(
+                            groupName,
+                            out HudPanel hidden))
+                    {
+                        hidden.Root.SetActive(false);
+                    }
+
+                    continue;
+                }
+
+                HudPanel panel =
+                    GetOrCreatePanel(
+                        groupName);
+
+                panel.Root.SetActive(true);
+                panel.Title.text =
+                    FormatTitle(
+                        groupName);
+                panel.Body.text =
+                    body.Trim();
+
+                int lineCount =
+                    Math.Max(
+                        1,
+                        panel.Body.text.Split('\n').Length);
+
+                float bodyHeight =
+                    Mathf.Clamp(
+                        10f + (lineCount * 13.5f),
+                        34f,
+                        210f);
+
+                float panelHeight =
+                    27f + bodyHeight;
+
+                panel.Rect.anchoredPosition =
+                    new Vector2(
+                        0f,
+                        -y);
+                panel.Rect.sizeDelta =
+                    new Vector2(
+                        250f,
+                        panelHeight);
+
+                y +=
+                    panelHeight + 8f;
+            }
+        }
+
+        private HudPanel GetOrCreatePanel(
+            string groupName)
+        {
+            if (_panels.TryGetValue(
+                    groupName,
+                    out HudPanel existing))
+            {
+                return existing;
+            }
+
+            GameObject root =
                 new GameObject(
-                    name,
+                    groupName + "Panel",
                     typeof(RectTransform),
                     typeof(CanvasRenderer),
                     typeof(Image));
 
-            obj.transform.SetParent(
-                parent,
+            root.transform.SetParent(
+                _hudRoot.transform,
                 false);
 
             RectTransform rect =
-                obj.GetComponent<RectTransform>();
+                root.GetComponent<RectTransform>();
 
             rect.anchorMin =
-                Vector2.zero;
+                new Vector2(
+                    1f,
+                    1f);
             rect.anchorMax =
-                Vector2.one;
-            rect.offsetMin =
+                new Vector2(
+                    1f,
+                    1f);
+            rect.pivot =
+                new Vector2(
+                    1f,
+                    1f);
+
+            Image background =
+                root.GetComponent<Image>();
+
+            background.color =
+                new Color(
+                    0f,
+                    0f,
+                    0f,
+                    0.68f);
+            background.raycastTarget =
+                false;
+
+            GameObject titleBar =
+                new GameObject(
+                    "TitleBar",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+
+            titleBar.transform.SetParent(
+                root.transform,
+                false);
+
+            RectTransform titleBarRect =
+                titleBar.GetComponent<RectTransform>();
+
+            titleBarRect.anchorMin =
+                new Vector2(
+                    0f,
+                    1f);
+            titleBarRect.anchorMax =
+                new Vector2(
+                    1f,
+                    1f);
+            titleBarRect.pivot =
+                new Vector2(
+                    0.5f,
+                    1f);
+            titleBarRect.offsetMin =
+                new Vector2(
+                    0f,
+                    -25f);
+            titleBarRect.offsetMax =
                 Vector2.zero;
-            rect.offsetMax =
-                Vector2.zero;
 
-            Image image =
-                obj.GetComponent<Image>();
+            Image titleBg =
+                titleBar.GetComponent<Image>();
 
-            image.sprite =
-                sprite;
-            image.type =
-                sprite != null
-                    ? type
-                    : Image.Type.Simple;
+            titleBg.color =
+                new Color(
+                    0.10f,
+                    0.08f,
+                    0.06f,
+                    0.94f);
+            titleBg.raycastTarget =
+                false;
 
-            return obj;
+            TextMeshProUGUI title =
+                CreateText(
+                    titleBar.transform,
+                    "Title",
+                    13f,
+                    TextAlignmentOptions.Center);
+
+            title.color =
+                new Color(
+                    1f,
+                    0.82f,
+                    0.45f,
+                    1f);
+
+            TextMeshProUGUI body =
+                CreateText(
+                    root.transform,
+                    "Body",
+                    11f,
+                    TextAlignmentOptions.TopLeft);
+
+            RectTransform bodyRect =
+                body.rectTransform;
+
+            bodyRect.offsetMin =
+                new Vector2(
+                    9f,
+                    6f);
+            bodyRect.offsetMax =
+                new Vector2(
+                    -9f,
+                    -29f);
+
+            body.enableWordWrapping =
+                true;
+            body.richText =
+                true;
+            body.overflowMode =
+                TextOverflowModes.Truncate;
+
+            HudPanel panel =
+                new HudPanel
+                {
+                    Root = root,
+                    Rect = rect,
+                    Title = title,
+                    Body = body
+                };
+
+            _panels[groupName] =
+                panel;
+
+            return panel;
         }
 
-        private static TextMeshProUGUI CreateText(
-            TextMeshProUGUI template,
+        private TextMeshProUGUI CreateText(
             Transform parent,
             string name,
             float fontSize,
@@ -417,11 +433,11 @@ namespace GK2Plus.Framework.UI
                 obj.GetComponent<TextMeshProUGUI>();
 
             text.font =
-                template.font;
+                _textTemplate.font;
             text.fontSharedMaterial =
-                template.fontSharedMaterial;
+                _textTemplate.fontSharedMaterial;
             text.spriteAsset =
-                template.spriteAsset;
+                _textTemplate.spriteAsset;
             text.fontSize =
                 fontSize;
             text.fontSizeMin =
@@ -433,15 +449,15 @@ namespace GK2Plus.Framework.UI
             text.alignment =
                 alignment;
             text.color =
-                template.color;
+                _textTemplate.color;
             text.raycastTarget =
                 false;
             text.margin =
                 Vector4.zero;
             text.characterSpacing =
-                0.5f;
+                0f;
             text.lineSpacing =
-                1f;
+                0f;
 
             RectTransform rect =
                 text.rectTransform;
@@ -458,22 +474,99 @@ namespace GK2Plus.Framework.UI
             return text;
         }
 
-        private static Sprite FindSprite(
-            string name)
+        private static Dictionary<string, string>
+            ParseGroups(
+                string raw)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            Dictionary<string, string> result =
+                new Dictionary<string, string>(
+                    StringComparer.OrdinalIgnoreCase);
+
+            string current =
+                null;
+
+            System.Text.StringBuilder buffer =
+                new System.Text.StringBuilder();
+
+            Action flush = () =>
             {
-                return null;
+                if (!string.IsNullOrWhiteSpace(current))
+                {
+                    result[current] =
+                        buffer
+                            .ToString()
+                            .Trim();
+                }
+
+                buffer.Clear();
+            };
+
+            foreach (string line in
+                     (raw ?? string.Empty)
+                     .Replace("\r", string.Empty)
+                     .Split('\n'))
+            {
+                string trimmed =
+                    line.Trim();
+
+                if (trimmed.StartsWith(
+                        "[[",
+                        StringComparison.Ordinal) &&
+                    trimmed.EndsWith(
+                        "]]",
+                        StringComparison.Ordinal))
+                {
+                    flush();
+
+                    current =
+                        trimmed.Substring(
+                            2,
+                            trimmed.Length - 4);
+
+                    continue;
+                }
+
+                if (current == null)
+                {
+                    continue;
+                }
+
+                if (buffer.Length > 0)
+                {
+                    buffer.AppendLine();
+                }
+
+                buffer.Append(
+                    line);
             }
 
-            return Resources
-                .FindObjectsOfTypeAll<Sprite>()
-                .FirstOrDefault(sprite =>
-                    sprite != null &&
-                    string.Equals(
-                        sprite.name,
-                        name,
-                        StringComparison.OrdinalIgnoreCase));
+            flush();
+
+            return result;
+        }
+
+        private static string FormatTitle(
+            string groupName)
+        {
+            if (string.IsNullOrWhiteSpace(groupName))
+            {
+                return string.Empty;
+            }
+
+            string lower =
+                groupName.ToLowerInvariant();
+
+            return char.ToUpperInvariant(lower[0]) +
+                   lower.Substring(1);
+        }
+
+        private void HideAll()
+        {
+            foreach (HudPanel panel in
+                     _panels.Values)
+            {
+                panel.Root?.SetActive(false);
+            }
         }
 
         public void ShutdownController()
@@ -489,6 +582,8 @@ namespace GK2Plus.Framework.UI
                     _hudRoot);
                 _hudRoot = null;
             }
+
+            _panels.Clear();
 
             if (gameObject != null)
             {
