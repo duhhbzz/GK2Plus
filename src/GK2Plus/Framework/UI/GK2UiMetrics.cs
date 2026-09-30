@@ -54,7 +54,7 @@ namespace GK2Plus.Framework.UI
         {
             public const float OuterPadding = 10f;
             public const float PaneGap = 8f;
-            public const float LeftPaneWidth = 430f;
+            public const float LeftPaneWidth = 275f;
             public const float SectionHeaderHeight = 39f;
             public const float FilterHeight = 27f;
             public const float FilterGap = 5f;
