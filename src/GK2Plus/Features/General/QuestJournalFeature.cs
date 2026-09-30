@@ -114,8 +114,14 @@ namespace GK2Plus.Features.General
             Patch(
                 typeof(global::QuestTreePageWidget),
                 "Display",
-                prefixName:
-                    nameof(QuestTreeDisplayPrefix));
+                postfixName:
+                    nameof(QuestTreeDisplayPostfix));
+
+            Patch(
+                typeof(global::CharacterWindow),
+                "SwitchPage",
+                postfixName:
+                    nameof(CharacterWindowSwitchPagePostfix));
 
             Patch(
                 typeof(global::QuestTreePageWidget),
@@ -176,7 +182,7 @@ namespace GK2Plus.Features.General
                 postfix);
         }
 
-        private static bool QuestTreeDisplayPrefix(
+        private static void QuestTreeDisplayPostfix(
             global::QuestTreePageWidget __instance,
             string focusOnQuest)
         {
@@ -189,20 +195,51 @@ namespace GK2Plus.Features.General
                 feature?
                     ._controller?
                     .RestoreNativeTree();
-
-                return true;
+                return;
             }
 
-            bool shown =
-                feature._controller?
-                    .TryShow(
-                        __instance,
-                        focusOnQuest) ==
-                true;
+            feature._controller?
+                .TryShow(
+                    __instance,
+                    focusOnQuest);
+        }
 
-            // Fall back to the native tree automatically if the custom view
-            // cannot initialize against a future game build.
-            return !shown;
+        private static void CharacterWindowSwitchPagePostfix(
+            global::CharacterWindow __instance,
+            global::CharacterWindowData.CharPage page)
+        {
+            QuestJournalFeature feature =
+                _activeInstance;
+
+            if (feature?._controller == null)
+            {
+                return;
+            }
+
+            if (page !=
+                global::CharacterWindowData.CharPage.QuestTree)
+            {
+                feature._controller.Hide();
+                return;
+            }
+
+            if (feature.Enabled?.Value != true)
+            {
+                feature._controller.RestoreNativeTree();
+                return;
+            }
+
+            global::QuestTreePageWidget widget =
+                Traverse.Create(__instance)
+                    .Field("questTreePageWidget")
+                    .GetValue<global::QuestTreePageWidget>();
+
+            if (widget != null)
+            {
+                feature._controller.TryShow(
+                    widget,
+                    string.Empty);
+            }
         }
 
         private static void QuestTreeHidePostfix()
