@@ -1235,77 +1235,32 @@ Button close = closeButton.GetComponent<Button>();
                     GK2FeatureToggleControl control =
                         controls[i];
 
-                    GameObject row = new GameObject(
-                        control.Id + "FeatureRow",
-                        typeof(RectTransform));
-
-                    row.transform.SetParent(
-                        _contentRoot.transform,
-                        false);
-
-                    RectTransform rowRect =
-                        row.GetComponent<RectTransform>();
-
-                    rowRect.anchorMin =
-                        new Vector2(0.5f, 1f);
-                    rowRect.anchorMax =
-                        new Vector2(0.5f, 1f);
-                    rowRect.pivot =
-                        new Vector2(0.5f, 1f);
                     float rowY =
                         positions.TryGetValue(
                             control.Id,
                             out float resolvedY)
                             ? resolvedY
-                            : -88f;
+                            : GK2UiMetrics.Menu.ControlFirstRowY;
 
-                    rowRect.anchoredPosition =
-                        new Vector2(0f, BodyY(rowY));
-                    rowRect.sizeDelta =
-                        new Vector2(
-                            GK2UiMetrics.Menu.BodyContentWidth,
-                            GK2UiMetrics.Menu.ControlRowHeight);
+                    GK2UiListRowView rowView =
+                        GK2UiListRowBuilder.Create(
+                            _contentRoot.transform,
+                            _theme,
+                            control.Id + "FeatureRow",
+                            control.Label,
+                            BodyY(rowY),
+                            "FeatureLabel",
+                            "ToggleButton",
+                            "OFF",
+                            child: false);
 
-                    Image rowBackground =
-                        row.AddComponent<Image>();
-
-                    rowBackground.color =
-                        _theme?.RowBackground ??
-                        new Color(0.12f, 0.13f, 0.16f, 0.88f);
-                    rowBackground.raycastTarget =
-                        false;
-
-                    CreateBodyText(
-                        _bodyTextTemplate,
-                        row.transform,
-                        "FeatureLabel",
-                        control.Label,
-                        new Vector2(0.5f, 1f),
-                        new Vector2(0.5f, 1f),
-                        new Vector2(0.5f, 1f),
-                        new Vector2(-60f, 0f),
-                        new Vector2(
-                            GK2UiMetrics.Menu.ControlLabelWidth,
-                            GK2UiMetrics.Menu.ControlRowHeight),
-                        9f,
-                        "Left");
+                    GameObject row =
+                        rowView.Root;
 
                     GameObject toggleButton =
-                        CreateActionButton(
-                            _menuButtonLabelTemplate,
-                            row.transform,
-                            _menuButtonSprite,
-                            "OFF",
-                            new Vector2(154f, 0f),
-                            new Vector2(
-                                GK2UiMetrics.Menu.ControlButtonWidth,
-                                GK2UiMetrics.Menu.ControlRowHeight));
+                        rowView.ActionButton.gameObject;
 
-                    toggleButton.name =
-                        "ToggleButton";
-
-                    toggleButton
-                        .GetComponent<Button>()
+                    rowView.ActionButton
                         .onClick
                         .AddListener(() =>
                         {
@@ -1513,88 +1468,36 @@ Button close = closeButton.GetComponent<Button>();
                     GK2FeatureOptionControl control =
                         controls[i];
 
-                    GameObject row = new GameObject(
-                        control.Id + "FeatureOptionRow",
-                        typeof(RectTransform));
-
-                    row.transform.SetParent(
-                        _contentRoot.transform,
-                        false);
-
-                    RectTransform rowRect =
-                        row.GetComponent<RectTransform>();
-
-                    rowRect.anchorMin =
-                        new Vector2(0.5f, 1f);
-                    rowRect.anchorMax =
-                        new Vector2(0.5f, 1f);
-                    rowRect.pivot =
-                        new Vector2(0.5f, 1f);
                     float rowY =
                         positions.TryGetValue(
                             control.Id,
                             out float resolvedY)
                             ? resolvedY
-                            : -88f;
+                            : GK2UiMetrics.Menu.ControlFirstRowY;
 
-                    rowRect.anchoredPosition =
-                        new Vector2(
-                            0f,
-                            BodyY(rowY));
-                    rowRect.sizeDelta =
-                        new Vector2(
-                            GK2UiMetrics.Menu.BodyContentWidth,
-                            GK2UiMetrics.Menu.ControlRowHeight);
+                    bool child =
+                        !string.IsNullOrWhiteSpace(
+                            control.ParentFeatureId);
 
-                    Image rowBackground =
-                        row.AddComponent<Image>();
+                    GK2UiListRowView rowView =
+                        GK2UiListRowBuilder.Create(
+                            _contentRoot.transform,
+                            _theme,
+                            control.Id + "FeatureOptionRow",
+                            control.Label,
+                            BodyY(rowY),
+                            "FeatureOptionLabel",
+                            "OptionButton",
+                            "Select",
+                            child);
 
-                    rowBackground.color =
-                        string.IsNullOrWhiteSpace(control.ParentFeatureId)
-                            ? (_theme?.RowBackground ??
-                               new Color(0.12f, 0.13f, 0.16f, 0.88f))
-                            : (_theme?.ChildRowBackground ??
-                               new Color(0.095f, 0.105f, 0.13f, 0.82f));
-                    rowBackground.raycastTarget =
-                        false;
-
-                    CreateBodyText(
-                        _bodyTextTemplate,
-                        row.transform,
-                        "FeatureOptionLabel",
-                        control.Label,
-                        new Vector2(0.5f, 1f),
-                        new Vector2(0.5f, 1f),
-                        new Vector2(0.5f, 1f),
-                        new Vector2(
-                            string.IsNullOrWhiteSpace(control.ParentFeatureId)
-                                ? -72f
-                                : -60f,
-                            0f),
-                        new Vector2(
-                            GK2UiMetrics.Menu.ControlLabelWidth,
-                            GK2UiMetrics.Menu.ControlRowHeight),
-                        string.IsNullOrWhiteSpace(control.ParentFeatureId)
-                            ? 9f
-                            : 8.5f,
-                        "Left");
+                    GameObject row =
+                        rowView.Root;
 
                     GameObject optionButton =
-                        CreateActionButton(
-                            _menuButtonLabelTemplate,
-                            row.transform,
-                            _menuButtonSprite,
-                            "Select",
-                            new Vector2(154f, 0f),
-                            new Vector2(
-                                GK2UiMetrics.Menu.ControlButtonWidth,
-                                GK2UiMetrics.Menu.ControlRowHeight));
+                        rowView.ActionButton.gameObject;
 
-                    optionButton.name =
-                        "OptionButton";
-
-                    optionButton
-                        .GetComponent<Button>()
+                    rowView.ActionButton
                         .onClick
                         .AddListener(() =>
                         {
