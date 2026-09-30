@@ -25,6 +25,28 @@ namespace GK2Plus.Framework.UI
             public bool? EnoughState;
         }
 
+        private sealed class HudMaterialData
+        {
+            public string ItemId;
+            public int Current;
+            public int Target;
+        }
+
+        private sealed class HudCraftEntryData
+        {
+            public string Title;
+            public readonly List<HudMaterialData> Materials =
+                new List<HudMaterialData>();
+        }
+
+        private sealed class HudCraftEntryView
+        {
+            public GameObject Root;
+            public RectTransform Rect;
+            public TextMeshProUGUI Title;
+            public GK2UiPool<HudIngredientView> IngredientPool;
+        }
+
         private sealed class HudPanel
         {
             public GameObject Root;
@@ -32,6 +54,7 @@ namespace GK2Plus.Framework.UI
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Body;
             public GK2UiPool<HudIngredientView> IngredientPool;
+            public GK2UiPool<HudCraftEntryView> CraftEntryPool;
         }
 
         private ManualLogSource _logger;
@@ -266,6 +289,7 @@ namespace GK2Plus.Framework.UI
                         34f,
                         RenderPanelBody(
                             panel,
+                            groupName,
                             body.Trim()));
 
                 float panelHeight =
@@ -289,8 +313,22 @@ namespace GK2Plus.Framework.UI
 
         private float RenderPanelBody(
             HudPanel panel,
+            string groupName,
             string body)
         {
+            if (string.Equals(
+                    groupName,
+                    "CRAFTS",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return RenderCraftPanel(
+                    panel,
+                    body);
+            }
+
+            panel.Body.gameObject.SetActive(true);
+            panel.CraftEntryPool?.Begin();
+            panel.CraftEntryPool?.End();
             panel.IngredientPool?.Begin();
 
             string[] lines =
@@ -303,7 +341,6 @@ namespace GK2Plus.Framework.UI
 
             int materialColumn = 0;
             int materialVisualLine = -1;
-            int ingredientViewIndex = 0;
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -333,8 +370,6 @@ namespace GK2Plus.Framework.UI
                         HudIngredientView itemView =
                             panel.IngredientPool?.Rent();
 
-                        ingredientViewIndex++;
-
                         ConfigureIngredientView(
                             itemView,
                             visualLineIndex,
@@ -353,7 +388,6 @@ namespace GK2Plus.Framework.UI
                         materialVisualLine =
                             textLines.Count;
 
-                        // 35px slot + padding fits in three compact text lines.
                         textLines.Add(" ");
                         textLines.Add(string.Empty);
                         textLines.Add(string.Empty);
@@ -361,8 +395,6 @@ namespace GK2Plus.Framework.UI
 
                     HudIngredientView materialView =
                         panel.IngredientPool?.Rent();
-
-                    ingredientViewIndex++;
 
                     ConfigureIngredientView(
                         materialView,
@@ -407,6 +439,250 @@ namespace GK2Plus.Framework.UI
                     1,
                     textLines.Count) *
                  GK2UiMetrics.Tracker.LineHeight);
+        }
+
+        private float RenderCraftPanel(
+            HudPanel panel,
+            string body)
+        {
+            panel.Body.text =
+                string.Empty;
+            panel.Body.gameObject.SetActive(false);
+
+            panel.IngredientPool?.Begin();
+            panel.IngredientPool?.End();
+
+            List<HudCraftEntryData> entries =
+                ParseCraftEntries(
+                    body);
+
+            panel.CraftEntryPool?.Begin();
+
+            float cursorY =
+                GK2UiMetrics.Tracker.BodyTopPadding;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                HudCraftEntryView view =
+                    panel.CraftEntryPool?.Rent();
+
+                if (view == null)
+                {
+                    continue;
+                }
+
+                float entryHeight =
+                    ConfigureCraftEntry(
+                        view,
+                        entries[i],
+                        cursorY);
+
+                cursorY +=
+                    entryHeight + 5f;
+            }
+
+            panel.CraftEntryPool?.End();
+
+            if (entries.Count > 0)
+            {
+                cursorY -= 5f;
+            }
+
+            return
+                cursorY +
+                GK2UiMetrics.Tracker.BodyBottomPadding;
+        }
+
+        private static List<HudCraftEntryData> ParseCraftEntries(
+            string body)
+        {
+            List<HudCraftEntryData> entries =
+                new List<HudCraftEntryData>();
+
+            HudCraftEntryData current =
+                null;
+
+            foreach (string rawLine in
+                     (body ?? string.Empty)
+                     .Replace("\r", string.Empty)
+                     .Split('\n'))
+            {
+                string line =
+                    rawLine.Trim();
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                if (TryParseHudItemToken(
+                        line,
+                        out string itemId,
+                        out int currentCount,
+                        out int target,
+                        out _,
+                        out bool customItem) &&
+                    !customItem)
+                {
+                    if (current != null)
+                    {
+                        current.Materials.Add(
+                            new HudMaterialData
+                            {
+                                ItemId = itemId,
+                                Current = currentCount,
+                                Target = target
+                            });
+                    }
+
+                    continue;
+                }
+
+                current =
+                    new HudCraftEntryData
+                    {
+                        Title =
+                            StripRichTextBold(
+                                line)
+                    };
+
+                entries.Add(
+                    current);
+            }
+
+            return entries;
+        }
+
+        private static string StripRichTextBold(
+            string value)
+        {
+            string result =
+                value ?? string.Empty;
+
+            if (result.StartsWith(
+                    "<b>",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                result =
+                    result.Substring(3);
+            }
+
+            if (result.EndsWith(
+                    "</b>",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                result =
+                    result.Substring(
+                        0,
+                        result.Length - 4);
+            }
+
+            return result;
+        }
+
+        private float ConfigureCraftEntry(
+            HudCraftEntryView view,
+            HudCraftEntryData data,
+            float cursorY)
+        {
+            if (view == null ||
+                data == null)
+            {
+                return 0f;
+            }
+
+            const float titleHeight = 14f;
+            const float titleToItemsGap = 2f;
+            const float entryBottomPadding = 2f;
+
+            int materialRows =
+                data.Materials.Count == 0
+                    ? 0
+                    : Mathf.CeilToInt(
+                        data.Materials.Count /
+                        (float)GK2UiMetrics.Tracker.IngredientColumns);
+
+            float materialHeight =
+                materialRows == 0
+                    ? 0f
+                    : (materialRows *
+                       GK2UiMetrics.Tracker.IngredientCellSize) +
+                      ((materialRows - 1) *
+                       GK2UiMetrics.Tracker.IngredientGap);
+
+            float entryHeight =
+                titleHeight +
+                (materialRows > 0
+                    ? titleToItemsGap + materialHeight
+                    : 0f) +
+                entryBottomPadding;
+
+            view.Root.SetActive(true);
+
+            view.Rect.anchoredPosition =
+                new Vector2(
+                    GK2UiMetrics.Tracker.BodyHorizontalPadding,
+                    -(GK2UiMetrics.Tracker.TitleHeight +
+                      cursorY));
+
+            view.Rect.sizeDelta =
+                new Vector2(
+                    GK2UiMetrics.Tracker.PanelWidth -
+                    (GK2UiMetrics.Tracker.BodyHorizontalPadding * 2f),
+                    entryHeight);
+
+            view.Title.text =
+                data.Title ?? string.Empty;
+
+            view.IngredientPool?.Begin();
+
+            for (int i = 0; i < data.Materials.Count; i++)
+            {
+                HudMaterialData material =
+                    data.Materials[i];
+
+                int row =
+                    i /
+                    GK2UiMetrics.Tracker.IngredientColumns;
+
+                int column =
+                    i %
+                    GK2UiMetrics.Tracker.IngredientColumns;
+
+                HudIngredientView ingredient =
+                    view.IngredientPool?.Rent();
+
+                if (ingredient == null)
+                {
+                    continue;
+                }
+
+                Vector2 position =
+                    new Vector2(
+                        column *
+                        (GK2UiMetrics.Tracker.IngredientCellSize +
+                         GK2UiMetrics.Tracker.IngredientGap),
+                        -(titleHeight +
+                          titleToItemsGap +
+                          (row *
+                           (GK2UiMetrics.Tracker.IngredientCellSize +
+                            GK2UiMetrics.Tracker.IngredientGap))));
+
+                ConfigureIngredientView(
+                    ingredient,
+                    0,
+                    0,
+                    material.ItemId,
+                    material.Current,
+                    material.Target,
+                    string.Empty,
+                    false,
+                    position);
+            }
+
+            view.IngredientPool?.End();
+
+            return entryHeight;
         }
 
         private static bool TryParseHudItemToken(
@@ -485,7 +761,7 @@ namespace GK2Plus.Framework.UI
         }
 
         private HudIngredientView CreateIngredientView(
-            HudPanel panel)
+            Transform parent)
         {
             const float cellSize =
                 GK2UiMetrics.Tracker.IngredientCellSize;
@@ -496,7 +772,7 @@ namespace GK2Plus.Framework.UI
                     typeof(RectTransform));
 
             row.transform.SetParent(
-                panel.Root.transform,
+                parent,
                 false);
 
             RectTransform rowRect =
@@ -694,7 +970,8 @@ namespace GK2Plus.Framework.UI
             int current,
             int target,
             string label,
-            bool customItem)
+            bool customItem,
+            Vector2? explicitPosition = null)
         {
             if (view == null ||
                 global::GameBalance.Me == null ||
@@ -736,6 +1013,7 @@ namespace GK2Plus.Framework.UI
             view.Root.SetActive(true);
 
             view.Rect.anchoredPosition =
+                explicitPosition ??
                 new Vector2(
                     8f + (columnIndex * (cellSize + cellGap)),
                     -(GK2UiMetrics.Tracker.TitleHeight +
@@ -837,6 +1115,86 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        private HudCraftEntryView CreateCraftEntryView(
+            HudPanel panel)
+        {
+            GameObject root =
+                new GameObject(
+                    "HudCraftEntry",
+                    typeof(RectTransform));
+
+            root.transform.SetParent(
+                panel.Root.transform,
+                false);
+
+            RectTransform rect =
+                root.GetComponent<RectTransform>();
+
+            rect.anchorMin =
+                new Vector2(
+                    0f,
+                    1f);
+            rect.anchorMax =
+                new Vector2(
+                    0f,
+                    1f);
+            rect.pivot =
+                new Vector2(
+                    0f,
+                    1f);
+
+            TextMeshProUGUI title =
+                CreateText(
+                    _bodyTemplate,
+                    root.transform,
+                    "EntryTitle",
+                    GK2UiMetrics.Tracker.BodyFontSize,
+                    TextAlignmentOptions.TopLeft);
+
+            RectTransform titleRect =
+                title.rectTransform;
+
+            titleRect.anchorMin =
+                new Vector2(
+                    0f,
+                    1f);
+            titleRect.anchorMax =
+                new Vector2(
+                    1f,
+                    1f);
+            titleRect.pivot =
+                new Vector2(
+                    0f,
+                    1f);
+            titleRect.anchoredPosition =
+                Vector2.zero;
+            titleRect.sizeDelta =
+                new Vector2(
+                    0f,
+                    14f);
+
+            HudCraftEntryView view =
+                new HudCraftEntryView
+                {
+                    Root = root,
+                    Rect = rect,
+                    Title = title
+                };
+
+            view.IngredientPool =
+                new GK2UiPool<HudIngredientView>(
+                    () => CreateIngredientView(root.transform),
+                    (ingredient, active) =>
+                    {
+                        if (ingredient?.Root != null)
+                        {
+                            ingredient.Root.SetActive(active);
+                        }
+                    });
+
+            return view;
+        }
+
         private HudPanel GetOrCreatePanel(
             string groupName)
         {
@@ -872,7 +1230,18 @@ namespace GK2Plus.Framework.UI
 
             panel.IngredientPool =
                 new GK2UiPool<HudIngredientView>(
-                    () => CreateIngredientView(panel),
+                    () => CreateIngredientView(panel.Root.transform),
+                    (view, active) =>
+                    {
+                        if (view?.Root != null)
+                        {
+                            view.Root.SetActive(active);
+                        }
+                    });
+
+            panel.CraftEntryPool =
+                new GK2UiPool<HudCraftEntryView>(
+                    () => CreateCraftEntryView(panel),
                     (view, active) =>
                     {
                         if (view?.Root != null)
