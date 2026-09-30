@@ -1266,6 +1266,15 @@ Button close = closeButton.GetComponent<Button>();
                             GK2UiMetrics.Menu.BodyContentWidth,
                             GK2UiMetrics.Menu.ControlRowHeight);
 
+                    Image rowBackground =
+                        row.AddComponent<Image>();
+
+                    rowBackground.color =
+                        _theme?.RowBackground ??
+                        new Color(0.12f, 0.13f, 0.16f, 0.88f);
+                    rowBackground.raycastTarget =
+                        false;
+
                     CreateBodyText(
                         _bodyTextTemplate,
                         row.transform,
@@ -1287,7 +1296,7 @@ Button close = closeButton.GetComponent<Button>();
                             row.transform,
                             _menuButtonSprite,
                             "OFF",
-                            new Vector2(124f, 0f),
+                            new Vector2(154f, 0f),
                             new Vector2(
                                 GK2UiMetrics.Menu.ControlButtonWidth,
                                 GK2UiMetrics.Menu.ControlRowHeight));
@@ -1533,7 +1542,21 @@ Button close = closeButton.GetComponent<Button>();
                             0f,
                             BodyY(rowY));
                     rowRect.sizeDelta =
-                        new Vector2(350f, 20f);
+                        new Vector2(
+                            GK2UiMetrics.Menu.BodyContentWidth,
+                            GK2UiMetrics.Menu.ControlRowHeight);
+
+                    Image rowBackground =
+                        row.AddComponent<Image>();
+
+                    rowBackground.color =
+                        string.IsNullOrWhiteSpace(control.ParentFeatureId)
+                            ? (_theme?.RowBackground ??
+                               new Color(0.12f, 0.13f, 0.16f, 0.88f))
+                            : (_theme?.ChildRowBackground ??
+                               new Color(0.095f, 0.105f, 0.13f, 0.82f));
+                    rowBackground.raycastTarget =
+                        false;
 
                     CreateBodyText(
                         _bodyTextTemplate,
@@ -1545,10 +1568,12 @@ Button close = closeButton.GetComponent<Button>();
                         new Vector2(0.5f, 1f),
                         new Vector2(
                             string.IsNullOrWhiteSpace(control.ParentFeatureId)
-                                ? -60f
-                                : -48f,
+                                ? -72f
+                                : -60f,
                             0f),
-                        new Vector2(210f, 20f),
+                        new Vector2(
+                            GK2UiMetrics.Menu.ControlLabelWidth,
+                            GK2UiMetrics.Menu.ControlRowHeight),
                         string.IsNullOrWhiteSpace(control.ParentFeatureId)
                             ? 9f
                             : 8.5f,
@@ -1560,8 +1585,10 @@ Button close = closeButton.GetComponent<Button>();
                             row.transform,
                             _menuButtonSprite,
                             "Select",
-                            new Vector2(124f, 0f),
-                            new Vector2(82f, 20f));
+                            new Vector2(154f, 0f),
+                            new Vector2(
+                                GK2UiMetrics.Menu.ControlButtonWidth,
+                                GK2UiMetrics.Menu.ControlRowHeight));
 
                     optionButton.name =
                         "OptionButton";
