@@ -6,6 +6,7 @@ using System.Reflection;
 using BepInEx.Logging;
 using GK2Plus.Core;
 using HarmonyLib;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
