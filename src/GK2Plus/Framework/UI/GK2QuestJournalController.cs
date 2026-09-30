@@ -582,8 +582,8 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateText(
                     root.transform,
                     "QuestTitle",
-                    _theme.InspirationTitleTemplate ??
-                    _theme.TitleTextTemplate,
+                    _theme.TitleTextTemplate ??
+                    _theme.BodyTextTemplate,
                     string.Empty,
                     12f,
                     TextAlignmentOptions.TopLeft,
@@ -601,12 +601,13 @@ namespace GK2Plus.Framework.UI
                 TextWrappingModes.NoWrap;
             title.overflowMode =
                 TextOverflowModes.Ellipsis;
+            title.color =
+                _theme.AccentText;
 
             TextMeshProUGUI description =
                 GK2UiFactory.CreateText(
                     root.transform,
                     "QuestDescription",
-                    _theme.InspirationDescriptionTemplate ??
                     _theme.BodyTextTemplate,
                     string.Empty,
                     9.5f,
@@ -682,7 +683,6 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateText(
                     progressRoot.transform,
                     "ProgressLabel",
-                    _theme.InspirationProgressTemplate ??
                     _theme.CountTextTemplate ??
                     _theme.BodyTextTemplate,
                     string.Empty,
@@ -730,8 +730,8 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(
-                        -7f,
-                        -5f),
+                        -8f,
+                        -31f),
                     new Vector2(30f, 30f),
                     Color.white,
                     true);
@@ -1065,19 +1065,15 @@ namespace GK2Plus.Framework.UI
                     $"Completed ({completedCount})";
             }
 
-            GK2UiFactory.SetButtonTone(
+            ApplyFilterStyle(
                 _activeFilterButton,
-                _theme,
-                _filter == JournalFilter.Active
-                    ? GK2UiButtonTone.Selected
-                    : GK2UiButtonTone.Neutral);
+                _activeFilterLabel,
+                _filter == JournalFilter.Active);
 
-            GK2UiFactory.SetButtonTone(
+            ApplyFilterStyle(
                 _completedFilterButton,
-                _theme,
-                _filter == JournalFilter.Completed
-                    ? GK2UiButtonTone.Selected
-                    : GK2UiButtonTone.Neutral);
+                _completedFilterLabel,
+                _filter == JournalFilter.Completed);
 
             List<QuestData> filtered =
                 allVisible
@@ -1164,6 +1160,69 @@ namespace GK2Plus.Framework.UI
                 .ToList();
         }
 
+        private void ApplyFilterStyle(
+            Button button,
+            TextMeshProUGUI label,
+            bool selected)
+        {
+            Image image =
+                button?.targetGraphic as Image;
+
+            if (image != null)
+            {
+                Sprite sprite =
+                    selected
+                        ? (_theme.SectionHeaderSprite ??
+                           _theme.SectionHeaderInactiveSprite)
+                        : (_theme.SectionHeaderInactiveSprite ??
+                           _theme.SectionHeaderSprite);
+
+                image.sprite =
+                    sprite;
+                image.type =
+                    sprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple;
+                image.color =
+                    sprite != null
+                        ? Color.white
+                        : (selected
+                            ? _theme.TabSelected
+                            : _theme.TabNeutral);
+            }
+
+            if (label != null)
+            {
+                TextMeshProUGUI source =
+                    _theme.TitleTextTemplate;
+
+                if (source != null)
+                {
+                    label.font =
+                        source.font;
+                    label.fontSharedMaterial =
+                        source.fontSharedMaterial;
+                    label.spriteAsset =
+                        source.spriteAsset;
+                }
+
+                label.fontSize =
+                    10.5f;
+                label.fontSizeMin =
+                    10.5f;
+                label.fontSizeMax =
+                    10.5f;
+                label.color =
+                    selected
+                        ? _theme.AccentText
+                        : new Color(
+                            0.82f,
+                            0.76f,
+                            0.66f,
+                            1f);
+            }
+        }
+
         private void ConfigureQuestRow(
             QuestRowView row,
             QuestData quest,
@@ -1237,11 +1296,8 @@ namespace GK2Plus.Framework.UI
                 row.Icon.sprite =
                     quest.Definition?.Icon;
 
-                if (row.Icon.sprite != null)
-                {
-                    row.Icon.BlueColorReplace(
-                        _theme.ItemIconTint);
-                }
+                row.Icon.color =
+                    Color.white;
             }
             catch
             {
@@ -1408,11 +1464,8 @@ namespace GK2Plus.Framework.UI
                 _detailIcon.gameObject.SetActive(
                     sprite != null);
 
-                if (sprite != null)
-                {
-                    _detailIcon.BlueColorReplace(
-                        _theme.ItemIconTint);
-                }
+                _detailIcon.color =
+                    Color.white;
             }
             catch
             {
