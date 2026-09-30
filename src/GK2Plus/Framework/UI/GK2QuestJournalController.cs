@@ -776,22 +776,18 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.LeftPaneWidth +
                 GK2UiMetrics.QuestJournal.PaneGap;
 
-            float top =
-                GK2UiMetrics.QuestJournal.HeaderHeight +
-                GK2UiMetrics.QuestJournal.OuterPadding;
-
             GameObject pane =
                 GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestDetailsPane",
                     null,
                     Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(1f, 1f),
-                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.PanelBackground);
+                    _theme.ContentBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -803,21 +799,38 @@ namespace GK2Plus.Framework.UI
             paneRect.offsetMax =
                 new Vector2(
                     -GK2UiMetrics.QuestJournal.OuterPadding,
-                    -top);
+                    -GK2UiMetrics.QuestJournal.OuterPadding);
+
+            AddPaneFrame(
+                pane.transform);
+
+            GK2UiSectionHeaderView paneHeader =
+                GK2UiSectionHeaderBuilder.Create(
+                    pane.transform,
+                    _theme,
+                    "QuestDetailsHeader",
+                    "Quest Details",
+                    GK2UiMetrics.QuestJournal.SectionHeaderHeight);
+
+            paneHeader.Rect.offsetMin =
+                new Vector2(
+                    0f,
+                    -GK2UiMetrics.QuestJournal.SectionHeaderHeight);
+            paneHeader.Rect.offsetMax =
+                Vector2.zero;
+
+            _detailPaneHeaderTitle =
+                paneHeader.Title;
 
             GameObject viewport =
-                GK2UiFactory.CreateImage(
+                GK2UiFactory.CreateRect(
                     pane.transform,
                     "DetailsViewport",
-                    null,
-                    Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    Vector2.zero,
-                    new Color(0f, 0f, 0f, 0.001f),
-                    true);
+                    Vector2.zero);
 
             RectTransform viewportRect =
                 viewport.GetComponent<RectTransform>();
@@ -829,13 +842,10 @@ namespace GK2Plus.Framework.UI
             viewportRect.offsetMax =
                 new Vector2(
                     -GK2UiMetrics.QuestJournal.DetailPadding,
-                    -GK2UiMetrics.QuestJournal.DetailPadding);
+                    -(GK2UiMetrics.QuestJournal.SectionHeaderHeight +
+                      GK2UiMetrics.QuestJournal.DetailPadding));
 
-            Mask mask =
-                viewport.AddComponent<Mask>();
-
-            mask.showMaskGraphic =
-                false;
+            viewport.AddComponent<RectMask2D>();
 
             GameObject content =
                 GK2UiFactory.CreateRect(
@@ -864,7 +874,7 @@ namespace GK2Plus.Framework.UI
             _detailScroll.movementType =
                 ScrollRect.MovementType.Clamped;
             _detailScroll.scrollSensitivity =
-                22f;
+                28f;
 
             _detailTitle =
                 GK2UiFactory.CreateText(
@@ -878,7 +888,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
-                    new Vector2(-70f, 30f));
+                    new Vector2(-78f, 34f));
 
             _detailTitle.color =
                 _theme.AccentText;
@@ -895,7 +905,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(1f, 1f),
                     Vector2.zero,
-                    new Vector2(54f, 54f),
+                    new Vector2(62f, 62f),
                     Color.white)
                     .GetComponent<Image>();
 
@@ -914,7 +924,18 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
-                    new Vector2(-70f, 18f));
+                    new Vector2(-78f, 18f));
+
+            GK2UiSectionHeaderView descriptionHeader =
+                GK2UiSectionHeaderBuilder.Create(
+                    _detailContent,
+                    _theme,
+                    "DescriptionHeader",
+                    "Description",
+                    30f);
+
+            _descriptionHeaderRect =
+                descriptionHeader.Rect;
 
             _detailDescription =
                 GK2UiFactory.CreateText(
@@ -933,22 +954,18 @@ namespace GK2Plus.Framework.UI
             _detailDescription.textWrappingMode =
                 TextWrappingModes.Normal;
 
-            _objectivesTitle =
-                GK2UiFactory.CreateText(
+            GK2UiSectionHeaderView objectivesHeader =
+                GK2UiSectionHeaderBuilder.Create(
                     _detailContent,
-                    "ObjectivesTitle",
-                    _theme.TitleTextTemplate,
+                    _theme,
+                    "ObjectivesHeader",
                     "Objectives",
-                    13f,
-                    TextAlignmentOptions.TopLeft,
-                    new Vector2(0f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(0f, 1f),
-                    Vector2.zero,
-                    new Vector2(0f, 22f));
+                    30f);
 
-            _objectivesTitle.color =
-                _theme.AccentText;
+            _objectivesHeaderRect =
+                objectivesHeader.Rect;
+            _objectivesTitle =
+                objectivesHeader.Title;
 
             _trackButton =
                 GK2UiFactory.CreateFlatButton(
@@ -957,7 +974,7 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "Track Quest",
                     Vector2.zero,
-                    new Vector2(126f, 28f),
+                    new Vector2(132f, 29f),
                     () =>
                     {
                         QuestData quest =
@@ -983,7 +1000,7 @@ namespace GK2Plus.Framework.UI
             if (_trackButtonLabel != null)
             {
                 _trackButtonLabel.rectTransform.offsetMin =
-                    new Vector2(28f, 0f);
+                    new Vector2(30f, 0f);
             }
 
             GameObject pin =
@@ -996,7 +1013,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 0.5f),
                     new Vector2(0f, 0.5f),
                     new Vector2(5f, 0f),
-                    new Vector2(24f, 24f),
+                    new Vector2(25f, 25f),
                     Color.white);
 
             _trackPinIcon =
