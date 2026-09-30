@@ -3174,105 +3174,27 @@ Button close = closeButton.GetComponent<Button>();
             Vector2 anchoredPosition,
             Vector2 size)
         {
-            GameObject obj = new GameObject(
-                text + "Button",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image),
-                typeof(Button)
-            );
+            Button button =
+                GK2UiFactory.CreateButton(
+                    parent,
+                    text + "Button",
+                    _theme,
+                    text,
+                    anchoredPosition,
+                    size,
+                    null,
+                    GK2UiButtonTone.Neutral);
 
-            obj.transform.SetParent(parent, false);
+            Navigation navigation =
+                button.navigation;
+            navigation.mode =
+                Navigation.Mode.Automatic;
+            button.navigation =
+                navigation;
 
-            RectTransform rect = obj.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 1f);
-            rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = anchoredPosition;
-            rect.sizeDelta = size;
-
-            Image image = obj.GetComponent<Image>();
-            image.sprite = sprite;
-            image.type = Image.Type.Sliced;
-            image.color =
-                _theme?.ButtonNeutral ??
-                new Color(0.62f, 0.57f, 0.52f, 0.92f);
-            image.raycastTarget = true;
-
-            Button button = obj.GetComponent<Button>();
-            button.targetGraphic = image;
-            button.transition = Selectable.Transition.ColorTint;
-
-            Navigation navigation = button.navigation;
-            navigation.mode = Navigation.Mode.Automatic;
-            button.navigation = navigation;
-
-            ColorBlock colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1f, 1f, 1f, 0.92f);
-            colors.pressedColor = new Color(0.82f, 0.82f, 0.82f, 0.92f);
-            colors.selectedColor = Color.white;
-            colors.disabledColor = new Color(0.58f, 0.58f, 0.58f, 0.60f);
-            colors.fadeDuration = 0.05f;
-            button.colors = colors;
-
-            GameObject label = CreateNativeButtonLabel(
-                textTemplate,
-                obj.transform,
-                text,
-                GK2UiMetrics.Menu.ButtonFontScale
-            );
-
-            return obj;
+            return button.gameObject;
         }
 
-        private GameObject CreateNativeButtonLabel(
-            GameObject template,
-            Transform parent,
-            string text,
-            float scale)
-        {
-            GameObject clone = Instantiate(template, parent, false);
-            clone.name = "Label";
-            clone.SetActive(true);
-
-            StripLocalization(clone);
-
-            RectTransform parentRect = parent as RectTransform;
-            RectTransform rect = clone.GetComponent<RectTransform>();
-
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = Vector2.zero;
-            rect.localRotation = Quaternion.identity;
-            rect.localScale = new Vector3(scale, scale, 1f);
-
-            if (parentRect != null)
-            {
-                float width = Mathf.Max(1f, parentRect.rect.width / scale);
-                float height = Mathf.Max(1f, parentRect.rect.height / scale);
-                rect.sizeDelta = new Vector2(width, height);
-            }
-
-            Component tmp = FindTmp(clone);
-
-            if (tmp == null)
-            {
-                throw new InvalidOperationException(
-                    "Native button label template has no TextMeshProUGUI.");
-            }
-
-            // Preserve the native main-menu font/material/outline.
-            // Only the text and tracking are changed.
-            SetProperty(tmp, "text", text);
-            SetProperty(tmp, "enableAutoSizing", false);
-            SetProperty(tmp, "characterSpacing", 0.75f);
-            SetProperty(tmp, "wordSpacing", 0.30f);
-            TrySetEnumProperty(tmp, "alignment", "Center");
-
-            return clone;
-        }
         private void SetActiveTab(string tabName)
         {
             bool tabChanged =
