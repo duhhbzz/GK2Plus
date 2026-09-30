@@ -186,7 +186,7 @@ namespace GK2Plus.Framework.UI
                     -56f);
             _rootRect.sizeDelta =
                 new Vector2(
-                    250f,
+                    152f,
                     600f);
 
             _logger?.LogInfo(
@@ -255,7 +255,7 @@ namespace GK2Plus.Framework.UI
                         -y);
                 panel.Rect.sizeDelta =
                     new Vector2(
-                        250f,
+                        152f,
                         panelHeight);
 
                 y +=
@@ -361,7 +361,7 @@ namespace GK2Plus.Framework.UI
                 CreateText(
                     titleBar.transform,
                     "Title",
-                    13f,
+                    12f,
                     TextAlignmentOptions.Center);
 
             title.color =
@@ -375,7 +375,7 @@ namespace GK2Plus.Framework.UI
                 CreateText(
                     root.transform,
                     "Body",
-                    11f,
+                    10f,
                     TextAlignmentOptions.TopLeft);
 
             RectTransform bodyRect =
