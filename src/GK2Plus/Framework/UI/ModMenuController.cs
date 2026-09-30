@@ -410,22 +410,12 @@ namespace GK2Plus.Framework.UI
             GameObject bodyTemplate,
             GameObject buttonLabelTemplate)
         {
-            Transform old = uiRoot.Find(RootObjectName);
-            if (old != null)
-            {
-                Destroy(old.gameObject);
-            }
-
             _theme =
                 GK2UiTheme.Resolve(
                     _logger,
                     bodyTemplate,
                     buttonLabelTemplate);
 
-            Sprite frameSprite =
-                _theme?.WindowFrameSprite;
-            Sprite bgSprite =
-                _theme?.WindowBackgroundSprite;
             Sprite dividerSprite =
                 _theme?.DividerSprite;
             Sprite redButtonSprite =
@@ -440,150 +430,36 @@ namespace GK2Plus.Framework.UI
                 bodyTemplate;
 
             if (_theme == null ||
-                frameSprite == null ||
-                bgSprite == null ||
+                _theme.WindowFrameSprite == null ||
+                _theme.WindowBackgroundSprite == null ||
                 redButtonSprite == null)
             {
                 throw new InvalidOperationException(
                     "Required native GK2 UI theme assets are not loaded.");
             }
 
-            GameObject overlay = new GameObject(
-                RootObjectName,
-                typeof(RectTransform)
-            );
+            GK2UiWindowView shell =
+                GK2UiWindowBuilder.CreateModal(
+                    uiRoot,
+                    RootObjectName,
+                    _theme,
+                    GK2UiMetrics.Menu.WindowSize);
 
-            // Keep the visual tree active while cloning TMP/native UI templates.
-            // Some GK2/TMP materials are initialized lazily and cloning them under
-            // an inactive hierarchy can leave materialForRendering null.
-            overlay.transform.SetParent(uiRoot, false);
-            overlay.transform.SetAsLastSibling();
+            GameObject overlay =
+                shell.Root;
 
-            RectTransform overlayRect = overlay.GetComponent<RectTransform>();
-            overlayRect.anchorMin = Vector2.zero;
-            overlayRect.anchorMax = Vector2.one;
-            overlayRect.offsetMin = Vector2.zero;
-            overlayRect.offsetMax = Vector2.zero;
+            GameObject window =
+                shell.Window;
 
-            _menuRoot = overlay;
+            RectTransform safeAreaRect =
+                shell.SafeAreaRect;
 
-            // Native GK2 windows use their own child Canvases/sorting orders.
-            // A plain RectTransform under GUIElements.Root can therefore render
-            // behind the main menu, HUD prompts, and other LazyWindows even when
-            // it is the last sibling. Give GK2+ its own override canvas so an
-            // open mod menu is consistently the top interactive window.
-            Canvas overlayCanvas = overlay.AddComponent<Canvas>();
-            overlayCanvas.overrideSorting = true;
-            overlayCanvas.sortingOrder = 30000;
-
-            if (overlay.GetComponent<GraphicRaycaster>() == null)
-            {
-                overlay.AddComponent<GraphicRaycaster>();
-            }
-
-            GameObject dimmer = CreateImage(
-                overlay.transform,
-                "Dimmer",
-                null,
-                Image.Type.Simple,
-                Vector2.zero,
-                Vector2.one,
-                new Vector2(0.5f, 0.5f),
-                Vector2.zero,
-                Vector2.zero
-            );
-
-            Image dimmerImage = dimmer.GetComponent<Image>();
-            dimmerImage.color = new Color(0f, 0f, 0f, 0.26f);
-            dimmerImage.raycastTarget = true;
-            dimmer.transform.SetAsFirstSibling();
-
-            GameObject window = new GameObject(
-                "Window",
-                typeof(RectTransform)
-            );
-            window.transform.SetParent(overlay.transform, false);
-            window.transform.SetAsLastSibling();
-
-            RectTransform windowRect = window.GetComponent<RectTransform>();
-            windowRect.anchorMin = new Vector2(0.5f, 0.5f);
-            windowRect.anchorMax = new Vector2(0.5f, 0.5f);
-            windowRect.pivot = new Vector2(0.5f, 0.5f);
-            windowRect.anchoredPosition = Vector2.zero;
-            windowRect.sizeDelta =
-                GK2UiMetrics.Menu.WindowSize;
-
-            GameObject solidBacking = CreateImage(
-                window.transform,
-                "SolidBacking",
-                null,
-                Image.Type.Simple,
-                Vector2.zero,
-                Vector2.one,
-                new Vector2(0.5f, 0.5f),
-                Vector2.zero,
-                Vector2.zero
-            );
-            solidBacking.GetComponent<Image>().color =
-                _theme.PanelBackground;
-
-            GameObject background = CreateStretchImage(
-                window.transform,
-                "Background",
-                bgSprite,
-                Image.Type.Sliced,
-                new Vector2(-3f, -3f),
-                new Vector2(3f, 3f)
-            );
-            background.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.98f);
-
-            CreateStretchImage(
-                window.transform,
-                "Frame",
-                frameSprite,
-                Image.Type.Sliced,
-                Vector2.zero,
-                Vector2.zero
-            );
-
-            // Reusable safe area derived from the native frame's 9-slice border.
-            // Controls placed in this RectTransform are positioned relative to
-            // the visible inside edge of the frame instead of the raw window rect.
-            // Calibrated VISUAL frame inset, in GK2 logical UI units.
-            // The sprite's raw 9-slice border is much larger than the visible
-            // decorative border and is not appropriate as a content safe area.
-            //
-            // At the current PixelSize 2 these correspond approximately to:
-            // left/right 18 px and top/bottom 14 px before inner padding.
-            Vector4 frameInsetsUi =
-                GK2UiMetrics.Menu.FrameInsets;
-
-            GameObject safeArea = new GameObject(
-                "ContentSafeArea",
-                typeof(RectTransform)
-            );
-            safeArea.transform.SetParent(window.transform, false);
-
-            RectTransform safeAreaRect = safeArea.GetComponent<RectTransform>();
-            safeAreaRect.anchorMin = Vector2.zero;
-            safeAreaRect.anchorMax = Vector2.one;
-            safeAreaRect.pivot = new Vector2(0.5f, 0.5f);
-            safeAreaRect.offsetMin = new Vector2(
-                frameInsetsUi.x,
-                frameInsetsUi.y
-            );
-            safeAreaRect.offsetMax = new Vector2(
-                -frameInsetsUi.z,
-                -frameInsetsUi.w
-            );
-            safeAreaRect.localScale = Vector3.one;
+            _menuRoot =
+                overlay;
 
             _logger?.LogInfo(
-                $"GK2+ frame safe area: " +
-                $"spriteBorder={frameSprite.border}, " +
-                $"visualInsetsUi(L,B,R,T)={frameInsetsUi}, " +
-                $"safeSize={safeAreaRect.rect.size}"
-            );
+                $"GK2+ UI framework built mod-menu shell; " +
+                $"safeSize={safeAreaRect.rect.size}.");
 
             GK2UiFactory.CreateImage(
                 window.transform,
