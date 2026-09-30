@@ -117,6 +117,12 @@ namespace GK2Plus
             );
 
             registry.Register(
+                new QuestJournalFeature(
+                    Config,
+                    _services.UI)
+            );
+
+            registry.Register(
                 new StackSizesFeature(
                     Config,
                     _services.UI)
