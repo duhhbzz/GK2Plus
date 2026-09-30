@@ -1037,7 +1037,9 @@ namespace GK2Plus.Features.Tracking
         private void AddOrUpdatePin(
             TrackerPinType type,
             string id,
-            int target)
+            int target,
+            string label = null,
+            string requirements = null)
         {
             id = (id ?? string.Empty).Trim();
 
@@ -1057,6 +1059,17 @@ namespace GK2Plus.Features.Tracking
             if (existing != null)
             {
                 existing.Target = target;
+
+                if (!string.IsNullOrWhiteSpace(label))
+                {
+                    existing.Label = label;
+                }
+
+                if (!string.IsNullOrWhiteSpace(requirements))
+                {
+                    existing.Requirements = requirements;
+                }
+
                 SavePins();
                 return;
             }
@@ -1073,7 +1086,9 @@ namespace GK2Plus.Features.Tracking
                 {
                     Type = type,
                     Id = id,
-                    Target = target
+                    Target = target,
+                    Label = label ?? string.Empty,
+                    Requirements = requirements ?? string.Empty
                 });
 
             SavePins();
@@ -1135,7 +1150,9 @@ namespace GK2Plus.Features.Tracking
                     ";",
                     _pins.Select(
                         pin =>
-                            $"{pin.Type}|{Uri.EscapeDataString(pin.Id)}|{pin.Target}"));
+                            $"{pin.Type}|{Uri.EscapeDataString(pin.Id)}|{pin.Target}|" +
+                            $"{Uri.EscapeDataString(pin.Label ?? string.Empty)}|" +
+                            $"{Uri.EscapeDataString(pin.Requirements ?? string.Empty)}"));
 
             _config.Save();
             _uiService.RefreshMenu();
@@ -1192,12 +1209,24 @@ namespace GK2Plus.Features.Tracking
                     continue;
                 }
 
+                string label =
+                    parts.Length > 3
+                        ? SafeUnescape(parts[3])
+                        : string.Empty;
+
+                string requirements =
+                    parts.Length > 4
+                        ? SafeUnescape(parts[4])
+                        : string.Empty;
+
                 _pins.Add(
                     new TrackerPin
                     {
                         Type = type,
                         Id = id,
-                        Target = target
+                        Target = target,
+                        Label = label,
+                        Requirements = requirements
                     });
 
                 if (_pins.Count >= MaxPins)
@@ -1205,6 +1234,41 @@ namespace GK2Plus.Features.Tracking
                     break;
                 }
             }
+        }
+
+        private static string SafeUnescape(
+            string value)
+        {
+            try
+            {
+                return Uri.UnescapeDataString(
+                    value ?? string.Empty);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string SerializeNeeds(
+            IEnumerable<global::NeedItemData> needs)
+        {
+            if (needs == null)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(
+                ",",
+                needs
+                    .Where(need =>
+                        need != null &&
+                        !need.IsEmpty &&
+                        !string.IsNullOrWhiteSpace(need.Id))
+                    .Select(need =>
+                        $"{(int)need.groupType}:" +
+                        $"{Uri.EscapeDataString(need.Id)}:" +
+                        $"{Math.Max(1, need.GetCount(null))}"));
         }
 
         private string BuildTrackerNotice()
