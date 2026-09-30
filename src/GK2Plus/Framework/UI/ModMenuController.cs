@@ -19,6 +19,7 @@ namespace GK2Plus.Framework.UI
             "Inventory",
             "Crafting",
             "Farming",
+            "Movement",
             "Zombies",
             "Cheats",
             "More"
@@ -623,7 +624,7 @@ namespace GK2Plus.Framework.UI
                 );
             }
 
-            float tabWidth = 54f;
+            float tabWidth = Tabs.Length > 7 ? 50f : 54f;
             float tabHeight = 18f;
             float gap = 2f;
             float rowWidth = (Tabs.Length * tabWidth) + ((Tabs.Length - 1) * gap);
