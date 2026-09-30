@@ -261,10 +261,28 @@ namespace GK2Plus.Features.Tracking
                           _selectedItemId.Value));
 
             RegisterAction(
-                "tracker.unpin-selected",
-                "Unpin Selected",
-                UnpinSelected,
-                CanManageTracker);
+                "tracker.remove-quest",
+                "Remove Quest",
+                RemoveSelectedQuest,
+                () => CanManageTracker() &&
+                      !string.IsNullOrWhiteSpace(
+                          _selectedQuestId.Value));
+
+            RegisterAction(
+                "tracker.remove-craft",
+                "Remove Craft",
+                RemoveSelectedCraft,
+                () => CanManageTracker() &&
+                      !string.IsNullOrWhiteSpace(
+                          _selectedCraftId.Value));
+
+            RegisterAction(
+                "tracker.remove-item",
+                "Remove Item",
+                RemoveSelectedItem,
+                () => CanManageTracker() &&
+                      !string.IsNullOrWhiteSpace(
+                          _selectedItemId.Value));
 
             RegisterAction(
                 "tracker.toggle-hud",
@@ -1094,38 +1112,48 @@ namespace GK2Plus.Features.Tracking
             SavePins();
         }
 
-        private void UnpinSelected()
+        private void RemoveSelectedQuest()
         {
-            string questId =
-                _selectedQuestId?.Value ??
-                string.Empty;
+            RemovePin(
+                TrackerPinType.Quest,
+                _selectedQuestId?.Value);
+        }
 
-            string craftId =
-                _selectedCraftId?.Value ??
-                string.Empty;
+        private void RemoveSelectedCraft()
+        {
+            RemovePin(
+                TrackerPinType.Craft,
+                _selectedCraftId?.Value);
+        }
 
-            string itemId =
-                _selectedItemId?.Value ??
-                string.Empty;
+        private void RemoveSelectedItem()
+        {
+            RemovePin(
+                TrackerPinType.Item,
+                _selectedItemId?.Value);
+        }
 
-            _pins.RemoveAll(pin =>
-                (pin.Type == TrackerPinType.Quest &&
-                 string.Equals(
-                     pin.Id,
-                     questId,
-                     StringComparison.OrdinalIgnoreCase)) ||
-                (pin.Type == TrackerPinType.Craft &&
-                 string.Equals(
-                     pin.Id,
-                     craftId,
-                     StringComparison.OrdinalIgnoreCase)) ||
-                (pin.Type == TrackerPinType.Item &&
-                 string.Equals(
-                     pin.Id,
-                     itemId,
-                     StringComparison.OrdinalIgnoreCase)));
+        private void RemovePin(
+            TrackerPinType type,
+            string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
 
-            SavePins();
+            int removed =
+                _pins.RemoveAll(pin =>
+                    pin.Type == type &&
+                    string.Equals(
+                        pin.Id,
+                        id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (removed > 0)
+            {
+                SavePins();
+            }
         }
 
         private void ClearPins()
