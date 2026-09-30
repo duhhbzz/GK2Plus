@@ -485,28 +485,32 @@ namespace GK2Plus.Features.Tracking
                 buttonObject.name =
                     "GK2PlusTrackCraftButton";
 
-                RectTransform sourceRect =
-                    sourceButton.transform as RectTransform;
-
                 RectTransform buttonRect =
                     buttonObject.transform as RectTransform;
 
-                if (sourceRect != null &&
-                    buttonRect != null)
+                if (buttonRect != null)
                 {
                     buttonRect.anchorMin =
-                        sourceRect.anchorMin;
-                    buttonRect.anchorMax =
-                        sourceRect.anchorMax;
-                    buttonRect.pivot =
-                        sourceRect.pivot;
-                    buttonRect.sizeDelta =
-                        sourceRect.sizeDelta;
-                    buttonRect.anchoredPosition =
-                        sourceRect.anchoredPosition +
                         new Vector2(
-                            0f,
-                            28f);
+                            1f,
+                            1f);
+                    buttonRect.anchorMax =
+                        new Vector2(
+                            1f,
+                            1f);
+                    buttonRect.pivot =
+                        new Vector2(
+                            1f,
+                            1f);
+                    buttonRect.sizeDelta =
+                        new Vector2(
+                            92f,
+                            24f);
+                    buttonRect.anchoredPosition =
+                        new Vector2(
+                            -42f,
+                            -42f);
+                    buttonRect.SetAsLastSibling();
                 }
             }
             else
@@ -528,6 +532,8 @@ namespace GK2Plus.Features.Tracking
 
             button.LazyUIElementId =
                 string.Empty;
+
+            button.transform.SetAsLastSibling();
 
             button.onClick.RemoveAllListeners();
             button.onEnter.RemoveAllListeners();
@@ -565,6 +571,9 @@ namespace GK2Plus.Features.Tracking
             UpdateCraftTrackButtonLabel(
                 buttonObject,
                 craft.id);
+
+            Logger.LogDebug(
+                $"Unified Tracker displayed craft Track button for '{craft.id}'.");
         }
 
         private void UpdateCraftTrackButtonLabel(
