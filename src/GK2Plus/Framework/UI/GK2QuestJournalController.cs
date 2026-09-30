@@ -24,9 +24,14 @@ namespace GK2Plus.Framework.UI
             public GameObject Root;
             public RectTransform Rect;
             public Image Background;
+            public Image IconFrame;
             public Image Icon;
             public TextMeshProUGUI Title;
+            public TextMeshProUGUI Description;
             public TextMeshProUGUI Status;
+            public GameObject ProgressRoot;
+            public Image ProgressFill;
+            public TextMeshProUGUI ProgressLabel;
             public Button SelectButton;
             public Button PinButton;
             public Image PinIcon;
@@ -57,6 +62,9 @@ namespace GK2Plus.Framework.UI
         private TextMeshProUGUI _detailStatus;
         private TextMeshProUGUI _detailDescription;
         private TextMeshProUGUI _objectivesTitle;
+        private TextMeshProUGUI _detailPaneHeaderTitle;
+        private RectTransform _descriptionHeaderRect;
+        private RectTransform _objectivesHeaderRect;
         private Image _detailIcon;
         private Button _trackButton;
         private Image _trackPinIcon;
@@ -235,59 +243,43 @@ namespace GK2Plus.Framework.UI
 
         private void BuildHeader()
         {
-            GameObject header =
+            // Intentionally empty. Native-style section headers are built
+            // into the left and right panes, matching Character/Inspirations.
+        }
+
+        private void AddPaneFrame(
+            Transform parent)
+        {
+            if (_theme?.WindowFrameSprite == null)
+            {
+                return;
+            }
+
+            GameObject frame =
                 GK2UiFactory.CreateImage(
-                    _root.transform,
-                    "JournalHeader",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(0.5f, 1f),
-                    Vector2.zero,
-                    new Vector2(
-                        0f,
-                        GK2UiMetrics.QuestJournal.HeaderHeight),
-                    _theme.HeaderBackground);
-
-            RectTransform headerRect =
-                header.GetComponent<RectTransform>();
-
-            headerRect.offsetMin =
-                new Vector2(
-                    0f,
-                    -GK2UiMetrics.QuestJournal.HeaderHeight);
-            headerRect.offsetMax =
-                Vector2.zero;
-
-            TextMeshProUGUI title =
-                GK2UiFactory.CreateText(
-                    header.transform,
-                    "Title",
-                    _theme.TitleTextTemplate,
-                    "Quest Journal",
-                    17f,
-                    TextAlignmentOptions.Center,
+                    parent,
+                    "Frame",
+                    _theme.WindowFrameSprite,
+                    Image.Type.Sliced,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    Vector2.zero);
+                    Vector2.zero,
+                    Color.white);
 
-            title.rectTransform.offsetMin =
+            RectTransform rect =
+                frame.GetComponent<RectTransform>();
+
+            rect.offsetMin =
                 Vector2.zero;
-            title.rectTransform.offsetMax =
+            rect.offsetMax =
                 Vector2.zero;
-            title.color =
-                _theme.AccentText;
+            frame.transform.SetAsLastSibling();
         }
 
         private void BuildQuestList()
         {
-            float top =
-                GK2UiMetrics.QuestJournal.HeaderHeight +
-                GK2UiMetrics.QuestJournal.OuterPadding;
-
             float left =
                 GK2UiMetrics.QuestJournal.OuterPadding;
 
@@ -303,24 +295,13 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 0f),
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
-                    new Vector2(
-                        left,
-                        -top),
-                    new Vector2(
-                        width,
-                        -(top +
-                          GK2UiMetrics.QuestJournal.OuterPadding)),
-                    _theme.PanelBackground);
+                    Vector2.zero,
+                    Vector2.zero,
+                    _theme.ContentBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
 
-            paneRect.anchorMin =
-                new Vector2(0f, 0f);
-            paneRect.anchorMax =
-                new Vector2(0f, 1f);
-            paneRect.pivot =
-                new Vector2(0f, 1f);
             paneRect.offsetMin =
                 new Vector2(
                     left,
@@ -328,13 +309,35 @@ namespace GK2Plus.Framework.UI
             paneRect.offsetMax =
                 new Vector2(
                     left + width,
-                    -top);
+                    -GK2UiMetrics.QuestJournal.OuterPadding);
+
+            AddPaneFrame(
+                pane.transform);
+
+            GK2UiSectionHeaderView header =
+                GK2UiSectionHeaderBuilder.Create(
+                    pane.transform,
+                    _theme,
+                    "QuestJournalHeader",
+                    "Quest Journal",
+                    GK2UiMetrics.QuestJournal.SectionHeaderHeight);
+
+            header.Rect.offsetMin =
+                new Vector2(
+                    0f,
+                    -GK2UiMetrics.QuestJournal.SectionHeaderHeight);
+            header.Rect.offsetMax =
+                Vector2.zero;
 
             float halfFilterWidth =
                 (width -
                  (GK2UiMetrics.QuestJournal.OuterPadding * 2f) -
                  GK2UiMetrics.QuestJournal.FilterGap) /
                 2f;
+
+            float filterTop =
+                GK2UiMetrics.QuestJournal.SectionHeaderHeight +
+                7f;
 
             _activeFilterButton =
                 GK2UiFactory.CreateFlatButton(
@@ -345,7 +348,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(
                         GK2UiMetrics.QuestJournal.OuterPadding +
                         (halfFilterWidth / 2f),
-                        -GK2UiMetrics.QuestJournal.OuterPadding),
+                        -filterTop),
                     new Vector2(
                         halfFilterWidth,
                         GK2UiMetrics.QuestJournal.FilterHeight),
@@ -385,7 +388,7 @@ namespace GK2Plus.Framework.UI
                         halfFilterWidth +
                         GK2UiMetrics.QuestJournal.FilterGap +
                         (halfFilterWidth / 2f),
-                        -GK2UiMetrics.QuestJournal.OuterPadding),
+                        -filterTop),
                     new Vector2(
                         halfFilterWidth,
                         GK2UiMetrics.QuestJournal.FilterHeight),
@@ -415,26 +418,22 @@ namespace GK2Plus.Framework.UI
                         true);
 
             GameObject viewport =
-                GK2UiFactory.CreateImage(
+                GK2UiFactory.CreateRect(
                     pane.transform,
                     "QuestViewport",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(1f, 1f),
+                    Vector2.zero,
+                    Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    Vector2.zero,
-                    new Color(0f, 0f, 0f, 0.001f),
-                    true);
+                    Vector2.zero);
 
             RectTransform viewportRect =
                 viewport.GetComponent<RectTransform>();
 
             float listTop =
-                GK2UiMetrics.QuestJournal.OuterPadding +
+                filterTop +
                 GK2UiMetrics.QuestJournal.FilterHeight +
-                GK2UiMetrics.QuestJournal.FilterGap;
+                7f;
 
             viewportRect.offsetMin =
                 new Vector2(
@@ -445,11 +444,7 @@ namespace GK2Plus.Framework.UI
                     -GK2UiMetrics.QuestJournal.OuterPadding,
                     -listTop);
 
-            Mask mask =
-                viewport.AddComponent<Mask>();
-
-            mask.showMaskGraphic =
-                false;
+            viewport.AddComponent<RectMask2D>();
 
             GameObject content =
                 GK2UiFactory.CreateRect(
@@ -463,6 +458,11 @@ namespace GK2Plus.Framework.UI
 
             _questListContent =
                 content.GetComponent<RectTransform>();
+
+            _questListContent.offsetMin =
+                Vector2.zero;
+            _questListContent.offsetMax =
+                Vector2.zero;
 
             _questScroll =
                 pane.AddComponent<ScrollRect>();
@@ -478,7 +478,7 @@ namespace GK2Plus.Framework.UI
             _questScroll.movementType =
                 ScrollRect.MovementType.Clamped;
             _questScroll.scrollSensitivity =
-                22f;
+                28f;
 
             _questRowPool =
                 new GK2UiPool<QuestRowView>(
@@ -495,12 +495,17 @@ namespace GK2Plus.Framework.UI
 
         private QuestRowView CreateQuestRow()
         {
+            Sprite cardSprite =
+                _theme.InspirationCardSprite;
+
             GameObject root =
                 GK2UiFactory.CreateImage(
                     _questListContent,
                     "QuestRow",
-                    null,
-                    Image.Type.Simple,
+                    cardSprite,
+                    cardSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0.5f, 1f),
@@ -508,7 +513,9 @@ namespace GK2Plus.Framework.UI
                     new Vector2(
                         0f,
                         GK2UiMetrics.QuestJournal.QuestRowHeight),
-                    _theme.RowBackground,
+                    cardSprite != null
+                        ? Color.white
+                        : _theme.RowBackground,
                     true);
 
             RectTransform rect =
@@ -525,18 +532,41 @@ namespace GK2Plus.Framework.UI
             select.transition =
                 Selectable.Transition.ColorTint;
 
-            GameObject iconObject =
+            float pad =
+                GK2UiMetrics.QuestJournal.QuestCardPadding;
+
+            GameObject frameObject =
                 GK2UiFactory.CreateImage(
                     root.transform,
+                    "QuestIconFrame",
+                    _theme.InspirationIconFrameSprite,
+                    _theme.InspirationIconFrameSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(
+                        pad,
+                        -31f),
+                    new Vector2(
+                        GK2UiMetrics.QuestJournal.QuestIconSize + 8f,
+                        GK2UiMetrics.QuestJournal.QuestIconSize + 8f),
+                    Color.white);
+
+            Image iconFrame =
+                frameObject.GetComponent<Image>();
+
+            GameObject iconObject =
+                GK2UiFactory.CreateImage(
+                    frameObject.transform,
                     "QuestIcon",
                     null,
                     Image.Type.Simple,
-                    new Vector2(0f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(
-                        6f,
-                        0f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
                     new Vector2(
                         GK2UiMetrics.QuestJournal.QuestIconSize,
                         GK2UiMetrics.QuestJournal.QuestIconSize),
@@ -552,20 +582,122 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateText(
                     root.transform,
                     "QuestTitle",
-                    _theme.BodyTextTemplate,
+                    _theme.InspirationTitleTemplate ??
+                    _theme.TitleTextTemplate,
                     string.Empty,
-                    10f,
-                    TextAlignmentOptions.Left,
-                    new Vector2(0f, 0.5f),
+                    12f,
+                    TextAlignmentOptions.TopLeft,
+                    new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(46f, -3f),
-                    new Vector2(-80f, 22f));
+                    new Vector2(0f, 1f),
+                    new Vector2(
+                        pad,
+                        -5f),
+                    new Vector2(
+                        -48f,
+                        24f));
 
             title.textWrappingMode =
                 TextWrappingModes.NoWrap;
             title.overflowMode =
                 TextOverflowModes.Ellipsis;
+
+            TextMeshProUGUI description =
+                GK2UiFactory.CreateText(
+                    root.transform,
+                    "QuestDescription",
+                    _theme.InspirationDescriptionTemplate ??
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    9.5f,
+                    TextAlignmentOptions.TopLeft,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(
+                        pad +
+                        GK2UiMetrics.QuestJournal.QuestIconSize +
+                        18f,
+                        -32f),
+                    new Vector2(
+                        -(pad + 6f),
+                        43f));
+
+            description.textWrappingMode =
+                TextWrappingModes.Normal;
+            description.overflowMode =
+                TextOverflowModes.Ellipsis;
+
+            GameObject progressRoot =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "Progress",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0.5f, 0f),
+                    new Vector2(
+                        0f,
+                        6f),
+                    new Vector2(
+                        -16f,
+                        GK2UiMetrics.QuestJournal.QuestProgressHeight),
+                    new Color(
+                        0.10f,
+                        0.11f,
+                        0.08f,
+                        0.95f));
+
+            RectTransform progressRect =
+                progressRoot.GetComponent<RectTransform>();
+
+            progressRect.offsetMin =
+                new Vector2(8f, 6f);
+            progressRect.offsetMax =
+                new Vector2(-8f, 6f +
+                    GK2UiMetrics.QuestJournal.QuestProgressHeight);
+
+            GameObject fillObject =
+                GK2UiFactory.CreateImage(
+                    progressRoot.transform,
+                    "Fill",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(
+                        0.30f,
+                        0.54f,
+                        0.04f,
+                        1f));
+
+            Image progressFill =
+                fillObject.GetComponent<Image>();
+
+            TextMeshProUGUI progressLabel =
+                GK2UiFactory.CreateText(
+                    progressRoot.transform,
+                    "ProgressLabel",
+                    _theme.InspirationProgressTemplate ??
+                    _theme.CountTextTemplate ??
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    10f,
+                    TextAlignmentOptions.Center,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            progressLabel.rectTransform.offsetMin =
+                Vector2.zero;
+            progressLabel.rectTransform.offsetMax =
+                Vector2.zero;
 
             TextMeshProUGUI status =
                 GK2UiFactory.CreateText(
@@ -574,15 +706,19 @@ namespace GK2Plus.Framework.UI
                     _theme.BodyTextTemplate,
                     string.Empty,
                     8.5f,
-                    TextAlignmentOptions.Left,
-                    new Vector2(0f, 0f),
-                    new Vector2(1f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(46f, 3f),
-                    new Vector2(-80f, 18f));
+                    TextAlignmentOptions.Right,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(
+                        -38f,
+                        -7f),
+                    new Vector2(
+                        110f,
+                        18f));
 
             status.color =
-                new Color(0.72f, 0.72f, 0.70f, 1f);
+                new Color(0.74f, 0.74f, 0.72f, 1f);
 
             GameObject pinObject =
                 GK2UiFactory.CreateImage(
@@ -590,11 +726,13 @@ namespace GK2Plus.Framework.UI
                     "PinButton",
                     UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi(),
                     Image.Type.Simple,
-                    new Vector2(1f, 0.5f),
-                    new Vector2(1f, 0.5f),
-                    new Vector2(1f, 0.5f),
-                    new Vector2(-7f, 0f),
-                    new Vector2(28f, 28f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(
+                        -7f,
+                        -5f),
+                    new Vector2(30f, 30f),
                     Color.white,
                     true);
 
@@ -617,9 +755,14 @@ namespace GK2Plus.Framework.UI
                 Root = root,
                 Rect = rect,
                 Background = background,
+                IconFrame = iconFrame,
                 Icon = icon,
                 Title = title,
+                Description = description,
                 Status = status,
+                ProgressRoot = progressRoot,
+                ProgressFill = progressFill,
+                ProgressLabel = progressLabel,
                 SelectButton = select,
                 PinButton = pinButton,
                 PinIcon = pinIcon
