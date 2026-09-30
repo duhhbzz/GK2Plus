@@ -33,9 +33,16 @@ namespace GK2Plus.Framework.UI
             public const float BodyViewportHeight = 164f;
             public const float BodyContentHorizontalPadding = 14f;
 
+            public const float BodyContentWidth = 414f;
+            public const float PageTextWideHeight = 112f;
+            public const float PageTextCompactHeight = 38f;
+
+            public const float ControlFirstRowY = -88f;
             public const float ControlRowHeight = 22f;
             public const float ControlChildStep = 25f;
             public const float ControlFeatureGap = 36f;
+            public const float ControlLabelWidth = 250f;
+            public const float ControlButtonWidth = 92f;
 
             public const float HeaderFontScale = 0.74f;
             public const float SectionTitleScale = 0.64f;
