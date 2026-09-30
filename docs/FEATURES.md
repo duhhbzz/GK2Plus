@@ -15,6 +15,7 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
+| General / UI | [RPG Quest Journal](#rpg-quest-journal) |
 | Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
 | Tracker | [Unified Tracker](#unified-tracker) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
@@ -61,6 +62,46 @@ Last saved: 10 minutes ago (4:26 AM).
 ~~~
 
 The value comes from native save metadata and updates after a successful save.
+
+---
+
+## RPG Quest Journal
+
+**Category:** General / UI  
+**Setting mode:** Live enable/disable from the GK2+ menu.
+
+RPG Quest Journal replaces the native **Quests** tab's branching quest-tree
+visualization with a traditional RPG/MMO-style journal while leaving GK2's
+quest progression and save data untouched.
+
+The native Character window and its normal top tabs remain in place. Selecting
+**Quests** mounts the GK2+ journal into the same page area.
+
+The initial journal provides:
+
+- **Active** and **Completed** filters;
+- a scrollable quest list using native quest icons;
+- a selected-quest details pane with status and localized description;
+- native-style item requirement cells for quest objectives;
+- direct integration with the Unified Tracker's parchment tracking control.
+
+The replacement is presentation-only. GK2 remains authoritative for quest
+state, completion, localization, requirements, rewards, and persistence.
+
+Disabling RPG Quest Journal restores the native quest tree. The replacement
+also falls back to the native tree automatically if the journal cannot
+initialize against the current game build.
+
+### Validation required
+
+- switch repeatedly between Character / Quests / Map and verify page lifecycle;
+- Active and Completed list filtering;
+- long quest titles/descriptions and scrolling;
+- quests with zero, one, and several item requirements;
+- selecting quests and preserving a sensible current selection;
+- tracking/untracking an active quest from the journal;
+- controller/gamepad navigation follow-up before release;
+- disable the feature and confirm the vanilla quest tree returns.
 
 ---
 
