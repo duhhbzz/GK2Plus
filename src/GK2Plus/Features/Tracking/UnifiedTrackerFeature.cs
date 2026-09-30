@@ -1330,8 +1330,99 @@ namespace GK2Plus.Features.Tracking
 
         private string BuildHudText()
         {
-            return BuildSnapshotText(
-                compact: false);
+            StringBuilder builder =
+                new StringBuilder();
+
+            AppendHudGroup(
+                builder,
+                "QUESTS",
+                _pins.Where(pin =>
+                    pin.Type ==
+                        TrackerPinType.Quest));
+
+            AppendHudGroup(
+                builder,
+                "CRAFTS",
+                _pins.Where(pin =>
+                    pin.Type ==
+                        TrackerPinType.Craft ||
+                    pin.Type ==
+                        TrackerPinType.Plan));
+
+            AppendHudGroup(
+                builder,
+                "ITEMS",
+                _pins.Where(pin =>
+                    pin.Type ==
+                        TrackerPinType.Item));
+
+            return builder
+                .ToString()
+                .Trim();
+        }
+
+        private void AppendHudGroup(
+            StringBuilder builder,
+            string groupName,
+            IEnumerable<TrackerPin> pins)
+        {
+            List<TrackerPin> group =
+                pins?.ToList() ??
+                new List<TrackerPin>();
+
+            if (group.Count == 0)
+            {
+                return;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.AppendLine();
+            }
+
+            builder.AppendLine(
+                $"[[{groupName}]]");
+
+            for (int i = 0; i < group.Count; i++)
+            {
+                if (i > 0)
+                {
+                    builder.AppendLine();
+                }
+
+                TrackerPin pin =
+                    group[i];
+
+                switch (pin.Type)
+                {
+                    case TrackerPinType.Quest:
+                        AppendQuest(
+                            builder,
+                            pin,
+                            compact: false);
+                        break;
+
+                    case TrackerPinType.Craft:
+                        AppendCraft(
+                            builder,
+                            pin,
+                            compact: false);
+                        break;
+
+                    case TrackerPinType.Item:
+                        AppendItem(
+                            builder,
+                            pin);
+                        break;
+
+                    case TrackerPinType.Plan:
+                        AppendPlan(
+                            builder,
+                            pin,
+                            compact: false);
+                        break;
+                }
+            }
         }
 
         private string BuildSnapshotText(
