@@ -1282,11 +1282,12 @@ namespace GK2Plus.Features.Tracking
             if (_pins.Count == 0)
             {
                 return
-                    "No tracker pins yet. Choose a quest, craft, or item below, then use the matching Pin action.";
+                    "No tracker pins yet. Right-click quests, recipes, and build entries in their native menus, " +
+                    "or use the selectors below for manual/custom item tracking.";
             }
 
             return
-                $"Pinned {_pins.Count}/{MaxPins}\n" +
+                $"Pinned {_pins.Count}/{MaxPins} · Right-click native quest/recipe/build entries to toggle tracking.\n" +
                 BuildSnapshotText(
                     compact: true);
         }
@@ -1347,6 +1348,13 @@ namespace GK2Plus.Features.Tracking
                             builder,
                             pin);
                         break;
+
+                    case TrackerPinType.Plan:
+                        AppendPlan(
+                            builder,
+                            pin,
+                            compact);
+                        break;
                 }
             }
 
@@ -1366,16 +1374,16 @@ namespace GK2Plus.Features.Tracking
             if (quest == null)
             {
                 builder.Append(
-                    $"Quest · {pin.Id} · unavailable");
+                    $"{pin.Id} · unavailable");
                 return;
             }
 
             builder.Append(
-                $"Quest · {LocalizeQuestName(quest)}");
+                $"<b>{LocalizeQuestName(quest)}</b>");
 
             if (quest.status == global::QuestStatus.Completed)
             {
-                builder.Append(" · COMPLETE");
+                builder.Append("  ✓");
                 return;
             }
 
@@ -1436,12 +1444,12 @@ namespace GK2Plus.Features.Tracking
             if (craft == null)
             {
                 builder.Append(
-                    $"Craft · {pin.Id} · unavailable");
+                    $"{pin.Id} · unavailable");
                 return;
             }
 
             builder.Append(
-                $"Craft · {GetCraftDisplayName(craft)}");
+                $"<b>{GetCraftDisplayName(craft)}</b>");
 
             if (compact ||
                 craft.needItems == null)
@@ -1487,12 +1495,138 @@ namespace GK2Plus.Features.Tracking
                     pin.Id);
 
             builder.Append(
-                $"Item · {GetItemDisplayName(pin.Id)}  {current}/{target}");
+                $"<b>{GetItemDisplayName(pin.Id)}</b>  {current}/{target}");
 
             if (current >= target)
             {
                 builder.Append("  ✓");
             }
+        }
+
+        private void AppendPlan(
+            StringBuilder builder,
+            TrackerPin pin,
+            bool compact)
+        {
+            string label =
+                string.IsNullOrWhiteSpace(pin.Label)
+                    ? pin.Id
+                    : pin.Label;
+
+            builder.Append(
+                $"<b>{label}</b>");
+
+            if (compact ||
+                string.IsNullOrWhiteSpace(pin.Requirements))
+            {
+                return;
+            }
+
+            foreach (string record in
+                     pin.Requirements.Split(
+                         new[] { ',' },
+                         StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] parts =
+                    record.Split(':');
+
+                if (parts.Length != 3 ||
+                    !int.TryParse(
+                        parts[0],
+                        out int groupValue) ||
+                    !int.TryParse(
+                        parts[2],
+                        out int target))
+                {
+                    continue;
+                }
+
+                string id =
+                    SafeUnescape(
+                        parts[1]);
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    continue;
+                }
+
+                global::ItemGroup groupType =
+                    (global::ItemGroup)groupValue;
+
+                int current =
+                    CountSnapshotNeed(
+                        groupType,
+                        id);
+
+                string name =
+                    groupType ==
+                        global::ItemGroup.None
+                        ? GetItemDisplayName(id)
+                        : $"Any {id}";
+
+                builder.AppendLine();
+                builder.Append(
+                    $"  {name}  {current}/{Math.Max(1, target)}");
+            }
+        }
+
+        private static int CountSnapshotNeed(
+            global::ItemGroup groupType,
+            string id)
+        {
+            if (groupType ==
+                global::ItemGroup.None)
+            {
+                return CountPlayerItem(
+                    id);
+            }
+
+            if (global::GameBalance.Me == null)
+            {
+                return 0;
+            }
+
+            List<global::ItemDef> defs =
+                null;
+
+            if (groupType ==
+                global::ItemGroup.Common)
+            {
+                global::GameBalance.Me
+                    .groupItemsCache
+                    .TryGetValue(
+                        id,
+                        out defs);
+            }
+            else if (groupType ==
+                     global::ItemGroup.Star)
+            {
+                global::GameBalance.Me
+                    .starGroupItemsCache
+                    .TryGetValue(
+                        id,
+                        out defs);
+            }
+
+            if (defs == null)
+            {
+                return 0;
+            }
+
+            int total = 0;
+
+            foreach (global::ItemDef def in defs)
+            {
+                if (def != null &&
+                    !string.IsNullOrWhiteSpace(def.id))
+                {
+                    total +=
+                        CountPlayerItem(
+                            def.id);
+                }
+            }
+
+            return total;
         }
 
         private static int CountNeed(
