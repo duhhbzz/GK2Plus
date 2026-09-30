@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using BepInEx.Configuration;
@@ -37,6 +38,11 @@ namespace GK2Plus.Features.Tracking
         }
 
         private static UnifiedTrackerFeature _activeInstance;
+        private const string TrackerPinResourceName =
+            "GK2Plus.Assets.UI.tracker_pin.png";
+
+        private static Texture2D _trackerPinTexture;
+        private static Sprite _trackerPinSprite;
 
         private readonly ConfigFile _config;
         private readonly GK2UIService _uiService;
@@ -637,6 +643,34 @@ namespace GK2Plus.Features.Tracking
                 return;
             }
 
+            string localizedName =
+                LLBase.L(
+                    data.Name);
+
+            bool isRemoveRow =
+                string.Equals(
+                    localizedName,
+                    "Remove",
+                    StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(build.Definition.id) &&
+                 build.Definition.id.IndexOf(
+                     "remove",
+                     StringComparison.OrdinalIgnoreCase) >= 0);
+
+            if (isRemoveRow)
+            {
+                Transform staleButton =
+                    __instance.transform.Find(
+                        "GK2PlusTrackBuildButton");
+
+                if (staleButton != null)
+                {
+                    staleButton.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
             feature.EnsureBuildTrackButton(
                 __instance,
                 data,
@@ -655,6 +689,14 @@ namespace GK2Plus.Features.Tracking
                 return;
             }
 
+            Sprite trackerSprite =
+                GetTrackerPinSprite();
+
+            if (trackerSprite == null)
+            {
+                return;
+            }
+
             const string buttonName =
                 "GK2PlusTrackBuildButton";
 
@@ -663,11 +705,6 @@ namespace GK2Plus.Features.Tracking
                     buttonName);
 
             GameObject buttonObject;
-
-            TextMeshProUGUI nameLabel =
-                Traverse.Create(widget)
-                    .Field("nameLabel")
-                    .GetValue<TextMeshProUGUI>();
 
             if (existing == null)
             {
@@ -687,9 +724,6 @@ namespace GK2Plus.Features.Tracking
                     buttonObject
                         .GetComponent<RectTransform>();
 
-                // Keep the action completely out of the variable-height name/
-                // description area. This right-side gutter is directly before
-                // the native ingredient cells.
                 rect.anchorMin =
                     new Vector2(
                         1f,
@@ -708,19 +742,19 @@ namespace GK2Plus.Features.Tracking
                         0f);
                 rect.sizeDelta =
                     new Vector2(
-                        16f,
-                        16f);
+                        20f,
+                        20f);
 
                 Image image =
                     buttonObject
                         .GetComponent<Image>();
 
-                image.color =
-                    new Color(
-                        0.18f,
-                        0.15f,
-                        0.12f,
-                        0.96f);
+                image.sprite =
+                    trackerSprite;
+                image.preserveAspect =
+                    true;
+                image.raycastTarget =
+                    true;
 
                 Button button =
                     buttonObject
@@ -739,71 +773,26 @@ namespace GK2Plus.Features.Tracking
                 colors.highlightedColor =
                     new Color(
                         1f,
-                        0.90f,
-                        0.65f,
+                        0.94f,
+                        0.76f,
                         1f);
                 colors.pressedColor =
                     new Color(
                         0.80f,
-                        0.72f,
-                        0.58f,
+                        0.76f,
+                        0.68f,
                         1f);
                 colors.selectedColor =
                     Color.white;
                 colors.disabledColor =
                     new Color(
-                        0.45f,
-                        0.45f,
-                        0.45f,
-                        0.65f);
+                        1f,
+                        1f,
+                        1f,
+                        0.30f);
 
                 button.colors =
                     colors;
-
-                TextMeshProUGUI label =
-                    new GameObject(
-                        "Label",
-                        typeof(RectTransform),
-                        typeof(CanvasRenderer),
-                        typeof(TextMeshProUGUI))
-                    .GetComponent<TextMeshProUGUI>();
-
-                label.transform.SetParent(
-                    buttonObject.transform,
-                    false);
-
-                RectTransform labelRect =
-                    label.rectTransform;
-
-                labelRect.anchorMin =
-                    Vector2.zero;
-                labelRect.anchorMax =
-                    Vector2.one;
-                labelRect.offsetMin =
-                    Vector2.zero;
-                labelRect.offsetMax =
-                    Vector2.zero;
-
-                if (nameLabel != null)
-                {
-                    label.font =
-                        nameLabel.font;
-                    label.fontSharedMaterial =
-                        nameLabel.fontSharedMaterial;
-                    label.spriteAsset =
-                        nameLabel.spriteAsset;
-                    label.color =
-                        nameLabel.color;
-                }
-
-                label.enableAutoSizing =
-                    false;
-                label.fontSize =
-                    10f;
-                label.alignment =
-                    TextAlignmentOptions.Center;
-                label.raycastTarget =
-                    false;
             }
             else
             {
@@ -811,8 +800,20 @@ namespace GK2Plus.Features.Tracking
                     existing.gameObject;
             }
 
-            buttonObject.SetActive(true);
+            buttonObject.SetActive(
+                true);
             buttonObject.transform.SetAsLastSibling();
+
+            Image trackImage =
+                buttonObject.GetComponent<Image>();
+
+            if (trackImage != null)
+            {
+                trackImage.sprite =
+                    trackerSprite;
+                trackImage.preserveAspect =
+                    true;
+            }
 
             string planId =
                 "build:" +
@@ -846,6 +847,99 @@ namespace GK2Plus.Features.Tracking
                 planId);
         }
 
+        private static Sprite GetTrackerPinSprite()
+        {
+            if (_trackerPinSprite != null)
+            {
+                return _trackerPinSprite;
+            }
+
+            try
+            {
+                Assembly assembly =
+                    typeof(UnifiedTrackerFeature)
+                        .Assembly;
+
+                using (Stream stream =
+                       assembly.GetManifestResourceStream(
+                           TrackerPinResourceName))
+                {
+                    if (stream == null)
+                    {
+                        _activeInstance?.Logger.LogError(
+                            $"Unified Tracker could not find embedded resource '{TrackerPinResourceName}'.");
+                        return null;
+                    }
+
+                    using (MemoryStream memory =
+                           new MemoryStream())
+                    {
+                        stream.CopyTo(
+                            memory);
+
+                        byte[] bytes =
+                            memory.ToArray();
+
+                        Texture2D texture =
+                            new Texture2D(
+                                2,
+                                2,
+                                TextureFormat.RGBA32,
+                                false);
+
+                        if (!ImageConversion.LoadImage(
+                                texture,
+                                bytes,
+                                false))
+                        {
+                            UnityEngine.Object.Destroy(
+                                texture);
+
+                            _activeInstance?.Logger.LogError(
+                                "Unified Tracker could not decode the embedded tracker pin PNG.");
+
+                            return null;
+                        }
+
+                        texture.name =
+                            "GK2PlusTrackerPinTexture";
+                        texture.filterMode =
+                            FilterMode.Point;
+                        texture.wrapMode =
+                            TextureWrapMode.Clamp;
+
+                        _trackerPinTexture =
+                            texture;
+
+                        _trackerPinSprite =
+                            Sprite.Create(
+                                texture,
+                                new Rect(
+                                    0f,
+                                    0f,
+                                    texture.width,
+                                    texture.height),
+                                new Vector2(
+                                    0.5f,
+                                    0.5f),
+                                100f);
+
+                        _trackerPinSprite.name =
+                            "GK2PlusTrackerPin";
+
+                        return _trackerPinSprite;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _activeInstance?.Logger.LogError(
+                    $"Unified Tracker failed to load tracker pin icon: {ex}");
+
+                return null;
+            }
+        }
+
         private void UpdateBuildTrackIcon(
             GameObject buttonObject,
             string planId)
@@ -865,37 +959,22 @@ namespace GK2Plus.Features.Tracking
                         planId,
                         StringComparison.OrdinalIgnoreCase));
 
-            TextMeshProUGUI label =
-                buttonObject
-                    .GetComponentsInChildren<TextMeshProUGUI>(
-                        true)
-                    .FirstOrDefault();
-
-            if (label != null)
-            {
-                label.text =
-                    tracked
-                        ? "✓"
-                        : "+";
-            }
-
             Image image =
                 buttonObject.GetComponent<Image>();
 
             if (image != null)
             {
+                image.sprite =
+                    GetTrackerPinSprite();
+
                 image.color =
                     tracked
-                        ? new Color(
-                            0.18f,
-                            0.30f,
-                            0.18f,
-                            0.96f)
+                        ? Color.white
                         : new Color(
-                            0.18f,
-                            0.15f,
-                            0.12f,
-                            0.96f);
+                            1f,
+                            1f,
+                            1f,
+                            0.48f);
             }
         }
 
