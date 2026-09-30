@@ -615,6 +615,12 @@ namespace GK2Plus.Framework.UI
             iconImage.raycastTarget =
                 false;
 
+            if (_theme?.ItemIconMaterial != null)
+            {
+                iconImage.material =
+                    _theme.ItemIconMaterial;
+            }
+
             TextMeshProUGUI countText =
                 CreateText(
                     _theme?.CountTextTemplate ??
@@ -1004,60 +1010,18 @@ namespace GK2Plus.Framework.UI
             float fontSize,
             TextAlignmentOptions alignment)
         {
-            GameObject obj =
-                new GameObject(
-                    name,
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(TextMeshProUGUI));
-
-            obj.transform.SetParent(
+            return GK2UiFactory.CreateText(
                 parent,
-                false);
-
-            TextMeshProUGUI text =
-                obj.GetComponent<TextMeshProUGUI>();
-
-            text.font =
-                template.font;
-            text.fontSharedMaterial =
-                template.fontSharedMaterial;
-            text.spriteAsset =
-                template.spriteAsset;
-            text.fontSize =
-                fontSize;
-            text.fontSizeMin =
-                fontSize;
-            text.fontSizeMax =
-                fontSize;
-            text.enableAutoSizing =
-                false;
-            text.alignment =
-                alignment;
-            text.color =
-                template.color;
-            text.raycastTarget =
-                false;
-            text.margin =
-                Vector4.zero;
-            text.characterSpacing =
-                0f;
-            text.lineSpacing =
-                0f;
-
-            RectTransform rect =
-                text.rectTransform;
-
-            rect.anchorMin =
-                Vector2.zero;
-            rect.anchorMax =
-                Vector2.one;
-            rect.offsetMin =
-                Vector2.zero;
-            rect.offsetMax =
-                Vector2.zero;
-
-            return text;
+                name,
+                template,
+                string.Empty,
+                fontSize,
+                alignment,
+                Vector2.zero,
+                Vector2.one,
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                Vector2.zero);
         }
 
         private static Dictionary<string, string>
