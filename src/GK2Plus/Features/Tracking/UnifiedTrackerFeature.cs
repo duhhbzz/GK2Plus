@@ -81,6 +81,8 @@ namespace GK2Plus.Features.Tracking
 
         protected override void OnInitialize()
         {
+            _activeInstance = this;
+
             _pinsRaw = _config.Bind(
                 Category,
                 $"{Id}.Pins",
@@ -92,6 +94,18 @@ namespace GK2Plus.Features.Tracking
                 $"{Id}.HudVisible",
                 true,
                 "Show the compact tracker HUD while a save is loaded.");
+
+            _autoTrackNewQuests = _config.Bind(
+                Category,
+                $"{Id}.AutoTrackNewQuests",
+                false,
+                "Automatically add a quest to the tracker when GK2 starts it.");
+
+            _removeCompletedQuests = _config.Bind(
+                Category,
+                $"{Id}.RemoveCompletedQuests",
+                true,
+                "Automatically remove quest pins when GK2 completes the quest.");
 
             _selectedQuestId = _config.Bind(
                 Category,
@@ -130,6 +144,36 @@ namespace GK2Plus.Features.Tracking
                     BuildFeatureStatus,
                     SetEnabledFromMainMenu,
                     order: 10));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.auto-track-quests",
+                    Category,
+                    "Auto-track New Quests",
+                    () => _autoTrackNewQuests.Value ? "On" : "Off",
+                    GetBinaryOptions,
+                    value => SetBooleanOption(
+                        _autoTrackNewQuests,
+                        value),
+                    parentFeatureId: Id,
+                    order: 12,
+                    enabledProvider: () => Enabled?.Value == true,
+                    allowInGameEditing: true));
+
+            _uiService.RegisterFeatureOptionControl(
+                new GK2FeatureOptionControl(
+                    $"{Id}.remove-completed-quests",
+                    Category,
+                    "Remove Completed Quests",
+                    () => _removeCompletedQuests.Value ? "On" : "Off",
+                    GetBinaryOptions,
+                    value => SetBooleanOption(
+                        _removeCompletedQuests,
+                        value),
+                    parentFeatureId: Id,
+                    order: 14,
+                    enabledProvider: () => Enabled?.Value == true,
+                    allowInGameEditing: true));
 
             _uiService.RegisterFeatureOptionControl(
                 new GK2FeatureOptionControl(
@@ -242,6 +286,8 @@ namespace GK2Plus.Features.Tracking
             _uiService.RegisterTrackerHud(
                 ShouldShowHud,
                 BuildHudText);
+
+            PatchNativeTrackerHooks();
         }
 
         private void RegisterAction(
