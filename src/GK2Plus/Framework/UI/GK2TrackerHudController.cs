@@ -4,7 +4,6 @@ using System.Linq;
 using BepInEx.Logging;
 using LazyBearTechnology;
 using TMPro;
-using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,8 +31,7 @@ namespace GK2Plus.Framework.UI
             public RectTransform Rect;
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Body;
-            public readonly List<HudIngredientView> IngredientViews =
-                new List<HudIngredientView>();
+            public GK2UiPool<HudIngredientView> IngredientPool;
         }
 
         private ManualLogSource _logger;
@@ -42,14 +40,9 @@ namespace GK2Plus.Framework.UI
 
         private GameObject _hudRoot;
         private RectTransform _rootRect;
+        private GK2UiTheme _theme;
         private TextMeshProUGUI _titleTemplate;
         private TextMeshProUGUI _bodyTemplate;
-        private TextMeshProUGUI _nativeCountTemplate;
-        private Sprite _nativeItemSlotSprite;
-        private Color _nativeItemIconTint = Color.white;
-        private TextStyle _nativeCountNormalStyle;
-        private TextStyle _nativeCountRedStyle;
-        private bool _nativeIngredientStyleResolved;
         private readonly Dictionary<string, HudPanel> _panels =
             new Dictionary<string, HudPanel>(StringComparer.OrdinalIgnoreCase);
 
@@ -138,8 +131,6 @@ namespace GK2Plus.Framework.UI
                 return;
             }
 
-            ResolveNativeIngredientStyle();
-
             Dictionary<string, string> groups =
                 ParseGroups(
                     _cachedText);
@@ -170,32 +161,18 @@ namespace GK2Plus.Framework.UI
                 return false;
             }
 
+            _theme =
+                GK2UiTheme.Resolve(
+                    _logger);
+
             _titleTemplate =
-                ResolveInventoryHeaderTemplate();
+                _theme?.TitleTextTemplate;
 
             _bodyTemplate =
-                ResolveListBodyTemplate();
+                _theme?.BodyTextTemplate;
 
-            TextMeshProUGUI fallback =
-                Resources
-                    .FindObjectsOfTypeAll<TextMeshProUGUI>()
-                    .FirstOrDefault(text =>
-                        text != null &&
-                        text.font != null &&
-                        text.gameObject.activeInHierarchy) ??
-                Resources
-                    .FindObjectsOfTypeAll<TextMeshProUGUI>()
-                    .FirstOrDefault(text =>
-                        text != null &&
-                        text.font != null);
-
-            _titleTemplate ??=
-                fallback;
-
-            _bodyTemplate ??=
-                fallback;
-
-            if (_titleTemplate == null ||
+            if (_theme == null ||
+                _titleTemplate == null ||
                 _bodyTemplate == null)
             {
                 return false;
@@ -234,10 +211,10 @@ namespace GK2Plus.Framework.UI
             _rootRect.anchoredPosition =
                 new Vector2(
                     -20f,
-                    -56f);
+                    -GK2UiMetrics.Tracker.RootTopOffset);
             _rootRect.sizeDelta =
                 new Vector2(
-                    152f,
+                    GK2UiMetrics.Tracker.PanelWidth,
                     600f);
 
             _logger?.LogInfo(
@@ -292,7 +269,8 @@ namespace GK2Plus.Framework.UI
                             body.Trim()));
 
                 float panelHeight =
-                    27f + bodyHeight;
+                    GK2UiMetrics.Tracker.TitleHeight +
+                    bodyHeight;
 
                 panel.Rect.anchoredPosition =
                     new Vector2(
@@ -300,11 +278,12 @@ namespace GK2Plus.Framework.UI
                         -y);
                 panel.Rect.sizeDelta =
                     new Vector2(
-                        152f,
+                        GK2UiMetrics.Tracker.PanelWidth,
                         panelHeight);
 
                 y +=
-                    panelHeight + 8f;
+                    panelHeight +
+                    GK2UiMetrics.Tracker.SectionGap;
             }
         }
 
@@ -312,14 +291,7 @@ namespace GK2Plus.Framework.UI
             HudPanel panel,
             string body)
         {
-            foreach (HudIngredientView view in
-                     panel.IngredientViews)
-            {
-                if (view?.Root != null)
-                {
-                    view.Root.SetActive(false);
-                }
-            }
+            panel.IngredientPool?.Begin();
 
             string[] lines =
                 (body ?? string.Empty)
@@ -359,9 +331,9 @@ namespace GK2Plus.Framework.UI
                         textLines.Add(string.Empty);
 
                         HudIngredientView itemView =
-                            GetOrCreateIngredientView(
-                                panel,
-                                ingredientViewIndex++);
+                            panel.IngredientPool?.Rent();
+
+                        ingredientViewIndex++;
 
                         ConfigureIngredientView(
                             itemView,
@@ -388,9 +360,9 @@ namespace GK2Plus.Framework.UI
                     }
 
                     HudIngredientView materialView =
-                        GetOrCreateIngredientView(
-                            panel,
-                            ingredientViewIndex++);
+                        panel.IngredientPool?.Rent();
+
+                    ingredientViewIndex++;
 
                     ConfigureIngredientView(
                         materialView,
@@ -404,7 +376,8 @@ namespace GK2Plus.Framework.UI
 
                     materialColumn++;
 
-                    if (materialColumn >= 3)
+                    if (materialColumn >=
+                        GK2UiMetrics.Tracker.IngredientColumns)
                     {
                         materialColumn = 0;
                         materialVisualLine = -1;
@@ -425,10 +398,15 @@ namespace GK2Plus.Framework.UI
                     "\n",
                     textLines);
 
-            return 10f +
-                   (Math.Max(
-                       1,
-                       textLines.Count) * 13.5f);
+            panel.IngredientPool?.End();
+
+            return
+                GK2UiMetrics.Tracker.BodyTopPadding +
+                GK2UiMetrics.Tracker.BodyBottomPadding +
+                (Math.Max(
+                    1,
+                    textLines.Count) *
+                 GK2UiMetrics.Tracker.LineHeight);
         }
 
         private static bool TryParseHudItemToken(
@@ -506,24 +484,11 @@ namespace GK2Plus.Framework.UI
             return !string.IsNullOrWhiteSpace(itemId);
         }
 
-        private HudIngredientView GetOrCreateIngredientView(
-            HudPanel panel,
-            int index)
-        {
-            while (panel.IngredientViews.Count <= index)
-            {
-                panel.IngredientViews.Add(
-                    CreateIngredientView(
-                        panel));
-            }
-
-            return panel.IngredientViews[index];
-        }
-
         private HudIngredientView CreateIngredientView(
             HudPanel panel)
         {
-            const float cellSize = 35f;
+            const float cellSize =
+                GK2UiMetrics.Tracker.IngredientCellSize;
 
             GameObject row =
                 new GameObject(
@@ -591,13 +556,13 @@ namespace GK2Plus.Framework.UI
                 slotObject.GetComponent<Image>();
 
             slotImage.sprite =
-                _nativeItemSlotSprite;
+                _theme?.ItemSlotSprite;
             slotImage.type =
-                _nativeItemSlotSprite != null
+                _theme?.ItemSlotSprite != null
                     ? Image.Type.Sliced
                     : Image.Type.Simple;
             slotImage.color =
-                _nativeItemSlotSprite != null
+                _theme?.ItemSlotSprite != null
                     ? Color.white
                     : new Color(
                         0.08f,
@@ -639,8 +604,8 @@ namespace GK2Plus.Framework.UI
                     1f);
             iconRect.sizeDelta =
                 new Vector2(
-                    29f,
-                    29f);
+                    GK2UiMetrics.Tracker.IngredientIconSize,
+                    GK2UiMetrics.Tracker.IngredientIconSize);
 
             Image iconImage =
                 iconObject.GetComponent<Image>();
@@ -652,11 +617,11 @@ namespace GK2Plus.Framework.UI
 
             TextMeshProUGUI countText =
                 CreateText(
-                    _nativeCountTemplate ??
+                    _theme?.CountTextTemplate ??
                     _bodyTemplate,
                     slotObject.transform,
                     "Count",
-                    11f,
+                    GK2UiMetrics.Tracker.IngredientCountFontSize,
                     TextAlignmentOptions.BottomRight);
 
             RectTransform countRect =
@@ -757,15 +722,20 @@ namespace GK2Plus.Framework.UI
                 return;
             }
 
-            const float cellSize = 35f;
-            const float cellGap = 3f;
+            const float cellSize =
+                GK2UiMetrics.Tracker.IngredientCellSize;
+            const float cellGap =
+                GK2UiMetrics.Tracker.IngredientGap;
 
             view.Root.SetActive(true);
 
             view.Rect.anchoredPosition =
                 new Vector2(
                     8f + (columnIndex * (cellSize + cellGap)),
-                    -31f - (lineIndex * 13.5f));
+                    -(GK2UiMetrics.Tracker.TitleHeight +
+                      GK2UiMetrics.Tracker.BodyTopPadding) -
+                    (lineIndex *
+                     GK2UiMetrics.Tracker.LineHeight));
 
             view.Rect.sizeDelta =
                 new Vector2(
@@ -789,7 +759,8 @@ namespace GK2Plus.Framework.UI
                 // native UI applies this tint before drawing; doing the same
                 // removes the raw blue halo seen in the tracker prototype.
                 view.Icon.BlueColorReplace(
-                    _nativeItemIconTint);
+                    _theme?.ItemIconTint ??
+                    Color.white);
             }
 
             int safeTarget =
@@ -819,8 +790,8 @@ namespace GK2Plus.Framework.UI
 
                 TextStyle nativeStyle =
                     enough
-                        ? _nativeCountNormalStyle
-                        : _nativeCountRedStyle;
+                        ? _theme?.CountNormalStyle
+                        : _theme?.CountRedStyle;
 
                 if (nativeStyle != null)
                 {
@@ -845,7 +816,7 @@ namespace GK2Plus.Framework.UI
             }
 
             view.Count.fontSize =
-                11f;
+                GK2UiMetrics.Tracker.IngredientCountFontSize;
             view.Count.alignment =
                 TextAlignmentOptions.BottomRight;
 
@@ -858,59 +829,6 @@ namespace GK2Plus.Framework.UI
                 view.Label.text =
                     label;
             }
-        }
-
-        private void ResolveNativeIngredientStyle()
-        {
-            if (_nativeIngredientStyleResolved)
-            {
-                return;
-            }
-
-            global::UIItemCell nativeTemplate =
-                Resources
-                    .FindObjectsOfTypeAll<global::UIItemCell>()
-                    .FirstOrDefault(cell =>
-                        cell != null &&
-                        cell.Background != null &&
-                        cell.Icon != null);
-
-            if (nativeTemplate == null)
-            {
-                return;
-            }
-
-            _nativeItemSlotSprite =
-                nativeTemplate.Background.sprite;
-
-            _nativeCountTemplate =
-                Traverse.Create(nativeTemplate)
-                    .Field("countLabel")
-                    .GetValue<TextMeshProUGUI>();
-
-            ImageColors colors =
-                Traverse.Create(nativeTemplate)
-                    .Field("colors")
-                    .GetValue<ImageColors>();
-
-            if (colors != null)
-            {
-                _nativeItemIconTint =
-                    colors.NormalColor;
-            }
-
-            _nativeCountNormalStyle =
-                Traverse.Create(nativeTemplate)
-                    .Field("countLabelNormal")
-                    .GetValue<TextStyle>();
-
-            _nativeCountRedStyle =
-                Traverse.Create(nativeTemplate)
-                    .Field("countLabelRed")
-                    .GetValue<TextStyle>();
-
-            _nativeIngredientStyleResolved =
-                true;
         }
 
         private HudPanel GetOrCreatePanel(
@@ -954,6 +872,7 @@ namespace GK2Plus.Framework.UI
                 root.GetComponent<Image>();
 
             background.color =
+                _theme?.HudBackground ??
                 new Color(
                     0f,
                     0f,
@@ -991,7 +910,7 @@ namespace GK2Plus.Framework.UI
             titleBarRect.offsetMin =
                 new Vector2(
                     0f,
-                    -25f);
+                    -GK2UiMetrics.Tracker.TitleHeight);
             titleBarRect.offsetMax =
                 Vector2.zero;
 
@@ -999,6 +918,7 @@ namespace GK2Plus.Framework.UI
                 titleBar.GetComponent<Image>();
 
             titleBg.color =
+                _theme?.HudTitleBackground ??
                 new Color(
                     0.10f,
                     0.08f,
@@ -1012,10 +932,11 @@ namespace GK2Plus.Framework.UI
                     _titleTemplate,
                     titleBar.transform,
                     "Title",
-                    12.5f,
+                    GK2UiMetrics.Tracker.TitleFontSize,
                     TextAlignmentOptions.Center);
 
             title.color =
+                _theme?.AccentText ??
                 new Color(
                     1f,
                     0.82f,
@@ -1027,7 +948,7 @@ namespace GK2Plus.Framework.UI
                     _bodyTemplate,
                     root.transform,
                     "Body",
-                    10f,
+                    GK2UiMetrics.Tracker.BodyFontSize,
                     TextAlignmentOptions.TopLeft);
 
             RectTransform bodyRect =
@@ -1035,15 +956,16 @@ namespace GK2Plus.Framework.UI
 
             bodyRect.offsetMin =
                 new Vector2(
-                    9f,
-                    6f);
+                    GK2UiMetrics.Tracker.BodyHorizontalPadding,
+                    GK2UiMetrics.Tracker.BodyBottomPadding);
             bodyRect.offsetMax =
                 new Vector2(
-                    -9f,
-                    -29f);
+                    -GK2UiMetrics.Tracker.BodyHorizontalPadding,
+                    -(GK2UiMetrics.Tracker.TitleHeight +
+                      GK2UiMetrics.Tracker.BodyTopPadding));
 
-            body.enableWordWrapping =
-                true;
+            body.textWrappingMode =
+                TextWrappingModes.Normal;
             body.richText =
                 true;
             body.overflowMode =
@@ -1057,6 +979,17 @@ namespace GK2Plus.Framework.UI
                     Title = title,
                     Body = body
                 };
+
+            panel.IngredientPool =
+                new GK2UiPool<HudIngredientView>(
+                    () => CreateIngredientView(panel),
+                    (view, active) =>
+                    {
+                        if (view?.Root != null)
+                        {
+                            view.Root.SetActive(active);
+                        }
+                    });
 
             _panels[groupName] =
                 panel;
@@ -1125,56 +1058,6 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero;
 
             return text;
-        }
-
-        private static TextMeshProUGUI ResolveInventoryHeaderTemplate()
-        {
-            foreach (InventoryHeaderWidget widget in
-                     Resources.FindObjectsOfTypeAll<InventoryHeaderWidget>())
-            {
-                if (widget == null)
-                {
-                    continue;
-                }
-
-                TextMeshProUGUI header =
-                    Traverse.Create(widget)
-                        .Field("header")
-                        .GetValue<TextMeshProUGUI>();
-
-                if (header != null &&
-                    header.font != null)
-                {
-                    return header;
-                }
-            }
-
-            return null;
-        }
-
-        private static TextMeshProUGUI ResolveListBodyTemplate()
-        {
-            foreach (UIBuildingWidget widget in
-                     Resources.FindObjectsOfTypeAll<UIBuildingWidget>())
-            {
-                if (widget == null)
-                {
-                    continue;
-                }
-
-                TextMeshProUGUI label =
-                    Traverse.Create(widget)
-                        .Field("nameLabel")
-                        .GetValue<TextMeshProUGUI>();
-
-                if (label != null &&
-                    label.font != null)
-                {
-                    return label;
-                }
-            }
-
-            return null;
         }
 
         private static Dictionary<string, string>
@@ -1276,9 +1159,10 @@ namespace GK2Plus.Framework.UI
             {
                 panel.Root?.SetActive(false);
             }
-                    _renderedText =
+
+            _renderedText =
                 string.Empty;
-}
+        }
 
         public void ShutdownController()
         {
@@ -1295,6 +1179,7 @@ namespace GK2Plus.Framework.UI
             }
 
             _panels.Clear();
+            _theme = null;
 
             if (gameObject != null)
             {
