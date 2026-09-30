@@ -25,6 +25,7 @@ Resolves native GK2 UI assets once and caches them:
 - window frame/background/divider/button sprites
 - native item-cell slot sprite and icon material
 - native item-count normal/red text styles
+- reusable native item-requirement cells
 
 The theme cache can be enriched later when additional native widgets have
 loaded. It is reset when the UI service shuts down.
@@ -84,6 +85,12 @@ Feature toggles and options in the F2 menu use this builder.
 Creates compact titled panels for HUD widgets and other small in-game surfaces.
 The Tracker's Quests / Crafts / Items sections use this builder.
 
+### `GK2UiItemRequirementBuilder`
+
+Creates a reusable native-style item requirement cell with the game's item
+sprite material/tint and enough/not-enough count styling. Quest Journal and
+future recipe/build views can share this control.
+
 ### `GK2UiPool<T>`
 
 Small reusable view pool. Runtime HUDs and future dynamic lists should use it
@@ -118,6 +125,13 @@ The shell now uses:
 
 This gives the menu a darker GK2-style slate body, parchment/brown header,
 native header/list typography, and adjustable dimensions from one metrics file.
+
+### RPG Quest Journal
+
+The native Quests tab can now host a two-pane RPG journal built with the same
+theme, metrics, pooling, scrolling, and item-requirement primitives. The
+journal controller is presentation-only and falls back to the vanilla
+`QuestTreePageWidget` if replacement initialization fails.
 
 ### Unified Tracker HUD
 
