@@ -214,6 +214,8 @@ namespace GK2Plus.Framework.UI
                 _trackerHudController = null;
             }
 
+            GK2UiTheme.Reset();
+
             base.Shutdown();
         }
     }
