@@ -847,143 +847,27 @@ namespace GK2Plus.Framework.UI
                 return existing;
             }
 
-            GameObject root =
-                new GameObject(
+            GK2UiSectionPanelView section =
+                GK2UiSectionPanelBuilder.Create(
+                    _hudRoot.transform,
+                    _theme,
                     groupName + "Panel",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(Image));
-
-            root.transform.SetParent(
-                _hudRoot.transform,
-                false);
-
-            RectTransform rect =
-                root.GetComponent<RectTransform>();
-
-            rect.anchorMin =
-                new Vector2(
-                    1f,
-                    1f);
-            rect.anchorMax =
-                new Vector2(
-                    1f,
-                    1f);
-            rect.pivot =
-                new Vector2(
-                    1f,
-                    1f);
-
-            Image background =
-                root.GetComponent<Image>();
-
-            background.color =
-                _theme?.HudBackground ??
-                new Color(
-                    0f,
-                    0f,
-                    0f,
-                    0.68f);
-            background.raycastTarget =
-                false;
-
-            GameObject titleBar =
-                new GameObject(
-                    "TitleBar",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(Image));
-
-            titleBar.transform.SetParent(
-                root.transform,
-                false);
-
-            RectTransform titleBarRect =
-                titleBar.GetComponent<RectTransform>();
-
-            titleBarRect.anchorMin =
-                new Vector2(
-                    0f,
-                    1f);
-            titleBarRect.anchorMax =
-                new Vector2(
-                    1f,
-                    1f);
-            titleBarRect.pivot =
-                new Vector2(
-                    0.5f,
-                    1f);
-            titleBarRect.offsetMin =
-                new Vector2(
-                    0f,
-                    -GK2UiMetrics.Tracker.TitleHeight);
-            titleBarRect.offsetMax =
-                Vector2.zero;
-
-            Image titleBg =
-                titleBar.GetComponent<Image>();
-
-            titleBg.color =
-                _theme?.HudTitleBackground ??
-                new Color(
-                    0.10f,
-                    0.08f,
-                    0.06f,
-                    0.94f);
-            titleBg.raycastTarget =
-                false;
-
-            TextMeshProUGUI title =
-                CreateText(
-                    _titleTemplate,
-                    titleBar.transform,
-                    "Title",
+                    FormatTitle(groupName),
+                    GK2UiMetrics.Tracker.PanelWidth,
+                    GK2UiMetrics.Tracker.TitleHeight,
                     GK2UiMetrics.Tracker.TitleFontSize,
-                    TextAlignmentOptions.Center);
-
-            title.color =
-                _theme?.AccentText ??
-                new Color(
-                    1f,
-                    0.82f,
-                    0.45f,
-                    1f);
-
-            TextMeshProUGUI body =
-                CreateText(
-                    _bodyTemplate,
-                    root.transform,
-                    "Body",
                     GK2UiMetrics.Tracker.BodyFontSize,
-                    TextAlignmentOptions.TopLeft);
-
-            RectTransform bodyRect =
-                body.rectTransform;
-
-            bodyRect.offsetMin =
-                new Vector2(
                     GK2UiMetrics.Tracker.BodyHorizontalPadding,
+                    GK2UiMetrics.Tracker.BodyTopPadding,
                     GK2UiMetrics.Tracker.BodyBottomPadding);
-            bodyRect.offsetMax =
-                new Vector2(
-                    -GK2UiMetrics.Tracker.BodyHorizontalPadding,
-                    -(GK2UiMetrics.Tracker.TitleHeight +
-                      GK2UiMetrics.Tracker.BodyTopPadding));
-
-            body.textWrappingMode =
-                TextWrappingModes.Normal;
-            body.richText =
-                true;
-            body.overflowMode =
-                TextOverflowModes.Truncate;
 
             HudPanel panel =
                 new HudPanel
                 {
-                    Root = root,
-                    Rect = rect,
-                    Title = title,
-                    Body = body
+                    Root = section.Root,
+                    Rect = section.Rect,
+                    Title = section.Title,
+                    Body = section.Body
                 };
 
             panel.IngredientPool =
