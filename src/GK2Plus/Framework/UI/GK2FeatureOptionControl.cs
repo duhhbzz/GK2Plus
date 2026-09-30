@@ -37,7 +37,8 @@ namespace GK2Plus.Framework.UI
             string parentFeatureId = null,
             int order = 0,
             Func<bool> enabledProvider = null,
-            bool allowInGameEditing = false)
+            bool allowInGameEditing = false,
+            bool searchable = false)
         {
             Id = string.IsNullOrWhiteSpace(id)
                 ? throw new ArgumentException(
@@ -66,6 +67,7 @@ namespace GK2Plus.Framework.UI
             Order = order;
             EnabledProvider = enabledProvider ?? (() => true);
             AllowInGameEditing = allowInGameEditing;
+            Searchable = searchable;
         }
 
         public string Id { get; }
@@ -87,5 +89,7 @@ namespace GK2Plus.Framework.UI
         public Func<bool> EnabledProvider { get; }
 
         public bool AllowInGameEditing { get; }
+
+        public bool Searchable { get; }
     }
 }
