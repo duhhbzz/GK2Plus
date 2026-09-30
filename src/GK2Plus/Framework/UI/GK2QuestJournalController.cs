@@ -29,6 +29,9 @@ namespace GK2Plus.Framework.UI
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Description;
             public TextMeshProUGUI Status;
+            public GameObject ProgressRoot;
+            public Image ProgressFill;
+            public TextMeshProUGUI ProgressLabel;
             public Button SelectButton;
             public Button PinButton;
             public Image PinIcon;
@@ -532,31 +535,54 @@ namespace GK2Plus.Framework.UI
             float pad =
                 GK2UiMetrics.QuestJournal.QuestCardPadding;
 
-            GameObject frameObject =
-                GK2UiFactory.CreateImage(
+            const float portraitBoxSize = 68f;
+
+            GameObject portraitRoot =
+                GK2UiFactory.CreateRect(
                     root.transform,
-                    "QuestIconFrame",
-                    _theme.InspirationIconFrameSprite,
-                    _theme.InspirationIconFrameSprite != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
+                    "QuestPortrait",
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     new Vector2(
                         pad,
-                        -31f),
+                        -30f),
                     new Vector2(
-                        GK2UiMetrics.QuestJournal.QuestIconSize + 8f,
-                        GK2UiMetrics.QuestJournal.QuestIconSize + 8f),
-                    Color.white);
+                        portraitBoxSize,
+                        portraitBoxSize));
 
-            Image iconFrame =
-                frameObject.GetComponent<Image>();
+            GameObject portraitBacking =
+                GK2UiFactory.CreateImage(
+                    portraitRoot.transform,
+                    "PortraitBacking",
+                    _theme.ItemSlotSprite,
+                    _theme.ItemSlotSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    _theme.ItemSlotSprite != null
+                        ? Color.white
+                        : new Color(
+                            0.10f,
+                            0.10f,
+                            0.11f,
+                            0.98f));
+
+            RectTransform backingRect =
+                portraitBacking.GetComponent<RectTransform>();
+
+            backingRect.offsetMin =
+                Vector2.zero;
+            backingRect.offsetMax =
+                Vector2.zero;
 
             GameObject iconObject =
                 GK2UiFactory.CreateImage(
-                    frameObject.transform,
+                    portraitRoot.transform,
                     "QuestIcon",
                     null,
                     Image.Type.Simple,
@@ -574,6 +600,32 @@ namespace GK2Plus.Framework.UI
 
             icon.preserveAspect =
                 true;
+
+            GameObject frameObject =
+                GK2UiFactory.CreateImage(
+                    portraitRoot.transform,
+                    "QuestIconFrame",
+                    _theme.InspirationIconFrameSprite,
+                    _theme.InspirationIconFrameSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    Color.white);
+
+            RectTransform frameRect =
+                frameObject.GetComponent<RectTransform>();
+
+            frameRect.offsetMin =
+                Vector2.zero;
+            frameRect.offsetMax =
+                Vector2.zero;
+
+            Image iconFrame =
+                frameObject.GetComponent<Image>();
 
             TextMeshProUGUI title =
                 GK2UiFactory.CreateText(
@@ -609,9 +661,9 @@ namespace GK2Plus.Framework.UI
                     string.Empty,
                     9.25f,
                     TextAlignmentOptions.TopLeft,
-                    new Vector2(0f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero);
 
@@ -621,9 +673,9 @@ namespace GK2Plus.Framework.UI
             descriptionRect.offsetMin =
                 new Vector2(
                     pad +
-                    GK2UiMetrics.QuestJournal.QuestIconSize +
-                    18f,
-                    -96f);
+                    portraitBoxSize +
+                    12f,
+                    31f);
             descriptionRect.offsetMax =
                 new Vector2(
                     -(pad + 7f),
@@ -634,7 +686,82 @@ namespace GK2Plus.Framework.UI
             description.overflowMode =
                 TextOverflowModes.Truncate;
             description.maxVisibleLines =
-                4;
+                3;
+
+            float progressLeft =
+                pad +
+                portraitBoxSize +
+                12f;
+
+            GameObject progressRoot =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "Progress",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0.5f, 0f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(
+                        0.10f,
+                        0.11f,
+                        0.08f,
+                        0.97f));
+
+            RectTransform progressRect =
+                progressRoot.GetComponent<RectTransform>();
+
+            progressRect.offsetMin =
+                new Vector2(
+                    progressLeft,
+                    7f);
+            progressRect.offsetMax =
+                new Vector2(
+                    -(pad + 7f),
+                    7f +
+                    GK2UiMetrics.QuestJournal.QuestProgressHeight);
+
+            GameObject fillObject =
+                GK2UiFactory.CreateImage(
+                    progressRoot.transform,
+                    "Fill",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(
+                        0.30f,
+                        0.54f,
+                        0.04f,
+                        1f));
+
+            Image progressFill =
+                fillObject.GetComponent<Image>();
+
+            TextMeshProUGUI progressLabel =
+                GK2UiFactory.CreateText(
+                    progressRoot.transform,
+                    "ProgressLabel",
+                    _theme.CountTextTemplate ??
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    10f,
+                    TextAlignmentOptions.Center,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            progressLabel.rectTransform.offsetMin =
+                Vector2.zero;
+            progressLabel.rectTransform.offsetMax =
+                Vector2.zero;
 
             TextMeshProUGUI status =
                 GK2UiFactory.CreateText(
@@ -668,7 +795,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(
                         -8f,
-                        -38f),
+                        -34f),
                     new Vector2(30f, 30f),
                     Color.white,
                     true);
@@ -697,6 +824,9 @@ namespace GK2Plus.Framework.UI
                 Title = title,
                 Description = description,
                 Status = status,
+                ProgressRoot = progressRoot,
+                ProgressFill = progressFill,
+                ProgressLabel = progressLabel,
                 SelectButton = select,
                 PinButton = pinButton,
                 PinIcon = pinIcon
@@ -1224,6 +1354,42 @@ namespace GK2Plus.Framework.UI
             row.Status.text =
                 GetQuestStatusText(
                     quest);
+
+            List<QuestPhraseRequirement> requirements =
+                GetItemRequirements(
+                    quest);
+
+            GetQuestProgress(
+                requirements,
+                out int current,
+                out int target,
+                out float progress01);
+
+            bool showProgress =
+                target > 0;
+
+            row.ProgressRoot.SetActive(
+                showProgress);
+
+            if (showProgress)
+            {
+                RectTransform fillRect =
+                    row.ProgressFill.rectTransform;
+
+                fillRect.anchorMin =
+                    Vector2.zero;
+                fillRect.anchorMax =
+                    new Vector2(
+                        Mathf.Clamp01(progress01),
+                        1f);
+                fillRect.offsetMin =
+                    Vector2.zero;
+                fillRect.offsetMax =
+                    Vector2.zero;
+
+                row.ProgressLabel.text =
+                    $"{current}/{target}";
+            }
 
             try
             {
