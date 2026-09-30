@@ -6,6 +6,7 @@ using GK2Plus.Features.Cheats;
 using GK2Plus.Features.Crafting;
 using GK2Plus.Features.General;
 using GK2Plus.Features.Inventory;
+using GK2Plus.Features.Tracking;
 using GK2Plus.Framework;
 using GK2Plus.Framework.Diagnostics;
 using GK2Plus.Framework.UI;
@@ -106,6 +107,13 @@ namespace GK2Plus
                 new BackwardsCompatibleExtensionsFeature(
                     Config,
                     _services.UI)
+            );
+
+            registry.Register(
+                new UnifiedTrackerFeature(
+                    Config,
+                    _services.UI,
+                    _services.Saves)
             );
 
             registry.Register(
