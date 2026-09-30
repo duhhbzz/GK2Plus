@@ -1947,6 +1947,8 @@ Button close = closeButton.GetComponent<Button>();
             _activeFeatureOptionPickerControl =
                 control;
             _featureOptionPickerPage = 0;
+            _lastFeatureOptionPickerSearch = string.Empty;
+            _featureOptionPickerSearchInput = null;
 
             _featureOptionPickerRoot = new GameObject(
                 "GK2PlusFeatureOptionPicker",
@@ -1996,7 +1998,11 @@ Button close = closeButton.GetComponent<Button>();
             panelRect.anchoredPosition =
                 Vector2.zero;
             panelRect.sizeDelta =
-                new Vector2(300f, 220f);
+                new Vector2(
+                    300f,
+                    control.Searchable
+                        ? 244f
+                        : 220f);
 
             Image panelImage =
                 panel.GetComponent<Image>();
@@ -2012,6 +2018,20 @@ Button close = closeButton.GetComponent<Button>();
                 new Vector2(0f, -16f),
                 new Vector2(220f, 20f),
                 0.60f);
+
+            if (control.Searchable)
+            {
+                _featureOptionPickerSearchInput =
+                    CreateTmpInputField(
+                        _menuButtonLabelTemplate,
+                        panel.transform,
+                        "FeatureOptionSearch",
+                        string.Empty,
+                        new Vector2(0f, -45f),
+                        new Vector2(230f, 20f),
+                        numericOnly: false,
+                        placeholder: "Search...");
+            }
 
             _featureOptionPickerPageText = CreateBodyText(
                 _bodyTextTemplate,
@@ -2031,7 +2051,11 @@ Button close = closeButton.GetComponent<Button>();
                 panel.transform,
                 _menuButtonSprite,
                 "Prev",
-                new Vector2(-92f, -190f),
+                new Vector2(
+                    -92f,
+                    control.Searchable
+                        ? -214f
+                        : -190f),
                 new Vector2(58f, 18f));
 
             prev.GetComponent<Button>().onClick.AddListener(() =>
@@ -2049,7 +2073,11 @@ Button close = closeButton.GetComponent<Button>();
                 panel.transform,
                 _menuButtonSprite,
                 "Next",
-                new Vector2(92f, -190f),
+                new Vector2(
+                    92f,
+                    control.Searchable
+                        ? -214f
+                        : -190f),
                 new Vector2(58f, 18f));
 
             next.GetComponent<Button>().onClick.AddListener(() =>
@@ -2063,7 +2091,11 @@ Button close = closeButton.GetComponent<Button>();
                 panel.transform,
                 _menuButtonSprite,
                 "Cancel",
-                new Vector2(0f, -190f),
+                new Vector2(
+                    0f,
+                    control.Searchable
+                        ? -214f
+                        : -190f),
                 new Vector2(68f, 18f));
 
             cancel.GetComponent<Button>().onClick.AddListener(
