@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using TMPro;
+using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,7 +27,8 @@ namespace GK2Plus.Framework.UI
 
         private GameObject _hudRoot;
         private RectTransform _rootRect;
-        private TextMeshProUGUI _textTemplate;
+        private TextMeshProUGUI _titleTemplate;
+        private TextMeshProUGUI _bodyTemplate;
         private readonly Dictionary<string, HudPanel> _panels =
             new Dictionary<string, HudPanel>(StringComparer.OrdinalIgnoreCase);
 
@@ -118,7 +120,8 @@ namespace GK2Plus.Framework.UI
         {
             if (_hudRoot != null &&
                 _rootRect != null &&
-                _textTemplate != null)
+                _titleTemplate != null &&
+                _bodyTemplate != null)
             {
                 return true;
             }
@@ -132,7 +135,13 @@ namespace GK2Plus.Framework.UI
                 return false;
             }
 
-            _textTemplate =
+            _titleTemplate =
+                ResolveInventoryHeaderTemplate();
+
+            _bodyTemplate =
+                ResolveListBodyTemplate();
+
+            TextMeshProUGUI fallback =
                 Resources
                     .FindObjectsOfTypeAll<TextMeshProUGUI>()
                     .FirstOrDefault(text =>
@@ -145,7 +154,14 @@ namespace GK2Plus.Framework.UI
                         text != null &&
                         text.font != null);
 
-            if (_textTemplate == null)
+            _titleTemplate ??=
+                fallback;
+
+            _bodyTemplate ??=
+                fallback;
+
+            if (_titleTemplate == null ||
+                _bodyTemplate == null)
             {
                 return false;
             }
@@ -359,9 +375,10 @@ namespace GK2Plus.Framework.UI
 
             TextMeshProUGUI title =
                 CreateText(
+                    _titleTemplate,
                     titleBar.transform,
                     "Title",
-                    12f,
+                    12.5f,
                     TextAlignmentOptions.Center);
 
             title.color =
@@ -373,6 +390,7 @@ namespace GK2Plus.Framework.UI
 
             TextMeshProUGUI body =
                 CreateText(
+                    _bodyTemplate,
                     root.transform,
                     "Body",
                     10f,
@@ -413,6 +431,7 @@ namespace GK2Plus.Framework.UI
         }
 
         private TextMeshProUGUI CreateText(
+            TextMeshProUGUI template,
             Transform parent,
             string name,
             float fontSize,
@@ -433,11 +452,11 @@ namespace GK2Plus.Framework.UI
                 obj.GetComponent<TextMeshProUGUI>();
 
             text.font =
-                _textTemplate.font;
+                template.font;
             text.fontSharedMaterial =
-                _textTemplate.fontSharedMaterial;
+                template.fontSharedMaterial;
             text.spriteAsset =
-                _textTemplate.spriteAsset;
+                template.spriteAsset;
             text.fontSize =
                 fontSize;
             text.fontSizeMin =
@@ -449,7 +468,7 @@ namespace GK2Plus.Framework.UI
             text.alignment =
                 alignment;
             text.color =
-                _textTemplate.color;
+                template.color;
             text.raycastTarget =
                 false;
             text.margin =
@@ -472,6 +491,56 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero;
 
             return text;
+        }
+
+        private static TextMeshProUGUI ResolveInventoryHeaderTemplate()
+        {
+            foreach (InventoryHeaderWidget widget in
+                     Resources.FindObjectsOfTypeAll<InventoryHeaderWidget>())
+            {
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                TextMeshProUGUI header =
+                    Traverse.Create(widget)
+                        .Field("header")
+                        .GetValue<TextMeshProUGUI>();
+
+                if (header != null &&
+                    header.font != null)
+                {
+                    return header;
+                }
+            }
+
+            return null;
+        }
+
+        private static TextMeshProUGUI ResolveListBodyTemplate()
+        {
+            foreach (UIBuildingWidget widget in
+                     Resources.FindObjectsOfTypeAll<UIBuildingWidget>())
+            {
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                TextMeshProUGUI label =
+                    Traverse.Create(widget)
+                        .Field("nameLabel")
+                        .GetValue<TextMeshProUGUI>();
+
+                if (label != null &&
+                    label.font != null)
+                {
+                    return label;
+                }
+            }
+
+            return null;
         }
 
         private static Dictionary<string, string>
