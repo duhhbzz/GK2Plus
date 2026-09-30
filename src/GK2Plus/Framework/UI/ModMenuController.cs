@@ -1435,7 +1435,11 @@ Button close = closeButton.GetComponent<Button>();
 
                 _featureSettingsNote.SetActive(
                     hasFeatureControls &&
-                    !mainMenu);
+                    !mainMenu &&
+                    !string.Equals(
+                        _activeTab,
+                        "Tracker",
+                        StringComparison.OrdinalIgnoreCase));
 
                 UpdateFeatureSettingsNotePosition();
             }
