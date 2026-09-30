@@ -250,6 +250,97 @@ namespace GK2Plus.Framework.UI
             return button;
         }
 
+        public static Button CreateFlatButton(
+            Transform parent,
+            string name,
+            GK2UiTheme theme,
+            string text,
+            Vector2 anchoredPosition,
+            Vector2 size,
+            UnityAction onClick = null,
+            bool selected = false)
+        {
+            GameObject obj =
+                CreateImage(
+                    parent,
+                    name,
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    anchoredPosition,
+                    size,
+                    selected
+                        ? (theme?.TabSelected ?? new Color(0.38f, 0.30f, 0.20f, 0.98f))
+                        : (theme?.TabNeutral ?? new Color(0.15f, 0.17f, 0.21f, 0.96f)),
+                    true);
+
+            Image image =
+                obj.GetComponent<Image>();
+
+            Button button =
+                obj.AddComponent<Button>();
+
+            button.targetGraphic =
+                image;
+            button.transition =
+                Selectable.Transition.ColorTint;
+
+            ColorBlock colors =
+                button.colors;
+
+            colors.normalColor =
+                Color.white;
+            colors.highlightedColor =
+                new Color(1.12f, 1.08f, 1f, 1f);
+            colors.pressedColor =
+                new Color(0.82f, 0.82f, 0.82f, 1f);
+            colors.selectedColor =
+                Color.white;
+            colors.disabledColor =
+                new Color(0.55f, 0.55f, 0.55f, 0.65f);
+            colors.fadeDuration =
+                0.05f;
+
+            button.colors =
+                colors;
+
+            TextMeshProUGUI label =
+                CreateText(
+                    obj.transform,
+                    "Label",
+                    theme?.BodyTextTemplate ??
+                    theme?.ButtonTextTemplate,
+                    text,
+                    9.5f,
+                    TextAlignmentOptions.Center,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            label.color =
+                theme?.AccentText ??
+                new Color(1f, 0.82f, 0.45f, 1f);
+
+            RectTransform labelRect =
+                label.rectTransform;
+            labelRect.offsetMin =
+                new Vector2(3f, 0f);
+            labelRect.offsetMax =
+                new Vector2(-3f, 0f);
+
+            if (onClick != null)
+            {
+                button.onClick.AddListener(
+                    onClick);
+            }
+
+            return button;
+        }
+
         public static void SetButtonTone(
             Button button,
             GK2UiTheme theme,
