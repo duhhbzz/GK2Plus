@@ -29,6 +29,7 @@ namespace GK2Plus.Framework.UI
         public Sprite DividerSprite { get; private set; }
         public Sprite ButtonSprite { get; private set; }
         public Sprite ItemSlotSprite { get; private set; }
+        public Material ItemIconMaterial { get; private set; }
 
         public Color ItemIconTint { get; private set; } = Color.white;
         public TextStyle CountNormalStyle { get; private set; }
@@ -191,6 +192,9 @@ namespace GK2Plus.Framework.UI
 
             ItemSlotSprite =
                 itemCell.Background.sprite;
+
+            ItemIconMaterial =
+                itemCell.Icon.material;
 
             CountTextTemplate =
                 Traverse.Create(itemCell)
