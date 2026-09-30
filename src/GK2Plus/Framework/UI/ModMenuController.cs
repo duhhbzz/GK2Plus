@@ -1728,11 +1728,19 @@ Button close = closeButton.GetComponent<Button>();
             GK2FeatureOptionControl control)
         {
             if (control == null ||
-                !control.EnabledProvider() ||
-                !string.Equals(
+                !control.EnabledProvider())
+            {
+                return;
+            }
+
+            bool mainMenuContext =
+                string.Equals(
                     DetectContext(),
                     "MainMenu",
-                    StringComparison.Ordinal))
+                    StringComparison.Ordinal);
+
+            if (!mainMenuContext &&
+                !control.AllowInGameEditing)
             {
                 return;
             }
@@ -1914,11 +1922,19 @@ Button close = closeButton.GetComponent<Button>();
                 !control.EnabledProvider() ||
                 _menuRoot == null ||
                 _menuButtonLabelTemplate == null ||
-                _menuButtonSprite == null ||
-                !string.Equals(
+                _menuButtonSprite == null)
+            {
+                return;
+            }
+
+            bool mainMenuContext =
+                string.Equals(
                     DetectContext(),
                     "MainMenu",
-                    StringComparison.Ordinal))
+                    StringComparison.Ordinal);
+
+            if (!mainMenuContext &&
+                !control.AllowInGameEditing)
             {
                 return;
             }
