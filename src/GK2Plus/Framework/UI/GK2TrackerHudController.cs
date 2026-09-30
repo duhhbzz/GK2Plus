@@ -319,10 +319,9 @@ namespace GK2Plus.Framework.UI
                     int visualLineIndex =
                         textLines.Count;
 
-                    // Reserve roughly one native ingredient-cell height so
-                    // the 48px item icon does not collide with following text.
+                    // Reserve roughly 41px for the compact native
+                    // ingredient cell used by the tracker HUD.
                     textLines.Add(" ");
-                    textLines.Add(string.Empty);
                     textLines.Add(string.Empty);
                     textLines.Add(string.Empty);
 
@@ -443,28 +442,40 @@ namespace GK2Plus.Framework.UI
             string label,
             bool customItem)
         {
+            if (global::GameBalance.Me == null ||
+                string.IsNullOrWhiteSpace(itemId))
+            {
+                return null;
+            }
+
             global::ItemDef def =
-                global::GameBalance.Me?
+                global::GameBalance.Me
                     .GetDataOrNull<global::ItemDef>(
                         itemId);
 
-            if (def == null ||
-                string.IsNullOrWhiteSpace(def.iconId))
+            if (def == null)
             {
                 return null;
             }
 
-            Sprite sprite =
-                LazySingletonSO<EasySpritesCollection>
-                    .Instance?
-                    .GetSprite(
-                        def.iconId,
-                        null);
+            global::UIItemCell nativeTemplate =
+                Resources
+                    .FindObjectsOfTypeAll<global::UICraftItemCell>()
+                    .Select(cell =>
+                        cell?.ItemCell)
+                    .FirstOrDefault(cell =>
+                        cell != null &&
+                        cell.gameObject != null);
 
-            if (sprite == null)
+            if (nativeTemplate == null)
             {
+                _logger?.LogWarning(
+                    "GK2+ tracker could not locate a native craft item-cell template.");
+
                 return null;
             }
+
+            const float desiredCellSize = 41f;
 
             GameObject row =
                 new GameObject(
@@ -497,104 +508,126 @@ namespace GK2Plus.Framework.UI
             rowRect.sizeDelta =
                 new Vector2(
                     134f,
-                    48f);
+                    desiredCellSize);
 
-            GameObject iconObject =
-                new GameObject(
-                    "Icon",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(Image));
+            GameObject nativeCellObject =
+                Instantiate(
+                    nativeTemplate.gameObject,
+                    row.transform);
 
-            iconObject.transform.SetParent(
-                row.transform,
-                false);
+            nativeCellObject.name =
+                "NativeIngredientCell";
 
-            RectTransform iconRect =
-                iconObject.GetComponent<RectTransform>();
+            global::UIItemCell nativeCell =
+                nativeCellObject
+                    .GetComponent<global::UIItemCell>();
 
-            iconRect.anchorMin =
-                new Vector2(
-                    0f,
-                    0.5f);
-            iconRect.anchorMax =
-                new Vector2(
-                    0f,
-                    0.5f);
-            iconRect.pivot =
-                new Vector2(
-                    0f,
-                    0.5f);
-            iconRect.anchoredPosition =
-                Vector2.zero;
-            iconRect.sizeDelta =
-                new Vector2(
-                    48f,
-                    48f);
+            if (nativeCell == null)
+            {
+                Destroy(
+                    nativeCellObject);
 
-            Image image =
-                iconObject.GetComponent<Image>();
+                return null;
+            }
 
-            image.sprite =
-                sprite;
-            image.preserveAspect =
-                true;
-            image.raycastTarget =
+            RectTransform nativeRect =
+                nativeCellObject.transform as RectTransform;
+
+            if (nativeRect != null)
+            {
+                nativeRect.anchorMin =
+                    new Vector2(
+                        0f,
+                        0.5f);
+                nativeRect.anchorMax =
+                    new Vector2(
+                        0f,
+                        0.5f);
+                nativeRect.pivot =
+                    new Vector2(
+                        0f,
+                        0.5f);
+                nativeRect.anchoredPosition =
+                    Vector2.zero;
+
+                float sourceSize =
+                    Mathf.Max(
+                        nativeRect.rect.width,
+                        nativeRect.rect.height);
+
+                if (sourceSize <= 0.01f)
+                {
+                    sourceSize =
+                        desiredCellSize;
+                }
+
+                float scale =
+                    desiredCellSize /
+                    sourceSize;
+
+                nativeRect.localScale =
+                    new Vector3(
+                        scale,
+                        scale,
+                        1f);
+            }
+
+            nativeCell.Draw(
+                new global::Item(
+                    itemId,
+                    Math.Max(
+                        1,
+                        target)),
+                isNeedItem: true,
+                hasItemCount: current,
+                isCraftResult: false,
+                multiplier: 1,
+                drawAsNonInteractable: false,
+                price: 0,
+                drawCounter: true,
+                forceNonEmpty: true,
+                forceDrawCounter: true,
+                customState:
+                    global::ItemRelatedWidgetState.NotSet,
+                noSelectionFrames: true);
+
+            nativeCell.ShowMouseSelectionFrame =
                 false;
-
-            TextMeshProUGUI countText =
-                CreateText(
-                    _bodyTemplate,
-                    row.transform,
-                    "Count",
-                    10.5f,
-                    TextAlignmentOptions.Left);
-
-            RectTransform countRect =
-                countText.rectTransform;
-
-            countRect.anchorMin =
-                new Vector2(
-                    0f,
-                    0f);
-            countRect.anchorMax =
-                new Vector2(
-                    1f,
-                    1f);
-            countRect.offsetMin =
-                new Vector2(
-                    52f,
-                    0f);
-            countRect.offsetMax =
-                Vector2.zero;
-
-            string count =
-                $"{current}/{Math.Max(1, target)}";
+            nativeCell.NoSelectionFrames =
+                true;
 
             if (customItem &&
                 !string.IsNullOrWhiteSpace(label))
             {
-                countText.text =
-                    $"{label}  {count}";
-            }
-            else
-            {
-                countText.text =
-                    count;
-            }
+                TextMeshProUGUI labelText =
+                    CreateText(
+                        _bodyTemplate,
+                        row.transform,
+                        "ItemLabel",
+                        9.5f,
+                        TextAlignmentOptions.Left);
 
-            countText.color =
-                current >= target
-                    ? new Color(
-                        0.80f,
-                        0.92f,
-                        0.58f,
-                        1f)
-                    : new Color(
-                        0.96f,
-                        0.58f,
-                        0.46f,
+                RectTransform labelRect =
+                    labelText.rectTransform;
+
+                labelRect.anchorMin =
+                    new Vector2(
+                        0f,
+                        0f);
+                labelRect.anchorMax =
+                    new Vector2(
+                        1f,
                         1f);
+                labelRect.offsetMin =
+                    new Vector2(
+                        45f,
+                        0f);
+                labelRect.offsetMax =
+                    Vector2.zero;
+
+                labelText.text =
+                    label;
+            }
 
             return row;
         }
