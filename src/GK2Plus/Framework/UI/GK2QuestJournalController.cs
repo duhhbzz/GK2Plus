@@ -313,9 +313,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.InspirationCardSprite != null
-                        ? new Color(0.58f, 0.60f, 0.62f, 0.96f)
-                        : _theme.ContentBackground);
+                    _theme.ContentBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
