@@ -606,6 +606,12 @@ namespace GK2Plus.Framework.UI
             portrait.preserveAspect =
                 true;
 
+            if (_theme?.ItemIconMaterial != null)
+            {
+                portrait.material =
+                    _theme.ItemIconMaterial;
+            }
+
             TextMeshProUGUI title =
                 GK2UiFactory.CreateText(
                     root.transform,
@@ -767,6 +773,12 @@ namespace GK2Plus.Framework.UI
 
             icon.preserveAspect =
                 true;
+
+            if (_theme?.ItemIconMaterial != null)
+            {
+                icon.material =
+                    _theme.ItemIconMaterial;
+            }
 
             TextMeshProUGUI title =
                 GK2UiFactory.CreateText(
@@ -1111,12 +1123,20 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(1f, 1f),
                     Vector2.zero,
-                    new Vector2(62f, 62f),
+                    new Vector2(
+                        GK2UiMetrics.QuestJournal.DetailPortraitSize,
+                        GK2UiMetrics.QuestJournal.DetailPortraitSize),
                     Color.white)
                     .GetComponent<Image>();
 
             _detailIcon.preserveAspect =
                 true;
+
+            if (_theme?.ItemIconMaterial != null)
+            {
+                _detailIcon.material =
+                    _theme.ItemIconMaterial;
+            }
 
             _detailStatus =
                 GK2UiFactory.CreateText(
@@ -1546,6 +1566,13 @@ namespace GK2Plus.Framework.UI
                     portrait != null);
                 view.Portrait.color =
                     Color.white;
+
+                if (portrait != null)
+                {
+                    view.Portrait.BlueColorReplace(
+                        _theme?.ItemIconTint ??
+                        Color.white);
+                }
             }
             catch
             {
@@ -1683,12 +1710,20 @@ namespace GK2Plus.Framework.UI
             try
             {
                 row.Icon.sprite =
+                    quest.Definition?.Portrait ??
                     quest.Definition?.Icon;
 
                 row.Icon.gameObject.SetActive(
                     row.Icon.sprite != null);
                 row.Icon.color =
                     Color.white;
+
+                if (row.Icon.sprite != null)
+                {
+                    row.Icon.BlueColorReplace(
+                        _theme?.ItemIconTint ??
+                        Color.white);
+                }
             }
             catch
             {
@@ -1795,10 +1830,14 @@ namespace GK2Plus.Framework.UI
                 GetQuestTitle(
                     quest);
 
+            float portraitReserve =
+                GK2UiMetrics.QuestJournal.DetailPortraitSize +
+                GK2UiMetrics.QuestJournal.DetailPortraitGap;
+
             Vector2 titlePreferred =
                 _detailTitle.GetPreferredValues(
                     _detailTitle.text,
-                    contentWidth - 82f,
+                    contentWidth - portraitReserve,
                     0f);
 
             float titleHeight =
@@ -1810,7 +1849,7 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0f, -y);
             _detailTitle.rectTransform.sizeDelta =
                 new Vector2(
-                    -82f,
+                    -portraitReserve,
                     titleHeight);
 
             try
@@ -1826,6 +1865,13 @@ namespace GK2Plus.Framework.UI
 
                 _detailIcon.color =
                     Color.white;
+
+                if (sprite != null)
+                {
+                    _detailIcon.BlueColorReplace(
+                        _theme?.ItemIconTint ??
+                        Color.white);
+                }
             }
             catch
             {
@@ -1846,7 +1892,9 @@ namespace GK2Plus.Framework.UI
             _detailStatus.rectTransform.anchoredPosition =
                 new Vector2(0f, -y);
             _detailStatus.rectTransform.sizeDelta =
-                new Vector2(-82f, 18f);
+                new Vector2(
+                    -portraitReserve,
+                    18f);
 
             bool canTrack =
                 quest.IsActiveQuest &&
@@ -1886,14 +1934,15 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f);
                 trackRect.anchoredPosition =
                     new Vector2(
-                        -76f,
+                        -portraitReserve,
                         -44f);
             }
 
             y =
                 Mathf.Max(
                     y + 25f,
-                    74f);
+                    GK2UiMetrics.QuestJournal.DetailPortraitSize +
+                    12f);
 
             _descriptionHeaderRect.gameObject.SetActive(
                 true);
@@ -2133,15 +2182,16 @@ namespace GK2Plus.Framework.UI
                     quest);
 
             string identityId =
-                GetIdentityString(
-                    identity);
+                NormalizeIdentityId(
+                    GetIdentityString(
+                        identity));
 
             if (!string.IsNullOrWhiteSpace(
                     identityId))
             {
                 return
                     "npc:" +
-                    identityId.Trim();
+                    identityId;
             }
 
             try
@@ -2174,8 +2224,9 @@ namespace GK2Plus.Framework.UI
                     quest);
 
             string identityId =
-                GetIdentityString(
-                    identity);
+                NormalizeIdentityId(
+                    GetIdentityString(
+                        identity));
 
             if (!string.IsNullOrWhiteSpace(
                     identityId))
@@ -2380,6 +2431,36 @@ namespace GK2Plus.Framework.UI
             return identity.ToString();
         }
 
+        private static string NormalizeIdentityId(
+            string value)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    value))
+            {
+                return string.Empty;
+            }
+
+            string normalized =
+                value.Trim();
+
+            int cloneIndex =
+                normalized.IndexOf(
+                    "(clone)",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (cloneIndex >= 0)
+            {
+                normalized =
+                    normalized
+                        .Remove(
+                            cloneIndex,
+                            "(clone)".Length)
+                        .Trim();
+            }
+
+            return normalized;
+        }
+
         private static string HumanizeIdentifier(
             string value)
         {
@@ -2390,7 +2471,8 @@ namespace GK2Plus.Framework.UI
             }
 
             string normalized =
-                value
+                NormalizeIdentityId(
+                    value)
                     .Replace("_portrait", string.Empty)
                     .Replace("_icon", string.Empty)
                     .Replace("portrait_", string.Empty)
