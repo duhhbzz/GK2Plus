@@ -2126,6 +2126,313 @@ namespace GK2Plus.Framework.UI
             return quest;
         }
 
+        private static string GetQuestGroupKey(
+            QuestData quest)
+        {
+            object identity =
+                TryGetQuestCharacterIdentity(
+                    quest);
+
+            string identityId =
+                GetIdentityString(
+                    identity);
+
+            if (!string.IsNullOrWhiteSpace(
+                    identityId))
+            {
+                return
+                    "npc:" +
+                    identityId.Trim();
+            }
+
+            try
+            {
+                Sprite portrait =
+                    quest?.Definition?.Portrait;
+
+                if (portrait != null &&
+                    !string.IsNullOrWhiteSpace(
+                        portrait.name))
+                {
+                    return
+                        "portrait:" +
+                        portrait.name;
+                }
+            }
+            catch
+            {
+                // Fall through to a stable catch-all group.
+            }
+
+            return "other";
+        }
+
+        private static string GetQuestGroupDisplayName(
+            QuestData quest)
+        {
+            object identity =
+                TryGetQuestCharacterIdentity(
+                    quest);
+
+            string identityId =
+                GetIdentityString(
+                    identity);
+
+            if (!string.IsNullOrWhiteSpace(
+                    identityId))
+            {
+                string localized =
+                    LLBase.L(
+                        identityId);
+
+                if (!string.IsNullOrWhiteSpace(
+                        localized) &&
+                    !string.Equals(
+                        localized,
+                        identityId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return localized;
+                }
+
+                return HumanizeIdentifier(
+                    identityId);
+            }
+
+            try
+            {
+                string portraitName =
+                    quest?.Definition?.Portrait?.name;
+
+                if (!string.IsNullOrWhiteSpace(
+                    portraitName))
+                {
+                    return HumanizeIdentifier(
+                        portraitName);
+                }
+            }
+            catch
+            {
+                // Use the generic fallback below.
+            }
+
+            return "Other";
+        }
+
+        private static object TryGetQuestCharacterIdentity(
+            QuestData quest)
+        {
+            object definition =
+                quest?.Definition;
+
+            if (definition == null)
+            {
+                return null;
+            }
+
+            string[] names =
+            {
+                "character",
+                "Character",
+                "npc",
+                "Npc",
+                "NPC",
+                "giver",
+                "Giver",
+                "owner",
+                "Owner",
+                "characterId",
+                "CharacterId",
+                "npcId",
+                "NpcId",
+                "giverId",
+                "GiverId"
+            };
+
+            Type type =
+                definition.GetType();
+
+            foreach (string name in names)
+            {
+                try
+                {
+                    PropertyInfo property =
+                        type.GetProperty(
+                            name,
+                            BindingFlags.Instance |
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic);
+
+                    if (property != null)
+                    {
+                        object value =
+                            property.GetValue(
+                                definition,
+                                null);
+
+                        if (value != null)
+                        {
+                            return value;
+                        }
+                    }
+
+                    FieldInfo field =
+                        type.GetField(
+                            name,
+                            BindingFlags.Instance |
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic);
+
+                    if (field != null)
+                    {
+                        object value =
+                            field.GetValue(
+                                definition);
+
+                        if (value != null)
+                        {
+                            return value;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Some generated/runtime members may throw when inspected.
+                }
+            }
+
+            return null;
+        }
+
+        private static string GetIdentityString(
+            object identity)
+        {
+            if (identity == null)
+            {
+                return string.Empty;
+            }
+
+            if (identity is string text)
+            {
+                return text;
+            }
+
+            Type type =
+                identity.GetType();
+
+            string[] names =
+            {
+                "id",
+                "Id",
+                "ID",
+                "name",
+                "Name"
+            };
+
+            foreach (string name in names)
+            {
+                try
+                {
+                    PropertyInfo property =
+                        type.GetProperty(
+                            name,
+                            BindingFlags.Instance |
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic);
+
+                    if (property != null)
+                    {
+                        object value =
+                            property.GetValue(
+                                identity,
+                                null);
+
+                        if (value != null)
+                        {
+                            return value.ToString();
+                        }
+                    }
+
+                    FieldInfo field =
+                        type.GetField(
+                            name,
+                            BindingFlags.Instance |
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic);
+
+                    if (field != null)
+                    {
+                        object value =
+                            field.GetValue(
+                                identity);
+
+                        if (value != null)
+                        {
+                            return value.ToString();
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore members that cannot be reflected safely.
+                }
+            }
+
+            return identity.ToString();
+        }
+
+        private static string HumanizeIdentifier(
+            string value)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    value))
+            {
+                return "Other";
+            }
+
+            string normalized =
+                value
+                    .Replace("_portrait", string.Empty)
+                    .Replace("_icon", string.Empty)
+                    .Replace("portrait_", string.Empty)
+                    .Replace("icon_", string.Empty)
+                    .Replace("_", " ")
+                    .Replace("-", " ")
+                    .Trim();
+
+            if (normalized.Length == 0)
+            {
+                return "Other";
+            }
+
+            string[] words =
+                normalized.Split(
+                    new[] { ' ' },
+                    StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word =
+                    words[i];
+
+                if (word.Length == 0)
+                {
+                    continue;
+                }
+
+                words[i] =
+                    char.ToUpperInvariant(
+                        word[0]) +
+                    (word.Length > 1
+                        ? word.Substring(1).ToLowerInvariant()
+                        : string.Empty);
+            }
+
+            return string.Join(
+                " ",
+                words);
+        }
+
         private static string GetQuestTitle(
             QuestData quest)
         {
