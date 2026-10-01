@@ -25,7 +25,6 @@ namespace GK2Plus.Framework.UI
             public GameObject Root;
             public RectTransform Rect;
             public Image Background;
-            public Image IconFrame;
             public Image Icon;
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Description;
