@@ -58,8 +58,8 @@ namespace GK2Plus.Framework.UI
             public const float SectionHeaderHeight = 39f;
             public const float FilterHeight = 27f;
             public const float FilterGap = 5f;
-            public const float QuestGroupHeight = 60f;
-            public const float QuestGroupIconSize = 48f;
+            public const float QuestGroupHeight = 108f;
+            public const float QuestGroupIconSize = 96f;
             public const float QuestSubRowIndent = 16f;
             public const float QuestRowHeight = 92f;
             public const float QuestRowGap = 5f;
@@ -67,6 +67,8 @@ namespace GK2Plus.Framework.UI
             public const float QuestCardPadding = 8f;
             public const float QuestProgressHeight = 15f;
             public const float DetailPadding = 14f;
+            public const float DetailPortraitSize = 186f;
+            public const float DetailPortraitGap = 18f;
             public const float DetailTitleSize = 18f;
             public const float DetailBodySize = 11f;
             public const float DetailStatusSize = 9.5f;
