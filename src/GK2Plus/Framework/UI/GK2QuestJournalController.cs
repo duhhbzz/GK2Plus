@@ -313,7 +313,9 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.ContentBackground);
+                    _theme.InspirationCardSprite != null
+                        ? new Color(0.58f, 0.60f, 0.62f, 0.96f)
+                        : _theme.ContentBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -666,13 +668,13 @@ namespace GK2Plus.Framework.UI
                     _theme.TitleTextTemplate ??
                     _theme.BodyTextTemplate,
                     "▶",
-                    16f,
+                    18f,
                     TextAlignmentOptions.Center,
                     new Vector2(1f, 0.5f),
                     new Vector2(1f, 0.5f),
                     new Vector2(1f, 0.5f),
-                    new Vector2(-10f, 0f),
-                    new Vector2(24f, 24f));
+                    new Vector2(-12f, 0f),
+                    new Vector2(30f, 30f));
 
             chevron.color =
                 _theme.AccentText;
@@ -843,18 +845,22 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     root.transform,
                     "Progress",
-                    null,
-                    Image.Type.Simple,
+                    _theme.InspirationCardSprite,
+                    _theme.InspirationCardSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
                     new Vector2(0f, 0f),
                     new Vector2(1f, 0f),
                     new Vector2(0.5f, 0f),
                     Vector2.zero,
                     Vector2.zero,
-                    new Color(
-                        0.10f,
-                        0.11f,
-                        0.08f,
-                        0.94f));
+                    _theme.InspirationCardSprite != null
+                        ? new Color(0.86f, 0.82f, 0.72f, 1f)
+                        : new Color(
+                            0.10f,
+                            0.11f,
+                            0.08f,
+                            0.94f));
 
             RectTransform progressRect =
                 progressRoot.GetComponent<RectTransform>();
@@ -897,6 +903,14 @@ namespace GK2Plus.Framework.UI
                 (int)Image.OriginHorizontal.Left;
             progressFill.fillAmount =
                 0f;
+
+            RectTransform fillRect =
+                progressFill.rectTransform;
+
+            fillRect.offsetMin =
+                new Vector2(3f, 3f);
+            fillRect.offsetMax =
+                new Vector2(-3f, -3f);
 
             TextMeshProUGUI progressLabel =
                 GK2UiFactory.CreateText(
@@ -998,8 +1012,10 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestDetailsPane",
-                    null,
-                    Image.Type.Simple,
+                    _theme.InspirationCardSprite,
+                    _theme.InspirationCardSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
@@ -1536,6 +1552,24 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     0f,
                     -y);
+
+            bool groupCompleted =
+                quests.All(quest =>
+                    quest.status == QuestStatus.Completed);
+
+            Sprite groupSprite =
+                groupCompleted
+                    ? (_theme.InspirationCardCompletedSprite ??
+                       _theme.InspirationCardSprite)
+                    : _theme.InspirationCardSprite;
+
+            if (groupSprite != null)
+            {
+                view.Background.sprite =
+                    groupSprite;
+                view.Background.type =
+                    Image.Type.Sliced;
+            }
 
             view.Background.color =
                 Color.white;
