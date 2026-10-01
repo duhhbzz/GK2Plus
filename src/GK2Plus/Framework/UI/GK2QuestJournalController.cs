@@ -1290,7 +1290,8 @@ namespace GK2Plus.Framework.UI
                             ? quest.IsActiveQuest
                             : quest.status ==
                               QuestStatus.Completed)
-                    .OrderBy(quest =>
+                    .OrderBy(GetQuestGroupDisplayName)
+                    .ThenBy(quest =>
                         quest.Definition?.phase ??
                         0)
                     .ThenBy(GetQuestTitle)
@@ -1311,31 +1312,90 @@ namespace GK2Plus.Framework.UI
                     filtered[0].id;
             }
 
-            _questRowPool.Begin();
+            List<IGrouping<string, QuestData>> groups =
+                filtered
+                    .GroupBy(
+                        GetQuestGroupKey,
+                        StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(group =>
+                        GetQuestGroupDisplayName(
+                            group.FirstOrDefault()))
+                    .ToList();
 
-            for (int i = 0; i < filtered.Count; i++)
+            if (groups.Count > 0 &&
+                _expandedQuestGroups.Count == 0)
             {
-                QuestRowView row =
-                    _questRowPool.Rent();
+                string selectedGroup =
+                    GetQuestGroupKey(
+                        filtered.FirstOrDefault(quest =>
+                            string.Equals(
+                                quest.id,
+                                _selectedQuestId,
+                                StringComparison.OrdinalIgnoreCase)) ??
+                        groups[0].First());
 
-                ConfigureQuestRow(
-                    row,
-                    filtered[i],
-                    i);
+                _expandedQuestGroups.Add(
+                    selectedGroup);
             }
 
-            _questRowPool.End();
+            _questGroupPool.Begin();
+            _questRowPool.Begin();
 
-            float rowStep =
-                GK2UiMetrics.QuestJournal.QuestRowHeight +
-                GK2UiMetrics.QuestJournal.QuestRowGap;
+            float y = 0f;
+
+            foreach (IGrouping<string, QuestData> group in groups)
+            {
+                List<QuestData> quests =
+                    group.ToList();
+
+                QuestGroupView groupView =
+                    _questGroupPool.Rent();
+
+                bool expanded =
+                    _expandedQuestGroups.Contains(
+                        group.Key);
+
+                ConfigureQuestGroup(
+                    groupView,
+                    group.Key,
+                    quests,
+                    expanded,
+                    y);
+
+                y +=
+                    GK2UiMetrics.QuestJournal.QuestGroupHeight +
+                    GK2UiMetrics.QuestJournal.QuestRowGap;
+
+                if (!expanded)
+                {
+                    continue;
+                }
+
+                foreach (QuestData quest in quests)
+                {
+                    QuestRowView row =
+                        _questRowPool.Rent();
+
+                    ConfigureQuestRow(
+                        row,
+                        quest,
+                        y);
+
+                    y +=
+                        GK2UiMetrics.QuestJournal.QuestRowHeight +
+                        GK2UiMetrics.QuestJournal.QuestRowGap;
+                }
+            }
+
+            _questGroupPool.End();
+            _questRowPool.End();
 
             _questListContent.sizeDelta =
                 new Vector2(
                     0f,
                     Mathf.Max(
                         0f,
-                        (filtered.Count * rowStep) -
+                        y -
                         GK2UiMetrics.QuestJournal.QuestRowGap));
 
             RenderSelectedQuest();
@@ -1430,10 +1490,96 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        private void ConfigureQuestGroup(
+            QuestGroupView view,
+            string groupKey,
+            List<QuestData> quests,
+            bool expanded,
+            float y)
+        {
+            if (view == null ||
+                quests == null ||
+                quests.Count == 0)
+            {
+                return;
+            }
+
+            QuestData representative =
+                quests[0];
+
+            view.Root.SetActive(
+                true);
+
+            view.GroupKey =
+                groupKey;
+
+            view.Rect.anchoredPosition =
+                new Vector2(
+                    0f,
+                    -y);
+
+            view.Background.color =
+                Color.white;
+
+            view.Title.text =
+                GetQuestGroupDisplayName(
+                    representative);
+
+            view.Count.text =
+                quests.Count == 1
+                    ? "1 quest"
+                    : $"{quests.Count} quests";
+
+            view.Chevron.text =
+                expanded
+                    ? "▼"
+                    : "▶";
+
+            try
+            {
+                Sprite portrait =
+                    representative.Definition?.Portrait ??
+                    representative.Definition?.Icon;
+
+                view.Portrait.sprite =
+                    portrait;
+                view.Portrait.gameObject.SetActive(
+                    portrait != null);
+                view.Portrait.color =
+                    Color.white;
+            }
+            catch
+            {
+                view.Portrait.sprite =
+                    null;
+                view.Portrait.gameObject.SetActive(
+                    false);
+            }
+
+            view.ToggleButton.onClick.RemoveAllListeners();
+            view.ToggleButton.onClick.AddListener(
+                () =>
+                {
+                    if (_expandedQuestGroups.Contains(
+                            groupKey))
+                    {
+                        _expandedQuestGroups.Remove(
+                            groupKey);
+                    }
+                    else
+                    {
+                        _expandedQuestGroups.Add(
+                            groupKey);
+                    }
+
+                    Refresh();
+                });
+        }
+
         private void ConfigureQuestRow(
             QuestRowView row,
             QuestData quest,
-            int index)
+            float y)
         {
             if (row == null ||
                 quest == null)
@@ -1447,14 +1593,18 @@ namespace GK2Plus.Framework.UI
             row.Quest =
                 quest;
 
-            float step =
-                GK2UiMetrics.QuestJournal.QuestRowHeight +
-                GK2UiMetrics.QuestJournal.QuestRowGap;
+            float indent =
+                GK2UiMetrics.QuestJournal.QuestSubRowIndent;
 
             row.Rect.anchoredPosition =
                 new Vector2(
-                    0f,
-                    -(index * step));
+                    indent / 2f,
+                    -y);
+
+            row.Rect.sizeDelta =
+                new Vector2(
+                    -indent,
+                    GK2UiMetrics.QuestJournal.QuestRowHeight);
 
             bool selected =
                 string.Equals(
@@ -1516,22 +1666,19 @@ namespace GK2Plus.Framework.UI
 
             if (showProgress)
             {
-                RectTransform fillRect =
-                    row.ProgressFill.rectTransform;
-
-                fillRect.anchorMin =
-                    Vector2.zero;
-                fillRect.anchorMax =
-                    new Vector2(
-                        Mathf.Clamp01(progress01),
-                        1f);
-                fillRect.offsetMin =
-                    Vector2.zero;
-                fillRect.offsetMax =
-                    Vector2.zero;
+                row.ProgressFill.fillAmount =
+                    Mathf.Clamp01(
+                        progress01);
 
                 row.ProgressLabel.text =
                     $"{current}/{target}";
+            }
+            else
+            {
+                row.ProgressFill.fillAmount =
+                    0f;
+                row.ProgressLabel.text =
+                    string.Empty;
             }
 
             try
@@ -1539,6 +1686,8 @@ namespace GK2Plus.Framework.UI
                 row.Icon.sprite =
                     quest.Definition?.Icon;
 
+                row.Icon.gameObject.SetActive(
+                    row.Icon.sprite != null);
                 row.Icon.color =
                     Color.white;
             }
@@ -1546,6 +1695,8 @@ namespace GK2Plus.Framework.UI
             {
                 row.Icon.sprite =
                     null;
+                row.Icon.gameObject.SetActive(
+                    false);
             }
 
             row.SelectButton.onClick.RemoveAllListeners();
