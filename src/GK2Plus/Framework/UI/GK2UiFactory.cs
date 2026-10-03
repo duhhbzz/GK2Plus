@@ -96,56 +96,6 @@ namespace GK2Plus.Framework.UI
             return obj;
         }
 
-        public static GameObject CreateRawImage(
-            Transform parent,
-            string name,
-            Texture texture,
-            Rect uvRect,
-            Material material,
-            Vector2 anchorMin,
-            Vector2 anchorMax,
-            Vector2 pivot,
-            Vector2 anchoredPosition,
-            Vector2 size,
-            Color color,
-            bool raycastTarget = false)
-        {
-            GameObject obj =
-                new GameObject(
-                    name,
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(RawImage));
-
-            obj.transform.SetParent(
-                parent,
-                false);
-
-            ApplyRect(
-                obj.GetComponent<RectTransform>(),
-                anchorMin,
-                anchorMax,
-                pivot,
-                anchoredPosition,
-                size);
-
-            RawImage image =
-                obj.GetComponent<RawImage>();
-
-            image.texture =
-                texture;
-            image.uvRect =
-                uvRect;
-            image.material =
-                material;
-            image.color =
-                color;
-            image.raycastTarget =
-                raycastTarget;
-
-            return obj;
-        }
-
         public static TextMeshProUGUI CreateText(
             Transform parent,
             string name,
