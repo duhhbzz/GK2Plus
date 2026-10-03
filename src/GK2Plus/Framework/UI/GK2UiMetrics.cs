@@ -59,7 +59,7 @@ namespace GK2Plus.Framework.UI
             public const float FilterHeight = 25f;
             public const float FilterGap = 5f;
             public const float QuestGroupHeight = 54f;
-            public const float QuestGroupIconSize = 40f;
+            public const float QuestGroupIconSize = 48f;
             public const float QuestSubRowIndent = 16f;
             public const float QuestRowHeight = 72f;
             public const float QuestRowGap = 5f;
