@@ -263,36 +263,6 @@ namespace GK2Plus.Framework.UI
             // into the left and right panes, matching Character/Inspirations.
         }
 
-        private void AddNativePaneFrame(
-            Transform parent)
-        {
-            if (_theme?.WindowFrameSprite == null)
-            {
-                return;
-            }
-
-            GameObject frame =
-                GK2UiFactory.CreateImage(
-                    parent,
-                    "PaneFrame",
-                    _theme.WindowFrameSprite,
-                    Image.Type.Sliced,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    Color.white);
-
-            RectTransform rect =
-                frame.GetComponent<RectTransform>();
-
-            rect.offsetMin =
-                Vector2.zero;
-            rect.offsetMax =
-                Vector2.zero;
-        }
-
         private void BuildQuestList()
         {
             float left =
@@ -305,18 +275,22 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestListPane",
-                    null,
-                    Image.Type.Simple,
+                    _theme.ContentCellSprite,
+                    _theme.ContentCellSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
                     new Vector2(0f, 0f),
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
                     Vector2.zero,
-                    new Color(
-                        0.13f,
-                        0.145f,
-                        0.17f,
-                        0.98f));
+                    _theme.ContentCellSprite != null
+                        ? Color.white
+                        : new Color(
+                            0.13f,
+                            0.145f,
+                            0.17f,
+                            0.98f));
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -329,9 +303,6 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     left + width,
                     -GK2UiMetrics.QuestJournal.OuterPadding);
-
-            AddNativePaneFrame(
-                pane.transform);
 
             GK2UiSectionHeaderView header =
                 GK2UiSectionHeaderBuilder.Create(
@@ -356,7 +327,7 @@ namespace GK2Plus.Framework.UI
 
             float filterTop =
                 GK2UiMetrics.QuestJournal.SectionHeaderHeight +
-                7f;
+                4f;
 
             _activeFilterButton =
                 GK2UiFactory.CreateFlatButton(
@@ -452,15 +423,15 @@ namespace GK2Plus.Framework.UI
             float listTop =
                 filterTop +
                 GK2UiMetrics.QuestJournal.FilterHeight +
-                7f;
+                4f;
 
             viewportRect.offsetMin =
                 new Vector2(
-                    GK2UiMetrics.QuestJournal.OuterPadding,
-                    GK2UiMetrics.QuestJournal.OuterPadding);
+                    5f,
+                    5f);
             viewportRect.offsetMax =
                 new Vector2(
-                    -GK2UiMetrics.QuestJournal.OuterPadding,
+                    -5f,
                     -listTop);
 
             viewport.AddComponent<RectMask2D>();
@@ -530,8 +501,10 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     _questListContent,
                     "QuestGroup",
-                    null,
-                    Image.Type.Simple,
+                    _theme.ContentCellSprite,
+                    _theme.ContentCellSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0.5f, 1f),
@@ -539,11 +512,17 @@ namespace GK2Plus.Framework.UI
                     new Vector2(
                         0f,
                         GK2UiMetrics.QuestJournal.QuestGroupHeight),
-                    new Color(
-                        0.18f,
-                        0.19f,
-                        0.22f,
-                        0.96f),
+                    _theme.ContentCellSprite != null
+                        ? new Color(
+                            0.92f,
+                            0.94f,
+                            0.98f,
+                            1f)
+                        : new Color(
+                            0.18f,
+                            0.19f,
+                            0.22f,
+                            0.96f),
                     true);
 
             RectTransform rect =
@@ -1010,18 +989,22 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestDetailsPane",
-                    null,
-                    Image.Type.Simple,
+                    _theme.ContentCellSprite,
+                    _theme.ContentCellSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    new Color(
-                        0.13f,
-                        0.145f,
-                        0.17f,
-                        0.98f));
+                    _theme.ContentCellSprite != null
+                        ? Color.white
+                        : new Color(
+                            0.13f,
+                            0.145f,
+                            0.17f,
+                            0.98f));
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -1034,9 +1017,6 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     -GK2UiMetrics.QuestJournal.OuterPadding,
                     -GK2UiMetrics.QuestJournal.OuterPadding);
-
-            AddNativePaneFrame(
-                pane.transform);
 
             GK2UiSectionHeaderView paneHeader =
                 GK2UiSectionHeaderBuilder.Create(
@@ -1071,13 +1051,13 @@ namespace GK2Plus.Framework.UI
 
             viewportRect.offsetMin =
                 new Vector2(
-                    GK2UiMetrics.QuestJournal.DetailPadding,
-                    GK2UiMetrics.QuestJournal.DetailPadding);
+                    7f,
+                    7f);
             viewportRect.offsetMax =
                 new Vector2(
-                    -GK2UiMetrics.QuestJournal.DetailPadding,
+                    -7f,
                     -(GK2UiMetrics.QuestJournal.SectionHeaderHeight +
-                      GK2UiMetrics.QuestJournal.DetailPadding));
+                      7f));
 
             viewport.AddComponent<RectMask2D>();
 
@@ -1580,21 +1560,35 @@ namespace GK2Plus.Framework.UI
                     quest.status == QuestStatus.Completed);
 
             view.Background.sprite =
-                null;
+                _theme.ContentCellSprite;
             view.Background.type =
-                Image.Type.Simple;
+                _theme.ContentCellSprite != null
+                    ? Image.Type.Sliced
+                    : Image.Type.Simple;
             view.Background.color =
-                groupCompleted
-                    ? new Color(
-                        0.17f,
-                        0.19f,
-                        0.17f,
-                        0.96f)
-                    : new Color(
-                        0.18f,
-                        0.19f,
-                        0.22f,
-                        0.96f);
+                _theme.ContentCellSprite != null
+                    ? (groupCompleted
+                        ? new Color(
+                            0.86f,
+                            0.92f,
+                            0.86f,
+                            1f)
+                        : new Color(
+                            0.92f,
+                            0.94f,
+                            0.98f,
+                            1f))
+                    : (groupCompleted
+                        ? new Color(
+                            0.17f,
+                            0.19f,
+                            0.17f,
+                            0.96f)
+                        : new Color(
+                            0.18f,
+                            0.19f,
+                            0.22f,
+                            0.96f));
 
             view.Title.text =
                 GetQuestGroupDisplayName(
