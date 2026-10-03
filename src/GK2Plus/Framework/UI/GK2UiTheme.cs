@@ -352,14 +352,25 @@ namespace GK2Plus.Framework.UI
                    (surface == null ||
                     frame == null))
             {
-                Image image =
-                    current.GetComponent<Image>();
+                Image[] images =
+                    current
+                        .GetComponentsInChildren<Image>(
+                            true)
+                        .Where(image =>
+                            image != null &&
+                            (image.transform == current ||
+                             image.transform.parent == current))
+                        .ToArray();
 
-                if (image != null &&
-                    image.sprite != null &&
-                    IsLargePaneImage(
-                        image))
+                foreach (Image image in images)
                 {
+                    if (image.sprite == null ||
+                        !IsLargePaneImage(
+                            image))
+                    {
+                        continue;
+                    }
+
                     string objectName =
                         image.gameObject.name ??
                         string.Empty;
@@ -426,7 +437,8 @@ namespace GK2Plus.Framework.UI
                     $"GK2+ native page pane surface: '{NativePaneSurfaceSprite.name}'" +
                     (NativePaneFrameSprite != null
                         ? $", frame: '{NativePaneFrameSprite.name}'."
-                        : "."));
+                        : ".") +
+                    $" Source: '{surface?.gameObject?.name ?? "unknown"}'.");
             }
         }
 
