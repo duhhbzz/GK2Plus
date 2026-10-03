@@ -514,15 +514,11 @@ namespace GK2Plus.Framework.UI
                         GK2UiMetrics.QuestJournal.QuestGroupHeight),
                     _theme.ContentCellSprite != null
                         ? new Color(
-                            0.92f,
                             0.94f,
+                            0.95f,
                             0.98f,
                             1f)
-                        : new Color(
-                            0.18f,
-                            0.19f,
-                            0.22f,
-                            0.96f),
+                        : _theme.RowBackground,
                     true);
 
             RectTransform rect =
@@ -539,18 +535,21 @@ namespace GK2Plus.Framework.UI
             toggle.transition =
                 Selectable.Transition.ColorTint;
 
-            float pad =
-                GK2UiMetrics.QuestJournal.QuestCardPadding;
+            float pad = 6f;
 
             float portraitSize =
                 GK2UiMetrics.QuestJournal.QuestGroupIconSize;
 
+            Sprite portraitFrame =
+                _theme.InspirationIconFrameSprite ??
+                _theme.ItemSlotSprite;
+
             GameObject portraitBacking =
                 GK2UiFactory.CreateImage(
                     root.transform,
-                    "PortraitBacking",
-                    _theme.ItemSlotSprite,
-                    _theme.ItemSlotSprite != null
+                    "PortraitFrame",
+                    portraitFrame,
+                    portraitFrame != null
                         ? Image.Type.Sliced
                         : Image.Type.Simple,
                     new Vector2(0f, 1f),
@@ -558,13 +557,17 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     new Vector2(
                         pad,
-                        -6f),
+                        -7f),
                     new Vector2(
                         portraitSize,
                         portraitSize),
-                    _theme.ItemSlotSprite != null
+                    portraitFrame != null
                         ? Color.white
-                        : new Color(0.10f, 0.10f, 0.11f, 0.98f));
+                        : new Color(
+                            0.10f,
+                            0.10f,
+                            0.11f,
+                            0.98f));
 
             GameObject portraitObject =
                 GK2UiFactory.CreateImage(
@@ -576,7 +579,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    new Vector2(-6f, -6f),
+                    new Vector2(-5f, -5f),
                     Color.white);
 
             Image portrait =
@@ -591,6 +594,9 @@ namespace GK2Plus.Framework.UI
                     _theme.ItemIconMaterial;
             }
 
+            float textX =
+                pad + portraitSize + 8f;
+
             TextMeshProUGUI title =
                 GK2UiFactory.CreateText(
                     root.transform,
@@ -598,17 +604,17 @@ namespace GK2Plus.Framework.UI
                     _theme.TitleTextTemplate ??
                     _theme.BodyTextTemplate,
                     string.Empty,
-                    13f,
+                    12f,
                     TextAlignmentOptions.MidlineLeft,
                     new Vector2(0f, 0f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 0.5f),
                     new Vector2(
-                        pad + portraitSize + 10f,
+                        textX,
                         5f),
                     new Vector2(
-                        -96f,
-                        24f));
+                        -76f,
+                        21f));
 
             title.color =
                 _theme.AccentText;
@@ -623,20 +629,24 @@ namespace GK2Plus.Framework.UI
                     "GroupCount",
                     _theme.BodyTextTemplate,
                     string.Empty,
-                    9f,
+                    8.5f,
                     TextAlignmentOptions.MidlineLeft,
                     new Vector2(0f, 0f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 0.5f),
                     new Vector2(
-                        pad + portraitSize + 10f,
-                        -14f),
+                        textX,
+                        -11f),
                     new Vector2(
-                        -96f,
-                        18f));
+                        -76f,
+                        16f));
 
             count.color =
-                new Color(0.78f, 0.76f, 0.70f, 1f);
+                new Color(
+                    0.78f,
+                    0.76f,
+                    0.70f,
+                    1f);
 
             TextMeshProUGUI chevron =
                 GK2UiFactory.CreateText(
@@ -645,16 +655,20 @@ namespace GK2Plus.Framework.UI
                     _theme.TitleTextTemplate ??
                     _theme.BodyTextTemplate,
                     "▶",
-                    14f,
+                    13f,
                     TextAlignmentOptions.Center,
                     new Vector2(1f, 0.5f),
                     new Vector2(1f, 0.5f),
                     new Vector2(1f, 0.5f),
-                    new Vector2(-14f, 0f),
-                    new Vector2(24f, 24f));
+                    new Vector2(-11f, 0f),
+                    new Vector2(20f, 20f));
 
             chevron.color =
-                _theme.AccentText;
+                new Color(
+                    0.82f,
+                    0.76f,
+                    0.66f,
+                    1f);
 
             return new QuestGroupView
             {
@@ -708,17 +722,20 @@ namespace GK2Plus.Framework.UI
             select.transition =
                 Selectable.Transition.ColorTint;
 
-            float pad =
-                GK2UiMetrics.QuestJournal.QuestCardPadding;
+            float pad = 6f;
+            const float iconBoxSize = 42f;
+            const float headerHeight = 21f;
 
-            const float iconBoxSize = 40f;
+            Sprite iconFrame =
+                _theme.InspirationIconFrameSprite ??
+                _theme.ItemSlotSprite;
 
             GameObject iconBacking =
                 GK2UiFactory.CreateImage(
                     root.transform,
-                    "QuestIconBacking",
-                    _theme.ItemSlotSprite,
-                    _theme.ItemSlotSprite != null
+                    "QuestIconFrame",
+                    iconFrame,
+                    iconFrame != null
                         ? Image.Type.Sliced
                         : Image.Type.Simple,
                     new Vector2(0f, 1f),
@@ -726,13 +743,17 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     new Vector2(
                         pad,
-                        -29f),
+                        -(headerHeight + 4f)),
                     new Vector2(
                         iconBoxSize,
                         iconBoxSize),
-                    _theme.ItemSlotSprite != null
+                    iconFrame != null
                         ? Color.white
-                        : new Color(0.10f, 0.10f, 0.11f, 0.98f));
+                        : new Color(
+                            0.10f,
+                            0.10f,
+                            0.11f,
+                            0.98f));
 
             GameObject iconObject =
                 GK2UiFactory.CreateImage(
@@ -744,7 +765,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    new Vector2(-6f, -6f),
+                    new Vector2(-5f, -5f),
                     Color.white);
 
             Image icon =
@@ -766,17 +787,17 @@ namespace GK2Plus.Framework.UI
                     _theme.TitleTextTemplate ??
                     _theme.BodyTextTemplate,
                     string.Empty,
-                    11.5f,
-                    TextAlignmentOptions.TopLeft,
+                    10.75f,
+                    TextAlignmentOptions.MidlineLeft,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
                     new Vector2(
-                        pad + iconBoxSize + 9f,
-                        -6f),
+                        pad,
+                        -2f),
                     new Vector2(
-                        -92f,
-                        22f));
+                        -108f,
+                        18f));
 
             title.textWrappingMode =
                 TextWrappingModes.NoWrap;
@@ -785,13 +806,68 @@ namespace GK2Plus.Framework.UI
             title.color =
                 _theme.AccentText;
 
+            TextMeshProUGUI status =
+                GK2UiFactory.CreateText(
+                    root.transform,
+                    "QuestStatus",
+                    _theme.BodyTextTemplate,
+                    string.Empty,
+                    7.75f,
+                    TextAlignmentOptions.Right,
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(
+                        -28f,
+                        -3f),
+                    new Vector2(
+                        72f,
+                        16f));
+
+            status.color =
+                new Color(
+                    0.78f,
+                    0.76f,
+                    0.72f,
+                    1f);
+
+            GameObject pinObject =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "PinButton",
+                    UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi(),
+                    Image.Type.Simple,
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(
+                        -6f,
+                        -3f),
+                    new Vector2(18f, 18f),
+                    Color.white,
+                    true);
+
+            Image pinIcon =
+                pinObject.GetComponent<Image>();
+
+            pinIcon.preserveAspect =
+                true;
+
+            Button pinButton =
+                pinObject.AddComponent<Button>();
+
+            pinButton.targetGraphic =
+                pinIcon;
+            pinButton.transition =
+                Selectable.Transition.ColorTint;
+
             TextMeshProUGUI description =
                 GK2UiFactory.CreateText(
                     root.transform,
                     "QuestDescription",
                     _theme.BodyTextTemplate,
                     string.Empty,
-                    8.75f,
+                    8.5f,
                     TextAlignmentOptions.TopLeft,
                     Vector2.zero,
                     Vector2.one,
@@ -804,12 +880,12 @@ namespace GK2Plus.Framework.UI
 
             descriptionRect.offsetMin =
                 new Vector2(
-                    pad + iconBoxSize + 9f,
-                    27f);
+                    pad + iconBoxSize + 8f,
+                    18f);
             descriptionRect.offsetMax =
                 new Vector2(
-                    -(pad + 7f),
-                    -28f);
+                    -(pad + 4f),
+                    -(headerHeight + 4f));
 
             description.textWrappingMode =
                 TextWrappingModes.Normal;
@@ -832,7 +908,11 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     Vector2.zero,
                     _theme.InspirationCardSprite != null
-                        ? new Color(0.86f, 0.82f, 0.72f, 1f)
+                        ? new Color(
+                            0.86f,
+                            0.82f,
+                            0.72f,
+                            1f)
                         : new Color(
                             0.10f,
                             0.11f,
@@ -844,12 +924,12 @@ namespace GK2Plus.Framework.UI
 
             progressRect.offsetMin =
                 new Vector2(
-                    pad + iconBoxSize + 9f,
-                    7f);
+                    pad + iconBoxSize + 8f,
+                    5f);
             progressRect.offsetMax =
                 new Vector2(
-                    -(pad + 40f),
-                    7f +
+                    -(pad + 4f),
+                    5f +
                     GK2UiMetrics.QuestJournal.QuestProgressHeight);
 
             GameObject fillObject =
@@ -885,9 +965,9 @@ namespace GK2Plus.Framework.UI
                 progressFill.rectTransform;
 
             fillRect.offsetMin =
-                new Vector2(3f, 3f);
+                new Vector2(2f, 2f);
             fillRect.offsetMax =
-                new Vector2(-3f, -3f);
+                new Vector2(-2f, -2f);
 
             TextMeshProUGUI progressLabel =
                 GK2UiFactory.CreateText(
@@ -896,7 +976,7 @@ namespace GK2Plus.Framework.UI
                     _theme.CountTextTemplate ??
                     _theme.BodyTextTemplate,
                     string.Empty,
-                    8.5f,
+                    8f,
                     TextAlignmentOptions.Center,
                     Vector2.zero,
                     Vector2.one,
@@ -908,57 +988,6 @@ namespace GK2Plus.Framework.UI
                 Vector2.zero;
             progressLabel.rectTransform.offsetMax =
                 Vector2.zero;
-
-            TextMeshProUGUI status =
-                GK2UiFactory.CreateText(
-                    root.transform,
-                    "QuestStatus",
-                    _theme.BodyTextTemplate,
-                    string.Empty,
-                    8f,
-                    TextAlignmentOptions.Right,
-                    new Vector2(0f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(
-                        -36f,
-                        -8f),
-                    new Vector2(
-                        86f,
-                        16f));
-
-            status.color =
-                new Color(0.74f, 0.74f, 0.72f, 1f);
-
-            GameObject pinObject =
-                GK2UiFactory.CreateImage(
-                    root.transform,
-                    "PinButton",
-                    UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi(),
-                    Image.Type.Simple,
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(
-                        -7f,
-                        -32f),
-                    new Vector2(26f, 26f),
-                    Color.white,
-                    true);
-
-            Image pinIcon =
-                pinObject.GetComponent<Image>();
-
-            pinIcon.preserveAspect =
-                true;
-
-            Button pinButton =
-                pinObject.AddComponent<Button>();
-
-            pinButton.targetGraphic =
-                pinIcon;
-            pinButton.transition =
-                Selectable.Transition.ColorTint;
 
             return new QuestRowView
             {
@@ -1148,27 +1177,16 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     new Vector2(-78f, 18f));
 
-            GK2UiSectionHeaderView descriptionHeader =
-                GK2UiSectionHeaderBuilder.Create(
+            GK2UiSubsectionHeaderView descriptionHeader =
+                GK2UiSubsectionHeaderBuilder.Create(
                     _detailContent,
                     _theme,
                     "DescriptionHeader",
                     "Description",
-                    26f);
+                    20f);
 
             _descriptionHeaderRect =
                 descriptionHeader.Rect;
-
-            if (_theme?.SectionHeaderInactiveSprite != null)
-            {
-                descriptionHeader.Background.sprite =
-                    _theme.SectionHeaderInactiveSprite;
-                descriptionHeader.Background.type =
-                    Image.Type.Sliced;
-            }
-
-            descriptionHeader.Title.fontSize =
-                12f;
 
             _detailDescription =
                 GK2UiFactory.CreateText(
@@ -1187,29 +1205,18 @@ namespace GK2Plus.Framework.UI
             _detailDescription.textWrappingMode =
                 TextWrappingModes.Normal;
 
-            GK2UiSectionHeaderView objectivesHeader =
-                GK2UiSectionHeaderBuilder.Create(
+            GK2UiSubsectionHeaderView objectivesHeader =
+                GK2UiSubsectionHeaderBuilder.Create(
                     _detailContent,
                     _theme,
                     "ObjectivesHeader",
                     "Objectives",
-                    26f);
+                    20f);
 
             _objectivesHeaderRect =
                 objectivesHeader.Rect;
             _objectivesTitle =
                 objectivesHeader.Title;
-
-            if (_theme?.SectionHeaderInactiveSprite != null)
-            {
-                objectivesHeader.Background.sprite =
-                    _theme.SectionHeaderInactiveSprite;
-                objectivesHeader.Background.type =
-                    Image.Type.Sliced;
-            }
-
-            objectivesHeader.Title.fontSize =
-                12f;
 
             _trackButton =
                 GK2UiFactory.CreateFlatButton(
@@ -1898,7 +1905,7 @@ namespace GK2Plus.Framework.UI
             _detailTitle.rectTransform.anchoredPosition =
                 new Vector2(
                     summaryTextOffset,
-                    -y);
+                    -(y + 2f));
             _detailTitle.rectTransform.sizeDelta =
                 new Vector2(
                     -summaryTextOffset,
@@ -1944,7 +1951,7 @@ namespace GK2Plus.Framework.UI
             _detailStatus.rectTransform.anchoredPosition =
                 new Vector2(
                     summaryTextOffset,
-                    -y);
+                    -(y + 1f));
             _detailStatus.rectTransform.sizeDelta =
                 new Vector2(
                     -summaryTextOffset,
@@ -2007,11 +2014,11 @@ namespace GK2Plus.Framework.UI
             _descriptionHeaderRect.gameObject.SetActive(
                 true);
             _descriptionHeaderRect.anchoredPosition =
-                new Vector2(6f, -y);
+                new Vector2(0f, -y);
             _descriptionHeaderRect.sizeDelta =
-                new Vector2(-12f, 22f);
+                new Vector2(0f, 20f);
 
-            y += 27f;
+            y += 24f;
 
             _detailDescription.text =
                 quest.Description ??
@@ -2053,11 +2060,11 @@ namespace GK2Plus.Framework.UI
             if (showObjectives)
             {
                 _objectivesHeaderRect.anchoredPosition =
-                    new Vector2(6f, -y);
+                    new Vector2(0f, -y);
                 _objectivesHeaderRect.sizeDelta =
-                    new Vector2(-12f, 22f);
+                    new Vector2(0f, 20f);
 
-                y += 27f;
+                y += 24f;
 
                 int columns =
                     Mathf.Max(
