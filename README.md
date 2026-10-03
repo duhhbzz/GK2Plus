@@ -23,11 +23,11 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.1.5-blue">
-  <img alt="Tested GK2 version" src="https://img.shields.io/badge/GK2%20tested-1.006-success">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-blue">
+  <img alt="Tested GK2 version" src="https://img.shields.io/badge/GK2%20tested-1.008-success">
   <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.5-purple">
   <img alt=".NET Standard" src="https://img.shields.io/badge/.NET%20Standard-2.1-blueviolet">
-  <img alt="Status" src="https://img.shields.io/badge/status-shared%20storage%20update-brightgreen">
+  <img alt="Status" src="https://img.shields.io/badge/status-2.0%20release-brightgreen">
 </p>
 
 ---
@@ -38,9 +38,9 @@
 
 The project combines quality-of-life improvements, gameplay tweaks, management tools, and optional cheats behind one modular framework. The goal is to reduce the need for many tiny overlapping mods while still allowing players to disable individual GK2+ features when another mod provides an implementation they prefer.
 
-**v0.1.5 expands GK2+ with Shared Storage, configurable stack-size scaling, Spawn Item, and substantial menu UX improvements while retaining the Manual Save, cheat-safety, and achievement-integrity foundation from v0.1.0.**
+**v2.0.0 expands GK2+ with the Unified Tracker, RPG Quest Journal, Continuous Planting, Sprinting, Backwards Compatible Extensions, and a reusable native-style UI framework while retaining the storage, stack-size, cheat, save-safety, and manual-save foundation from earlier releases.**
 
-**Compatibility:** GK2+ v0.1.5 has been runtime-tested against **Graveyard Keeper 2 v1.006**. If the game updates, GK2+ reports the running game version as untested but continues loading so minor game patches do not create an unnecessary hard lock.
+**Compatibility:** GK2+ v2.0.0 has been runtime-tested against **Graveyard Keeper 2 v1.008**. If the game updates, GK2+ reports the running game version as untested but continues loading so minor game patches do not create an unnecessary hard lock.
 
 ### Design goals
 
