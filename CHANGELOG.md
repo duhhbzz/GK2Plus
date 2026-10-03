@@ -4,6 +4,40 @@ All notable changes to **GK2+ (Graveyard Keeper Plus)** are documented here.
 
 GK2+ follows [Semantic Versioning](https://semver.org/).
 
+
+## [2.0.0] - 2026-10-03
+
+### Added
+
+- **Unified Tracker** for quests, crafts/recipes, construction targets, and custom item quantity targets with a compact persistent HUD.
+- Native gameplay tracking interactions, including right-click tracking where supported, auto-track-new-quest behavior, completed-quest cleanup options, and a Tracker management tab.
+- **RPG Quest Journal** replacement for the native Quests page with Active/Completed filters, NPC-grouped quest navigation, quest details, item objectives, and direct tracker integration.
+- **Continuous Planting** to keep the successfully planted seed selected while more of that exact seed remains available.
+- **Sprinting** with configurable keyboard binding and movement-speed multiplier for normal free movement.
+- **Backwards Compatible Extensions**, initially allowing Fine Tool Rack to satisfy compatible recipes that still require Tool Rack.
+- Reusable native-style UI framework components, centralized theme/metrics helpers, pooled UI controls, item-requirement cells, section builders, portrait components, and shared tracker/journal presentation primitives.
+
+### Changed
+
+- GK2+ now targets and has been runtime-tested against **Graveyard Keeper 2 v1.008**.
+- Mod-menu layout and feature controls were expanded for Tracker and Movement configuration while retaining the existing persistent F2 menu lifecycle.
+- Tracker pin capacity and presentation were refined around a compact combined HUD.
+- Quest Journal presentation was iterated toward a denser native-style two-pane layout with grouped NPC navigation and compact quest cards.
+
+### Validation
+
+- Graveyard Keeper 2 v1.008 launches successfully with GK2+ and existing 0.1.x functionality continues to operate during current runtime testing.
+- RPG Quest Journal Active/Completed navigation, NPC grouping, quest selection/details, and tracker integration were exercised during iterative in-game UI testing.
+- Unified Tracker behavior and native gameplay integrations were exercised during development against the current game build.
+- Existing Manual Save, Shared Storage, Bigger Item Stacks, Spawn Item, cheat-safety, and menu behavior continued to operate normally during v1.008 testing.
+
+### Notes
+
+- The 2.0 release intentionally prioritizes the current functional UI over further visual-polish work; additional native-material/texture fidelity can continue after release without blocking functionality.
+- Backwards Compatible Extensions is opt-in and remains narrowly scoped to the supported Tool Rack compatibility rule.
+
+---
+
 ## [0.1.5] - 2026-09-26
 
 ### Added
