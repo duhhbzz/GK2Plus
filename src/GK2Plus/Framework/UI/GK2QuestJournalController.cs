@@ -513,11 +513,7 @@ namespace GK2Plus.Framework.UI
                         0f,
                         GK2UiMetrics.QuestJournal.QuestGroupHeight),
                     _theme.ContentCellSprite != null
-                        ? new Color(
-                            0.94f,
-                            0.95f,
-                            0.98f,
-                            1f)
+                        ? Color.white
                         : _theme.RowBackground,
                     true);
 
@@ -535,64 +531,57 @@ namespace GK2Plus.Framework.UI
             toggle.transition =
                 Selectable.Transition.ColorTint;
 
-            float pad = 6f;
+            GameObject topEdge =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "TopEdge",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    new Vector2(0f, 1f),
+                    new Color(
+                        0.36f,
+                        0.38f,
+                        0.42f,
+                        0.36f));
+
+            GameObject bottomEdge =
+                GK2UiFactory.CreateImage(
+                    root.transform,
+                    "BottomEdge",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0.5f, 0f),
+                    Vector2.zero,
+                    new Vector2(0f, 1f),
+                    new Color(
+                        0.035f,
+                        0.04f,
+                        0.05f,
+                        0.82f));
+
+            float pad = 3f;
 
             float portraitSize =
                 GK2UiMetrics.QuestJournal.QuestGroupIconSize;
 
-            Sprite portraitFrame =
-                _theme.InspirationIconFrameSprite ??
-                _theme.ItemSlotSprite;
-
-            GameObject portraitBacking =
-                GK2UiFactory.CreateImage(
+            GK2UiPortraitView portraitView =
+                GK2UiPortraitBuilder.CreateStonePortrait(
                     root.transform,
-                    "PortraitFrame",
-                    portraitFrame,
-                    portraitFrame != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
+                    _theme,
+                    "NpcPortrait",
                     new Vector2(
                         pad,
-                        -7f),
-                    new Vector2(
-                        portraitSize,
-                        portraitSize),
-                    portraitFrame != null
-                        ? Color.white
-                        : new Color(
-                            0.10f,
-                            0.10f,
-                            0.11f,
-                            0.98f));
-
-            GameObject portraitObject =
-                GK2UiFactory.CreateImage(
-                    portraitBacking.transform,
-                    "Portrait",
-                    null,
-                    Image.Type.Simple,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    new Vector2(-5f, -5f),
-                    Color.white);
+                        -3f),
+                    portraitSize);
 
             Image portrait =
-                portraitObject.GetComponent<Image>();
-
-            portrait.preserveAspect =
-                true;
-
-            if (_theme?.ItemIconMaterial != null)
-            {
-                portrait.material =
-                    _theme.ItemIconMaterial;
-            }
+                portraitView.Portrait;
 
             float textX =
                 pad + portraitSize + 8f;
@@ -686,7 +675,7 @@ namespace GK2Plus.Framework.UI
         private QuestRowView CreateQuestRow()
         {
             Sprite cardSprite =
-                _theme.InspirationCardSprite;
+                _theme.ContentCellSprite;
 
             GameObject root =
                 GK2UiFactory.CreateImage(
@@ -726,59 +715,42 @@ namespace GK2Plus.Framework.UI
             const float iconBoxSize = 42f;
             const float headerHeight = 21f;
 
-            Sprite iconFrame =
-                _theme.InspirationIconFrameSprite ??
-                _theme.ItemSlotSprite;
+            Sprite headerSprite =
+                _theme.SectionHeaderInactiveSprite;
 
-            GameObject iconBacking =
+            GameObject headerStrip =
                 GK2UiFactory.CreateImage(
                     root.transform,
-                    "QuestIconFrame",
-                    iconFrame,
-                    iconFrame != null
+                    "QuestHeaderStrip",
+                    headerSprite,
+                    headerSprite != null
                         ? Image.Type.Sliced
                         : Image.Type.Simple,
                     new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(
-                        pad,
-                        -(headerHeight + 4f)),
-                    new Vector2(
-                        iconBoxSize,
-                        iconBoxSize),
-                    iconFrame != null
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    new Vector2(0f, headerHeight),
+                    headerSprite != null
                         ? Color.white
                         : new Color(
-                            0.10f,
-                            0.10f,
-                            0.11f,
-                            0.98f));
+                            0.30f,
+                            0.27f,
+                            0.20f,
+                            0.94f));
 
-            GameObject iconObject =
-                GK2UiFactory.CreateImage(
-                    iconBacking.transform,
-                    "QuestIcon",
-                    null,
-                    Image.Type.Simple,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    new Vector2(-5f, -5f),
-                    Color.white);
+            GK2UiPortraitView iconView =
+                GK2UiPortraitBuilder.CreateStonePortrait(
+                    root.transform,
+                    _theme,
+                    "QuestPortrait",
+                    new Vector2(
+                        pad,
+                        -(headerHeight + 3f)),
+                    iconBoxSize);
 
             Image icon =
-                iconObject.GetComponent<Image>();
-
-            icon.preserveAspect =
-                true;
-
-            if (_theme?.ItemIconMaterial != null)
-            {
-                icon.material =
-                    _theme.ItemIconMaterial;
-            }
+                iconView.Portrait;
 
             TextMeshProUGUI title =
                 GK2UiFactory.CreateText(
@@ -898,8 +870,8 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     root.transform,
                     "Progress",
-                    _theme.InspirationCardSprite,
-                    _theme.InspirationCardSprite != null
+                    _theme.ContentCellSprite,
+                    _theme.ContentCellSprite != null
                         ? Image.Type.Sliced
                         : Image.Type.Simple,
                     new Vector2(0f, 0f),
@@ -907,11 +879,11 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0.5f, 0f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.InspirationCardSprite != null
+                    _theme.ContentCellSprite != null
                         ? new Color(
-                            0.86f,
                             0.82f,
-                            0.72f,
+                            0.84f,
+                            0.88f,
                             1f)
                         : new Color(
                             0.10f,
@@ -1576,15 +1548,11 @@ namespace GK2Plus.Framework.UI
                 _theme.ContentCellSprite != null
                     ? (groupCompleted
                         ? new Color(
-                            0.86f,
-                            0.92f,
-                            0.86f,
+                            0.90f,
+                            0.96f,
+                            0.90f,
                             1f)
-                        : new Color(
-                            0.92f,
-                            0.94f,
-                            0.98f,
-                            1f))
+                        : Color.white)
                     : (groupCompleted
                         ? new Color(
                             0.17f,
@@ -1695,29 +1663,33 @@ namespace GK2Plus.Framework.UI
                     _selectedQuestId,
                     StringComparison.OrdinalIgnoreCase);
 
-            Sprite cardSprite =
+            row.Background.sprite =
+                _theme.ContentCellSprite;
+            row.Background.type =
+                _theme.ContentCellSprite != null
+                    ? Image.Type.Sliced
+                    : Image.Type.Simple;
+
+            Color rowColor =
                 quest.status ==
                     QuestStatus.Completed
-                    ? (_theme.InspirationCardCompletedSprite ??
-                       _theme.InspirationCardSprite)
-                    : _theme.InspirationCardSprite;
-
-            if (cardSprite != null)
-            {
-                row.Background.sprite =
-                    cardSprite;
-                row.Background.type =
-                    Image.Type.Sliced;
-            }
+                    ? new Color(
+                        0.90f,
+                        0.94f,
+                        0.88f,
+                        1f)
+                    : Color.white;
 
             row.Background.color =
                 selected
                     ? new Color(
-                        1f,
-                        0.92f,
-                        0.72f,
+                        rowColor.r,
+                        Mathf.Min(
+                            1f,
+                            rowColor.g * 0.95f),
+                        0.78f,
                         1f)
-                    : Color.white;
+                    : rowColor;
 
             row.Title.text =
                 GetQuestTitle(
