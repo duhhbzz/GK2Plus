@@ -275,8 +275,10 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestListPane",
+                    _theme.NativePaneSurfaceSprite ??
                     _theme.ContentCellSprite,
-                    _theme.ContentCellSprite != null
+                    (_theme.NativePaneSurfaceSprite ??
+                     _theme.ContentCellSprite) != null
                         ? Image.Type.Sliced
                         : Image.Type.Simple,
                     new Vector2(0f, 0f),
@@ -284,13 +286,15 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.ContentCellSprite != null
-                        ? Color.white
-                        : new Color(
-                            0.13f,
-                            0.145f,
-                            0.17f,
-                            0.98f));
+                    _theme.NativePaneSurfaceSprite != null
+                        ? _theme.NativePaneSurfaceColor
+                        : (_theme.ContentCellSprite != null
+                            ? Color.white
+                            : new Color(
+                                0.13f,
+                                0.145f,
+                                0.17f,
+                                0.98f)));
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -310,7 +314,8 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "QuestJournalHeader",
                     "Quest Journal",
-                    GK2UiMetrics.QuestJournal.SectionHeaderHeight);
+                    GK2UiMetrics.QuestJournal.SectionHeaderHeight,
+                    true);
 
             header.Rect.offsetMin =
                 new Vector2(
@@ -327,7 +332,7 @@ namespace GK2Plus.Framework.UI
 
             float filterTop =
                 GK2UiMetrics.QuestJournal.SectionHeaderHeight +
-                4f;
+                2f;
 
             _activeFilterButton =
                 GK2UiFactory.CreateFlatButton(
@@ -423,7 +428,7 @@ namespace GK2Plus.Framework.UI
             float listTop =
                 filterTop +
                 GK2UiMetrics.QuestJournal.FilterHeight +
-                4f;
+                2f;
 
             viewportRect.offsetMin =
                 new Vector2(
@@ -989,8 +994,10 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestDetailsPane",
+                    _theme.NativePaneSurfaceSprite ??
                     _theme.ContentCellSprite,
-                    _theme.ContentCellSprite != null
+                    (_theme.NativePaneSurfaceSprite ??
+                     _theme.ContentCellSprite) != null
                         ? Image.Type.Sliced
                         : Image.Type.Simple,
                     Vector2.zero,
@@ -998,13 +1005,15 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.ContentCellSprite != null
-                        ? Color.white
-                        : new Color(
-                            0.13f,
-                            0.145f,
-                            0.17f,
-                            0.98f));
+                    _theme.NativePaneSurfaceSprite != null
+                        ? _theme.NativePaneSurfaceColor
+                        : (_theme.ContentCellSprite != null
+                            ? Color.white
+                            : new Color(
+                                0.13f,
+                                0.145f,
+                                0.17f,
+                                0.98f)));
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -1024,7 +1033,8 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "QuestDetailsHeader",
                     "Quest Details",
-                    GK2UiMetrics.QuestJournal.SectionHeaderHeight);
+                    GK2UiMetrics.QuestJournal.SectionHeaderHeight,
+                    true);
 
             paneHeader.Rect.offsetMin =
                 new Vector2(
