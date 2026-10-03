@@ -31,6 +31,10 @@ namespace GK2Plus.Framework.UI
         public Sprite ContentCellSprite { get; private set; }
         public Sprite NativePaneSurfaceSprite { get; private set; }
         public Color NativePaneSurfaceColor { get; private set; } = Color.white;
+        public Image.Type NativePaneSurfaceType { get; private set; } = Image.Type.Sliced;
+        public Sprite NativePaneFrameSprite { get; private set; }
+        public Color NativePaneFrameColor { get; private set; } = Color.white;
+        public Image.Type NativePaneFrameType { get; private set; } = Image.Type.Sliced;
         public Sprite ItemSlotSprite { get; private set; }
         public Material ItemIconMaterial { get; private set; }
 
@@ -145,7 +149,7 @@ namespace GK2Plus.Framework.UI
 
                 if (_current.NativePaneSurfaceSprite == null)
                 {
-                    _current.ResolveNativePaneSurfaceStyle(
+                    _current.ResolveNativePaneStyle(
                         logger);
                 }
 
@@ -222,7 +226,7 @@ namespace GK2Plus.Framework.UI
             theme.ResolveItemCellStyle();
             theme.ResolveSectionHeaderStyle();
             theme.ResolveInspirationCardStyle();
-            theme.ResolveNativePaneSurfaceStyle(
+            theme.ResolveNativePaneStyle(
                 logger);
 
             _current =
@@ -316,163 +320,75 @@ namespace GK2Plus.Framework.UI
                     .GetValue<TextStyle>();
         }
 
-        private void ResolveNativePaneSurfaceStyle(
+        private void ResolveNativePaneStyle(
             ManualLogSource logger)
         {
-            Image best =
-                null;
+            InspirationWidget widget =
+                Resources
+                    .FindObjectsOfTypeAll<InspirationWidget>()
+                    .FirstOrDefault(candidate =>
+                        candidate != null &&
+                        candidate.transform != null);
 
-            float bestScore =
-                0f;
-
-            foreach (Image image in
-                     Resources.FindObjectsOfTypeAll<Image>())
-            {
-                if (image == null ||
-                    image.sprite == null ||
-                    image.rectTransform == null)
-                {
-                    continue;
-                }
-
-                string hierarchy =
-                    GetHierarchyName(
-                        image.transform);
-
-                if (hierarchy.IndexOf(
-                        "perk",
-                        StringComparison.OrdinalIgnoreCase) < 0 &&
-                    hierarchy.IndexOf(
-                        "inspiration",
-                        StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                string objectName =
-                    image.gameObject.name ??
-                    string.Empty;
-
-                string spriteName =
-                    image.sprite.name ??
-                    string.Empty;
-
-                if (objectName.IndexOf(
-                        "header",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    objectName.IndexOf(
-                        "icon",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    objectName.IndexOf(
-                        "button",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    spriteName.IndexOf(
-                        "icon",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    spriteName.IndexOf(
-                        "btn",
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    continue;
-                }
-
-                Rect rect =
-                    image.rectTransform.rect;
-
-                float width =
-                    Mathf.Abs(
-                        rect.width);
-
-                float height =
-                    Mathf.Abs(
-                        rect.height);
-
-                if (width < 180f ||
-                    height < 140f)
-                {
-                    continue;
-                }
-
-                float score =
-                    width *
-                    height;
-
-                if (hierarchy.IndexOf(
-                        "perk",
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    score *=
-                        1.25f;
-                }
-
-                if (spriteName.IndexOf(
-                        "back",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    spriteName.IndexOf(
-                        "panel",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    spriteName.IndexOf(
-                        "window",
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    spriteName.IndexOf(
-                        "cell",
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    score *=
-                        1.10f;
-                }
-
-                if (score <=
-                    bestScore)
-                {
-                    continue;
-                }
-
-                best =
-                    image;
-                bestScore =
-                    score;
-            }
-
-            if (best == null)
+            if (widget == null)
             {
                 return;
             }
 
-            NativePaneSurfaceSprite =
-                best.sprite;
+            Image surface =
+                null;
 
-            NativePaneSurfaceColor =
-                best.color;
-
-            logger?.LogInfo(
-                $"GK2+ native pane surface resolved from '{best.gameObject.name}' using sprite '{best.sprite.name}'.");
-        }
-
-        private static string GetHierarchyName(
-            Transform transform)
-        {
-            if (transform == null)
-            {
-                return string.Empty;
-            }
-
-            string result =
-                string.Empty;
+            Image frame =
+                null;
 
             Transform current =
-                transform;
+                widget.transform;
 
             int depth =
                 0;
 
             while (current != null &&
-                   depth < 10)
+                   depth < 10 &&
+                   (surface == null ||
+                    frame == null))
             {
-                result =
-                    current.name +
-                    "/" +
-                    result;
+                Image image =
+                    current.GetComponent<Image>();
+
+                if (image != null &&
+                    image.sprite != null &&
+                    IsLargePaneImage(
+                        image))
+                {
+                    string objectName =
+                        image.gameObject.name ??
+                        string.Empty;
+
+                    string spriteName =
+                        image.sprite.name ??
+                        string.Empty;
+
+                    bool looksLikeFrame =
+                        ContainsAny(
+                            objectName,
+                            "frame",
+                            "border") ||
+                        ContainsAny(
+                            spriteName,
+                            "frame",
+                            "border");
+
+                    if (looksLikeFrame)
+                    {
+                        frame ??=
+                            image;
+                    }
+                    else
+                    {
+                        surface ??=
+                            image;
+                    }
+                }
 
                 current =
                     current.parent;
@@ -480,7 +396,97 @@ namespace GK2Plus.Framework.UI
                 depth++;
             }
 
-            return result;
+            if (surface != null)
+            {
+                NativePaneSurfaceSprite =
+                    surface.sprite;
+
+                NativePaneSurfaceColor =
+                    surface.color;
+
+                NativePaneSurfaceType =
+                    surface.type;
+            }
+
+            if (frame != null)
+            {
+                NativePaneFrameSprite =
+                    frame.sprite;
+
+                NativePaneFrameColor =
+                    frame.color;
+
+                NativePaneFrameType =
+                    frame.type;
+            }
+
+            if (NativePaneSurfaceSprite != null)
+            {
+                logger?.LogInfo(
+                    $"GK2+ native page pane surface: '{NativePaneSurfaceSprite.name}'" +
+                    (NativePaneFrameSprite != null
+                        ? $", frame: '{NativePaneFrameSprite.name}'."
+                        : "."));
+            }
+        }
+
+        private static bool IsLargePaneImage(
+            Image image)
+        {
+            if (image?.rectTransform == null)
+            {
+                return false;
+            }
+
+            Rect rect =
+                image.rectTransform.rect;
+
+            Vector2 sizeDelta =
+                image.rectTransform.sizeDelta;
+
+            float width =
+                Mathf.Max(
+                    Mathf.Abs(
+                        rect.width),
+                    Mathf.Abs(
+                        sizeDelta.x));
+
+            float height =
+                Mathf.Max(
+                    Mathf.Abs(
+                        rect.height),
+                    Mathf.Abs(
+                        sizeDelta.y));
+
+            return
+                width >= 220f &&
+                height >= 160f;
+        }
+
+        private static bool ContainsAny(
+            string value,
+            params string[] terms)
+        {
+            if (string.IsNullOrEmpty(
+                    value) ||
+                terms == null)
+            {
+                return false;
+            }
+
+            foreach (string term in terms)
+            {
+                if (!string.IsNullOrEmpty(
+                        term) &&
+                    value.IndexOf(
+                        term,
+                        StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ResolveInspirationCardStyle()
