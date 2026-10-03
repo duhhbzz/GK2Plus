@@ -16,6 +16,8 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
 | General / UI | [RPG Quest Journal](#rpg-quest-journal) |
+| Farming | [Continuous Planting](#continuous-planting) |
+| Movement | [Sprinting](#sprinting) |
 | Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
 | Tracker | [Unified Tracker](#unified-tracker) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
@@ -102,6 +104,32 @@ initialize against the current game build.
 - tracking/untracking an active quest from the journal;
 - controller/gamepad navigation follow-up before release;
 - disable the feature and confirm the vanilla quest tree returns.
+
+---
+
+## Continuous Planting
+
+**Category:** Farming  
+**Setting mode:** Main-menu enable/disable; read-only status during gameplay.
+
+Continuous Planting keeps the currently selected seed active after a successful planting action while more of the same seed remains in the player's inventory.
+
+Vanilla cancellation still wins: pressing the normal Action/Menu/Tab cancellation controls clears the selected seed and GK2+ does not restore it.
+
+The feature only restores the exact seed id that was successfully planted and stops when the player's remaining count reaches zero.
+
+---
+
+## Sprinting
+
+**Category:** Movement  
+**Setting mode:** Main-menu enable/disable, sprint-key selection, and speed multiplier; read-only status during gameplay.
+
+Sprinting temporarily increases the player's normal free-movement speed while the configured key is held.
+
+Default sprint key: **Left Shift**. Available in-menu keys include left/right Shift, left/right Ctrl, and Caps Lock. Speed presets range from **1.25x to 3x**.
+
+The implementation only wraps `FreePlayerState.FixedUpdate`, temporarily scaling the native `PlayerPhysicalBody.SpeedMultiplier` for that free-movement call and restoring the exact previous value afterward. This avoids intentionally changing planting, combat, scripted movement, ladders, knockback, or other non-free player states.
 
 ---
 
