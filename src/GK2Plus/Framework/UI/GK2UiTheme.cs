@@ -29,6 +29,8 @@ namespace GK2Plus.Framework.UI
         public Sprite DividerSprite { get; private set; }
         public Sprite ButtonSprite { get; private set; }
         public Sprite ContentCellSprite { get; private set; }
+        public Sprite NativePaneSurfaceSprite { get; private set; }
+        public Color NativePaneSurfaceColor { get; private set; } = Color.white;
         public Sprite ItemSlotSprite { get; private set; }
         public Material ItemIconMaterial { get; private set; }
 
@@ -141,6 +143,12 @@ namespace GK2Plus.Framework.UI
                 _current.ContentCellSprite ??=
                     FindSprite("comm-cell_dark_2");
 
+                if (_current.NativePaneSurfaceSprite == null)
+                {
+                    _current.ResolveNativePaneSurfaceStyle(
+                        logger);
+                }
+
                 if (_current.SectionHeaderSprite == null)
                 {
                     _current.ResolveSectionHeaderStyle();
@@ -214,6 +222,8 @@ namespace GK2Plus.Framework.UI
             theme.ResolveItemCellStyle();
             theme.ResolveSectionHeaderStyle();
             theme.ResolveInspirationCardStyle();
+            theme.ResolveNativePaneSurfaceStyle(
+                logger);
 
             _current =
                 theme;
@@ -304,6 +314,173 @@ namespace GK2Plus.Framework.UI
                 Traverse.Create(widget)
                     .Field("headerActiveStyle")
                     .GetValue<TextStyle>();
+        }
+
+        private void ResolveNativePaneSurfaceStyle(
+            ManualLogSource logger)
+        {
+            Image best =
+                null;
+
+            float bestScore =
+                0f;
+
+            foreach (Image image in
+                     Resources.FindObjectsOfTypeAll<Image>())
+            {
+                if (image == null ||
+                    image.sprite == null ||
+                    image.rectTransform == null)
+                {
+                    continue;
+                }
+
+                string hierarchy =
+                    GetHierarchyName(
+                        image.transform);
+
+                if (hierarchy.IndexOf(
+                        "perk",
+                        StringComparison.OrdinalIgnoreCase) < 0 &&
+                    hierarchy.IndexOf(
+                        "inspiration",
+                        StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                string objectName =
+                    image.gameObject.name ??
+                    string.Empty;
+
+                string spriteName =
+                    image.sprite.name ??
+                    string.Empty;
+
+                if (objectName.IndexOf(
+                        "header",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    objectName.IndexOf(
+                        "icon",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    objectName.IndexOf(
+                        "button",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    spriteName.IndexOf(
+                        "icon",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    spriteName.IndexOf(
+                        "btn",
+                        StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+
+                Rect rect =
+                    image.rectTransform.rect;
+
+                float width =
+                    Mathf.Abs(
+                        rect.width);
+
+                float height =
+                    Mathf.Abs(
+                        rect.height);
+
+                if (width < 180f ||
+                    height < 140f)
+                {
+                    continue;
+                }
+
+                float score =
+                    width *
+                    height;
+
+                if (hierarchy.IndexOf(
+                        "perk",
+                        StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    score *=
+                        1.25f;
+                }
+
+                if (spriteName.IndexOf(
+                        "back",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    spriteName.IndexOf(
+                        "panel",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    spriteName.IndexOf(
+                        "window",
+                        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    spriteName.IndexOf(
+                        "cell",
+                        StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    score *=
+                        1.10f;
+                }
+
+                if (score <=
+                    bestScore)
+                {
+                    continue;
+                }
+
+                best =
+                    image;
+                bestScore =
+                    score;
+            }
+
+            if (best == null)
+            {
+                return;
+            }
+
+            NativePaneSurfaceSprite =
+                best.sprite;
+
+            NativePaneSurfaceColor =
+                best.color;
+
+            logger?.LogInfo(
+                $"GK2+ native pane surface resolved from '{best.gameObject.name}' using sprite '{best.sprite.name}'.");
+        }
+
+        private static string GetHierarchyName(
+            Transform transform)
+        {
+            if (transform == null)
+            {
+                return string.Empty;
+            }
+
+            string result =
+                string.Empty;
+
+            Transform current =
+                transform;
+
+            int depth =
+                0;
+
+            while (current != null &&
+                   depth < 10)
+            {
+                result =
+                    current.name +
+                    "/" +
+                    result;
+
+                current =
+                    current.parent;
+
+                depth++;
+            }
+
+            return result;
         }
 
         private void ResolveInspirationCardStyle()
