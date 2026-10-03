@@ -21,6 +21,7 @@ namespace GK2Plus.Framework.UI
             "Inventory",
             "Crafting",
             "Farming",
+            "Movement",
             "Tracker",
             "Zombies",
             "Cheats",
