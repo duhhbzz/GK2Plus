@@ -252,6 +252,7 @@ namespace GK2Plus.Framework.UI
             BuildHeader();
             BuildQuestList();
             BuildDetails();
+            BuildPaneDivider();
 
             _logger?.LogInfo(
                 "GK2+ Quest Journal mounted into native Quests tab.");
@@ -261,6 +262,64 @@ namespace GK2Plus.Framework.UI
         {
             // Intentionally empty. Native-style section headers are built
             // into the left and right panes, matching Character/Inspirations.
+        }
+
+        private void BuildPaneDivider()
+        {
+            float dividerX =
+                GK2UiMetrics.QuestJournal.OuterPadding +
+                GK2UiMetrics.QuestJournal.LeftPaneWidth +
+                (GK2UiMetrics.QuestJournal.PaneGap / 2f);
+
+            GameObject shadow =
+                GK2UiFactory.CreateImage(
+                    _root.transform,
+                    "PaneDividerShadow",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(0.03f, 0.035f, 0.045f, 0.98f));
+
+            RectTransform shadowRect =
+                shadow.GetComponent<RectTransform>();
+
+            shadowRect.offsetMin =
+                new Vector2(
+                    dividerX - 2f,
+                    GK2UiMetrics.QuestJournal.OuterPadding);
+            shadowRect.offsetMax =
+                new Vector2(
+                    dividerX + 2f,
+                    -GK2UiMetrics.QuestJournal.OuterPadding);
+
+            GameObject highlight =
+                GK2UiFactory.CreateImage(
+                    _root.transform,
+                    "PaneDividerHighlight",
+                    null,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(0.30f, 0.31f, 0.34f, 0.48f));
+
+            RectTransform highlightRect =
+                highlight.GetComponent<RectTransform>();
+
+            highlightRect.offsetMin =
+                new Vector2(
+                    dividerX - 0.5f,
+                    GK2UiMetrics.QuestJournal.OuterPadding);
+            highlightRect.offsetMax =
+                new Vector2(
+                    dividerX + 0.5f,
+                    -GK2UiMetrics.QuestJournal.OuterPadding);
         }
 
         private void BuildQuestList()
@@ -282,7 +341,11 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.RowBackground);
+                    new Color(
+                        0.13f,
+                        0.145f,
+                        0.17f,
+                        0.98f));
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -489,17 +552,12 @@ namespace GK2Plus.Framework.UI
 
         private QuestGroupView CreateQuestGroup()
         {
-            Sprite cardSprite =
-                _theme.InspirationCardSprite;
-
             GameObject root =
                 GK2UiFactory.CreateImage(
                     _questListContent,
                     "QuestGroup",
-                    cardSprite,
-                    cardSprite != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
+                    null,
+                    Image.Type.Simple,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0.5f, 1f),
@@ -507,9 +565,11 @@ namespace GK2Plus.Framework.UI
                     new Vector2(
                         0f,
                         GK2UiMetrics.QuestJournal.QuestGroupHeight),
-                    cardSprite != null
-                        ? Color.white
-                        : _theme.RowBackground,
+                    new Color(
+                        0.18f,
+                        0.19f,
+                        0.22f,
+                        0.96f),
                     true);
 
             RectTransform rect =
@@ -632,13 +692,13 @@ namespace GK2Plus.Framework.UI
                     _theme.TitleTextTemplate ??
                     _theme.BodyTextTemplate,
                     "▶",
-                    18f,
+                    14f,
                     TextAlignmentOptions.Center,
                     new Vector2(1f, 0.5f),
                     new Vector2(1f, 0.5f),
                     new Vector2(1f, 0.5f),
-                    new Vector2(-12f, 0f),
-                    new Vector2(30f, 30f));
+                    new Vector2(-14f, 0f),
+                    new Vector2(24f, 24f));
 
             chevron.color =
                 _theme.AccentText;
@@ -983,7 +1043,11 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.RowBackground);
+                    new Color(
+                        0.13f,
+                        0.145f,
+                        0.17f,
+                        0.98f));
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -1094,9 +1158,9 @@ namespace GK2Plus.Framework.UI
                     "DetailQuestIcon",
                     null,
                     Image.Type.Simple,
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
                     Vector2.zero,
                     new Vector2(
                         GK2UiMetrics.QuestJournal.DetailPortraitSize,
@@ -1516,22 +1580,22 @@ namespace GK2Plus.Framework.UI
                 quests.All(quest =>
                     quest.status == QuestStatus.Completed);
 
-            Sprite groupSprite =
-                groupCompleted
-                    ? (_theme.InspirationCardCompletedSprite ??
-                       _theme.InspirationCardSprite)
-                    : _theme.InspirationCardSprite;
-
-            if (groupSprite != null)
-            {
-                view.Background.sprite =
-                    groupSprite;
-                view.Background.type =
-                    Image.Type.Sliced;
-            }
-
+            view.Background.sprite =
+                null;
+            view.Background.type =
+                Image.Type.Simple;
             view.Background.color =
-                Color.white;
+                groupCompleted
+                    ? new Color(
+                        0.17f,
+                        0.19f,
+                        0.17f,
+                        0.96f)
+                    : new Color(
+                        0.18f,
+                        0.19f,
+                        0.22f,
+                        0.96f);
 
             view.Title.text =
                 GetQuestGroupDisplayName(
@@ -1823,14 +1887,14 @@ namespace GK2Plus.Framework.UI
                 GetQuestTitle(
                     quest);
 
-            float portraitReserve =
+            float summaryTextOffset =
                 GK2UiMetrics.QuestJournal.DetailPortraitSize +
                 GK2UiMetrics.QuestJournal.DetailPortraitGap;
 
             Vector2 titlePreferred =
                 _detailTitle.GetPreferredValues(
                     _detailTitle.text,
-                    contentWidth - portraitReserve,
+                    contentWidth - summaryTextOffset,
                     0f);
 
             float titleHeight =
@@ -1839,10 +1903,12 @@ namespace GK2Plus.Framework.UI
                     titlePreferred.y);
 
             _detailTitle.rectTransform.anchoredPosition =
-                new Vector2(0f, -y);
+                new Vector2(
+                    summaryTextOffset,
+                    -y);
             _detailTitle.rectTransform.sizeDelta =
                 new Vector2(
-                    -portraitReserve,
+                    -summaryTextOffset,
                     titleHeight);
 
             try
@@ -1883,10 +1949,12 @@ namespace GK2Plus.Framework.UI
                     quest);
 
             _detailStatus.rectTransform.anchoredPosition =
-                new Vector2(0f, -y);
+                new Vector2(
+                    summaryTextOffset,
+                    -y);
             _detailStatus.rectTransform.sizeDelta =
                 new Vector2(
-                    -portraitReserve,
+                    -summaryTextOffset,
                     18f);
 
             float summaryBottom =
@@ -1930,7 +1998,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f);
                 trackRect.anchoredPosition =
                     new Vector2(
-                        0f,
+                        summaryTextOffset,
                         -(y + 21f));
 
                 summaryBottom =
