@@ -252,7 +252,6 @@ namespace GK2Plus.Framework.UI
             BuildHeader();
             BuildQuestList();
             BuildDetails();
-            BuildPaneDivider();
 
             _logger?.LogInfo(
                 "GK2+ Quest Journal mounted into native Quests tab.");
@@ -264,62 +263,34 @@ namespace GK2Plus.Framework.UI
             // into the left and right panes, matching Character/Inspirations.
         }
 
-        private void BuildPaneDivider()
+        private void AddNativePaneFrame(
+            Transform parent)
         {
-            float dividerX =
-                GK2UiMetrics.QuestJournal.OuterPadding +
-                GK2UiMetrics.QuestJournal.LeftPaneWidth +
-                (GK2UiMetrics.QuestJournal.PaneGap / 2f);
+            if (_theme?.WindowFrameSprite == null)
+            {
+                return;
+            }
 
-            GameObject shadow =
+            GameObject frame =
                 GK2UiFactory.CreateImage(
-                    _root.transform,
-                    "PaneDividerShadow",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(0f, 1f),
+                    parent,
+                    "PaneFrame",
+                    _theme.WindowFrameSprite,
+                    Image.Type.Sliced,
+                    Vector2.zero,
+                    Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    new Color(0.03f, 0.035f, 0.045f, 0.98f));
+                    Color.white);
 
-            RectTransform shadowRect =
-                shadow.GetComponent<RectTransform>();
+            RectTransform rect =
+                frame.GetComponent<RectTransform>();
 
-            shadowRect.offsetMin =
-                new Vector2(
-                    dividerX - 2f,
-                    GK2UiMetrics.QuestJournal.OuterPadding);
-            shadowRect.offsetMax =
-                new Vector2(
-                    dividerX + 2f,
-                    -GK2UiMetrics.QuestJournal.OuterPadding);
-
-            GameObject highlight =
-                GK2UiFactory.CreateImage(
-                    _root.transform,
-                    "PaneDividerHighlight",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    new Color(0.30f, 0.31f, 0.34f, 0.48f));
-
-            RectTransform highlightRect =
-                highlight.GetComponent<RectTransform>();
-
-            highlightRect.offsetMin =
-                new Vector2(
-                    dividerX - 0.5f,
-                    GK2UiMetrics.QuestJournal.OuterPadding);
-            highlightRect.offsetMax =
-                new Vector2(
-                    dividerX + 0.5f,
-                    -GK2UiMetrics.QuestJournal.OuterPadding);
+            rect.offsetMin =
+                Vector2.zero;
+            rect.offsetMax =
+                Vector2.zero;
         }
 
         private void BuildQuestList()
@@ -358,6 +329,9 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     left + width,
                     -GK2UiMetrics.QuestJournal.OuterPadding);
+
+            AddNativePaneFrame(
+                pane.transform);
 
             GK2UiSectionHeaderView header =
                 GK2UiSectionHeaderBuilder.Create(
@@ -1061,6 +1035,9 @@ namespace GK2Plus.Framework.UI
                     -GK2UiMetrics.QuestJournal.OuterPadding,
                     -GK2UiMetrics.QuestJournal.OuterPadding);
 
+            AddNativePaneFrame(
+                pane.transform);
+
             GK2UiSectionHeaderView paneHeader =
                 GK2UiSectionHeaderBuilder.Create(
                     pane.transform,
@@ -1202,6 +1179,17 @@ namespace GK2Plus.Framework.UI
             _descriptionHeaderRect =
                 descriptionHeader.Rect;
 
+            if (_theme?.SectionHeaderInactiveSprite != null)
+            {
+                descriptionHeader.Background.sprite =
+                    _theme.SectionHeaderInactiveSprite;
+                descriptionHeader.Background.type =
+                    Image.Type.Sliced;
+            }
+
+            descriptionHeader.Title.fontSize =
+                12f;
+
             _detailDescription =
                 GK2UiFactory.CreateText(
                     _detailContent,
@@ -1231,6 +1219,17 @@ namespace GK2Plus.Framework.UI
                 objectivesHeader.Rect;
             _objectivesTitle =
                 objectivesHeader.Title;
+
+            if (_theme?.SectionHeaderInactiveSprite != null)
+            {
+                objectivesHeader.Background.sprite =
+                    _theme.SectionHeaderInactiveSprite;
+                objectivesHeader.Background.type =
+                    Image.Type.Sliced;
+            }
+
+            objectivesHeader.Title.fontSize =
+                12f;
 
             _trackButton =
                 GK2UiFactory.CreateFlatButton(
@@ -2014,11 +2013,11 @@ namespace GK2Plus.Framework.UI
             _descriptionHeaderRect.gameObject.SetActive(
                 true);
             _descriptionHeaderRect.anchoredPosition =
-                new Vector2(0f, -y);
+                new Vector2(6f, -y);
             _descriptionHeaderRect.sizeDelta =
-                new Vector2(0f, 26f);
+                new Vector2(-12f, 22f);
 
-            y += 31f;
+            y += 27f;
 
             _detailDescription.text =
                 quest.Description ??
@@ -2060,11 +2059,11 @@ namespace GK2Plus.Framework.UI
             if (showObjectives)
             {
                 _objectivesHeaderRect.anchoredPosition =
-                    new Vector2(0f, -y);
+                    new Vector2(6f, -y);
                 _objectivesHeaderRect.sizeDelta =
-                    new Vector2(0f, 26f);
+                    new Vector2(-12f, 22f);
 
-                y += 31f;
+                y += 27f;
 
                 int columns =
                     Mathf.Max(
