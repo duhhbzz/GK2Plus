@@ -578,7 +578,8 @@ namespace GK2Plus.Framework.UI
                     new Vector2(
                         pad,
                         -3f),
-                    portraitSize);
+                    portraitSize,
+                    1.55f);
 
             Image portrait =
                 portraitView.Portrait;
