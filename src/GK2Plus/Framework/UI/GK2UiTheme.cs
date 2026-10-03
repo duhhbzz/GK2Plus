@@ -29,17 +29,6 @@ namespace GK2Plus.Framework.UI
         public Sprite DividerSprite { get; private set; }
         public Sprite ButtonSprite { get; private set; }
         public Sprite ContentCellSprite { get; private set; }
-        public Sprite NativePaneSurfaceSprite { get; private set; }
-        public Texture NativePaneSurfaceTexture { get; private set; }
-        public Material NativePaneSurfaceMaterial { get; private set; }
-        public Rect NativePaneSurfaceUvRect { get; private set; } =
-            new Rect(0f, 0f, 1f, 1f);
-        public Color NativePaneSurfaceColor { get; private set; } = Color.white;
-        public Image.Type NativePaneSurfaceType { get; private set; } = Image.Type.Sliced;
-        public Sprite NativePaneFrameSprite { get; private set; }
-        public Material NativePaneFrameMaterial { get; private set; }
-        public Color NativePaneFrameColor { get; private set; } = Color.white;
-        public Image.Type NativePaneFrameType { get; private set; } = Image.Type.Sliced;
         public Sprite ItemSlotSprite { get; private set; }
         public Material ItemIconMaterial { get; private set; }
 
@@ -152,13 +141,6 @@ namespace GK2Plus.Framework.UI
                 _current.ContentCellSprite ??=
                     FindSprite("comm-cell_dark_2");
 
-                if (_current.NativePaneSurfaceSprite == null &&
-                    _current.NativePaneSurfaceTexture == null)
-                {
-                    _current.ResolveNativePaneStyle(
-                        logger);
-                }
-
                 if (_current.SectionHeaderSprite == null)
                 {
                     _current.ResolveSectionHeaderStyle();
@@ -232,8 +214,6 @@ namespace GK2Plus.Framework.UI
             theme.ResolveItemCellStyle();
             theme.ResolveSectionHeaderStyle();
             theme.ResolveInspirationCardStyle();
-            theme.ResolveNativePaneStyle(
-                logger);
 
             _current =
                 theme;
@@ -324,237 +304,6 @@ namespace GK2Plus.Framework.UI
                 Traverse.Create(widget)
                     .Field("headerActiveStyle")
                     .GetValue<TextStyle>();
-        }
-
-        private void ResolveNativePaneStyle(
-            ManualLogSource logger)
-        {
-            InspirationWidget widget =
-                Resources
-                    .FindObjectsOfTypeAll<InspirationWidget>()
-                    .FirstOrDefault(candidate =>
-                        candidate != null &&
-                        candidate.transform != null);
-
-            if (widget == null)
-            {
-                return;
-            }
-
-            RawImage rawSurface =
-                null;
-
-            Image imageSurface =
-                null;
-
-            Image frame =
-                null;
-
-            Transform current =
-                widget.transform;
-
-            int depth =
-                0;
-
-            while (current != null &&
-                   depth < 10)
-            {
-                Graphic[] graphics =
-                    current
-                        .GetComponentsInChildren<Graphic>(
-                            true)
-                        .Where(graphic =>
-                            graphic != null &&
-                            (graphic.transform == current ||
-                             graphic.transform.parent == current))
-                        .ToArray();
-
-                foreach (Graphic graphic in graphics)
-                {
-                    if (!IsLargePaneGraphic(
-                            graphic))
-                    {
-                        continue;
-                    }
-
-                    string objectName =
-                        graphic.gameObject.name ??
-                        string.Empty;
-
-                    if (ContainsAny(
-                            objectName,
-                            "header",
-                            "button",
-                            "icon"))
-                    {
-                        continue;
-                    }
-
-                    if (graphic is RawImage rawImage &&
-                        rawImage.texture != null)
-                    {
-                        rawSurface ??=
-                            rawImage;
-
-                        continue;
-                    }
-
-                    if (!(graphic is Image image) ||
-                        image.sprite == null)
-                    {
-                        continue;
-                    }
-
-                    string spriteName =
-                        image.sprite.name ??
-                        string.Empty;
-
-                    bool looksLikeFrame =
-                        ContainsAny(
-                            objectName,
-                            "frame",
-                            "border") ||
-                        ContainsAny(
-                            spriteName,
-                            "frame",
-                            "border");
-
-                    if (looksLikeFrame)
-                    {
-                        frame ??=
-                            image;
-                    }
-                    else
-                    {
-                        imageSurface ??=
-                            image;
-                    }
-                }
-
-                current =
-                    current.parent;
-
-                depth++;
-            }
-
-            if (rawSurface != null)
-            {
-                NativePaneSurfaceTexture =
-                    rawSurface.texture;
-
-                NativePaneSurfaceMaterial =
-                    rawSurface.material;
-
-                NativePaneSurfaceUvRect =
-                    rawSurface.uvRect;
-
-                NativePaneSurfaceColor =
-                    rawSurface.color;
-
-                NativePaneSurfaceSprite =
-                    null;
-            }
-            else if (imageSurface != null)
-            {
-                NativePaneSurfaceSprite =
-                    imageSurface.sprite;
-
-                NativePaneSurfaceMaterial =
-                    imageSurface.material;
-
-                NativePaneSurfaceColor =
-                    imageSurface.color;
-
-                NativePaneSurfaceType =
-                    imageSurface.type;
-            }
-
-            if (frame != null)
-            {
-                NativePaneFrameSprite =
-                    frame.sprite;
-
-                NativePaneFrameMaterial =
-                    frame.material;
-
-                NativePaneFrameColor =
-                    frame.color;
-
-                NativePaneFrameType =
-                    frame.type;
-            }
-
-            string surfaceName =
-                rawSurface != null
-                    ? $"RawImage texture '{rawSurface.texture?.name ?? "unnamed"}'"
-                    : NativePaneSurfaceSprite != null
-                        ? $"Image sprite '{NativePaneSurfaceSprite.name}'"
-                        : "none";
-
-            logger?.LogInfo(
-                $"GK2+ native page pane surface: {surfaceName}" +
-                (NativePaneFrameSprite != null
-                    ? $", frame: '{NativePaneFrameSprite.name}'."
-                    : "."));
-        }
-
-        private static bool IsLargePaneGraphic(
-            Graphic graphic)
-        {
-            if (graphic?.rectTransform == null)
-            {
-                return false;
-            }
-
-            Rect rect =
-                graphic.rectTransform.rect;
-
-            Vector2 sizeDelta =
-                graphic.rectTransform.sizeDelta;
-
-            float width =
-                Mathf.Max(
-                    Mathf.Abs(
-                        rect.width),
-                    Mathf.Abs(
-                        sizeDelta.x));
-
-            float height =
-                Mathf.Max(
-                    Mathf.Abs(
-                        rect.height),
-                    Mathf.Abs(
-                        sizeDelta.y));
-
-            return
-                width >= 220f &&
-                height >= 160f;
-        }
-
-        private static bool ContainsAny(
-            string value,
-            params string[] terms)
-        {
-            if (string.IsNullOrEmpty(
-                    value) ||
-                terms == null)
-            {
-                return false;
-            }
-
-            foreach (string term in terms)
-            {
-                if (!string.IsNullOrEmpty(
-                        term) &&
-                    value.IndexOf(
-                        term,
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private void ResolveInspirationCardStyle()
