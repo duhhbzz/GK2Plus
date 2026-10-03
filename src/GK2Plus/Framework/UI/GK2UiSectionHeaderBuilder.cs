@@ -19,8 +19,7 @@ namespace GK2Plus.Framework.UI
             GK2UiTheme theme,
             string name,
             string title,
-            float height,
-            bool addOrnaments = false)
+            float height)
         {
             GameObject root =
                 GK2UiFactory.CreateImage(
@@ -39,57 +38,6 @@ namespace GK2Plus.Framework.UI
                         ? Color.white
                         : theme?.HeaderBackground ??
                           new Color(0.43f, 0.33f, 0.20f, 0.97f));
-
-            if (addOrnaments &&
-                theme?.DividerSprite != null)
-            {
-                GameObject leftDecor =
-                    GK2UiFactory.CreateImage(
-                        root.transform,
-                        "LeftDecor",
-                        theme.DividerSprite,
-                        Image.Type.Simple,
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(1f, 0.5f),
-                        new Vector2(-68f, 0f),
-                        new Vector2(58f, 12f),
-                        Color.white);
-
-                Image leftImage =
-                    leftDecor.GetComponent<Image>();
-
-                leftImage.preserveAspect =
-                    true;
-
-                GameObject rightDecor =
-                    GK2UiFactory.CreateImage(
-                        root.transform,
-                        "RightDecor",
-                        theme.DividerSprite,
-                        Image.Type.Simple,
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(0f, 0.5f),
-                        new Vector2(68f, 0f),
-                        new Vector2(58f, 12f),
-                        Color.white);
-
-                Image rightImage =
-                    rightDecor.GetComponent<Image>();
-
-                rightImage.preserveAspect =
-                    true;
-
-                RectTransform rightRect =
-                    rightDecor.GetComponent<RectTransform>();
-
-                rightRect.localScale =
-                    new Vector3(
-                        -1f,
-                        1f,
-                        1f);
-            }
 
             TextMeshProUGUI label =
                 GK2UiFactory.CreateText(
