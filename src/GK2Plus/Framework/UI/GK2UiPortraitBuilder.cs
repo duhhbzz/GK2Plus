@@ -22,7 +22,8 @@ namespace GK2Plus.Framework.UI
             GK2UiTheme theme,
             string name,
             Vector2 anchoredPosition,
-            float size)
+            float size,
+            float visualScale = 1f)
         {
             Sprite backingSprite =
                 theme?.ContentCellSprite;
@@ -93,6 +94,11 @@ namespace GK2Plus.Framework.UI
                 new Vector2(2f, 2f);
             portraitRect.offsetMax =
                 new Vector2(-2f, -2f);
+            portraitRect.localScale =
+                new Vector3(
+                    visualScale,
+                    visualScale,
+                    1f);
 
             Image portrait =
                 portraitObject.GetComponent<Image>();
