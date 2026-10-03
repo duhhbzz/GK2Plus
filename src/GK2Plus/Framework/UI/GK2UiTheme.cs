@@ -28,6 +28,7 @@ namespace GK2Plus.Framework.UI
         public Sprite WindowBackgroundSprite { get; private set; }
         public Sprite DividerSprite { get; private set; }
         public Sprite ButtonSprite { get; private set; }
+        public Sprite ContentCellSprite { get; private set; }
         public Sprite ItemSlotSprite { get; private set; }
         public Material ItemIconMaterial { get; private set; }
 
@@ -137,6 +138,9 @@ namespace GK2Plus.Framework.UI
                     _current.ResolveItemCellStyle();
                 }
 
+                _current.ContentCellSprite ??=
+                    FindSprite("comm-cell_dark_2");
+
                 if (_current.SectionHeaderSprite == null)
                 {
                     _current.ResolveSectionHeaderStyle();
@@ -163,6 +167,8 @@ namespace GK2Plus.Framework.UI
                 FindSprite("widget_perks-text_decor-drk_1");
             theme.ButtonSprite =
                 FindSprite("comm-btn-simple_red-active");
+            theme.ContentCellSprite =
+                FindSprite("comm-cell_dark_2");
 
             theme.TitleTextTemplate =
                 ResolveInventoryHeaderTemplate();
