@@ -30,9 +30,14 @@ namespace GK2Plus.Framework.UI
         public Sprite ButtonSprite { get; private set; }
         public Sprite ContentCellSprite { get; private set; }
         public Sprite NativePaneSurfaceSprite { get; private set; }
+        public Texture NativePaneSurfaceTexture { get; private set; }
+        public Material NativePaneSurfaceMaterial { get; private set; }
+        public Rect NativePaneSurfaceUvRect { get; private set; } =
+            new Rect(0f, 0f, 1f, 1f);
         public Color NativePaneSurfaceColor { get; private set; } = Color.white;
         public Image.Type NativePaneSurfaceType { get; private set; } = Image.Type.Sliced;
         public Sprite NativePaneFrameSprite { get; private set; }
+        public Material NativePaneFrameMaterial { get; private set; }
         public Color NativePaneFrameColor { get; private set; } = Color.white;
         public Image.Type NativePaneFrameType { get; private set; } = Image.Type.Sliced;
         public Sprite ItemSlotSprite { get; private set; }
@@ -147,7 +152,8 @@ namespace GK2Plus.Framework.UI
                 _current.ContentCellSprite ??=
                     FindSprite("comm-cell_dark_2");
 
-                if (_current.NativePaneSurfaceSprite == null)
+                if (_current.NativePaneSurfaceSprite == null &&
+                    _current.NativePaneSurfaceTexture == null)
                 {
                     _current.ResolveNativePaneStyle(
                         logger);
@@ -335,7 +341,10 @@ namespace GK2Plus.Framework.UI
                 return;
             }
 
-            Image surface =
+            RawImage rawSurface =
+                null;
+
+            Image imageSurface =
                 null;
 
             Image frame =
@@ -348,32 +357,53 @@ namespace GK2Plus.Framework.UI
                 0;
 
             while (current != null &&
-                   depth < 10 &&
-                   (surface == null ||
-                    frame == null))
+                   depth < 10)
             {
-                Image[] images =
+                Graphic[] graphics =
                     current
-                        .GetComponentsInChildren<Image>(
+                        .GetComponentsInChildren<Graphic>(
                             true)
-                        .Where(image =>
-                            image != null &&
-                            (image.transform == current ||
-                             image.transform.parent == current))
+                        .Where(graphic =>
+                            graphic != null &&
+                            (graphic.transform == current ||
+                             graphic.transform.parent == current))
                         .ToArray();
 
-                foreach (Image image in images)
+                foreach (Graphic graphic in graphics)
                 {
-                    if (image.sprite == null ||
-                        !IsLargePaneImage(
-                            image))
+                    if (!IsLargePaneGraphic(
+                            graphic))
                     {
                         continue;
                     }
 
                     string objectName =
-                        image.gameObject.name ??
+                        graphic.gameObject.name ??
                         string.Empty;
+
+                    if (ContainsAny(
+                            objectName,
+                            "header",
+                            "button",
+                            "icon"))
+                    {
+                        continue;
+                    }
+
+                    if (graphic is RawImage rawImage &&
+                        rawImage.texture != null)
+                    {
+                        rawSurface ??=
+                            rawImage;
+
+                        continue;
+                    }
+
+                    if (!(graphic is Image image) ||
+                        image.sprite == null)
+                    {
+                        continue;
+                    }
 
                     string spriteName =
                         image.sprite.name ??
@@ -396,7 +426,7 @@ namespace GK2Plus.Framework.UI
                     }
                     else
                     {
-                        surface ??=
+                        imageSurface ??=
                             image;
                     }
                 }
@@ -407,22 +437,45 @@ namespace GK2Plus.Framework.UI
                 depth++;
             }
 
-            if (surface != null)
+            if (rawSurface != null)
             {
-                NativePaneSurfaceSprite =
-                    surface.sprite;
+                NativePaneSurfaceTexture =
+                    rawSurface.texture;
+
+                NativePaneSurfaceMaterial =
+                    rawSurface.material;
+
+                NativePaneSurfaceUvRect =
+                    rawSurface.uvRect;
 
                 NativePaneSurfaceColor =
-                    surface.color;
+                    rawSurface.color;
+
+                NativePaneSurfaceSprite =
+                    null;
+            }
+            else if (imageSurface != null)
+            {
+                NativePaneSurfaceSprite =
+                    imageSurface.sprite;
+
+                NativePaneSurfaceMaterial =
+                    imageSurface.material;
+
+                NativePaneSurfaceColor =
+                    imageSurface.color;
 
                 NativePaneSurfaceType =
-                    surface.type;
+                    imageSurface.type;
             }
 
             if (frame != null)
             {
                 NativePaneFrameSprite =
                     frame.sprite;
+
+                NativePaneFrameMaterial =
+                    frame.material;
 
                 NativePaneFrameColor =
                     frame.color;
@@ -431,30 +484,33 @@ namespace GK2Plus.Framework.UI
                     frame.type;
             }
 
-            if (NativePaneSurfaceSprite != null)
-            {
-                logger?.LogInfo(
-                    $"GK2+ native page pane surface: '{NativePaneSurfaceSprite.name}'" +
-                    (NativePaneFrameSprite != null
-                        ? $", frame: '{NativePaneFrameSprite.name}'."
-                        : ".") +
-                    $" Source: '{surface?.gameObject?.name ?? "unknown"}'.");
-            }
+            string surfaceName =
+                rawSurface != null
+                    ? $"RawImage texture '{rawSurface.texture?.name ?? "unnamed"}'"
+                    : NativePaneSurfaceSprite != null
+                        ? $"Image sprite '{NativePaneSurfaceSprite.name}'"
+                        : "none";
+
+            logger?.LogInfo(
+                $"GK2+ native page pane surface: {surfaceName}" +
+                (NativePaneFrameSprite != null
+                    ? $", frame: '{NativePaneFrameSprite.name}'."
+                    : "."));
         }
 
-        private static bool IsLargePaneImage(
-            Image image)
+        private static bool IsLargePaneGraphic(
+            Graphic graphic)
         {
-            if (image?.rectTransform == null)
+            if (graphic?.rectTransform == null)
             {
                 return false;
             }
 
             Rect rect =
-                image.rectTransform.rect;
+                graphic.rectTransform.rect;
 
             Vector2 sizeDelta =
-                image.rectTransform.sizeDelta;
+                graphic.rectTransform.sizeDelta;
 
             float width =
                 Mathf.Max(
