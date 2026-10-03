@@ -271,33 +271,20 @@ namespace GK2Plus.Framework.UI
             float width =
                 GK2UiMetrics.QuestJournal.LeftPaneWidth;
 
-            GameObject pane =
-                GK2UiFactory.CreateImage(
+            GK2UiPagePaneView paneView =
+                GK2UiPagePaneBuilder.Create(
                     _root.transform,
+                    _theme,
                     "QuestListPane",
-                    _theme.NativePaneSurfaceSprite ??
-                    _theme.ContentCellSprite,
-                    (_theme.NativePaneSurfaceSprite ??
-                     _theme.ContentCellSprite) != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
                     new Vector2(0f, 0f),
                     new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    _theme.NativePaneSurfaceSprite != null
-                        ? _theme.NativePaneSurfaceColor
-                        : (_theme.ContentCellSprite != null
-                            ? Color.white
-                            : new Color(
-                                0.13f,
-                                0.145f,
-                                0.17f,
-                                0.98f)));
+                    new Vector2(0f, 1f));
+
+            GameObject pane =
+                paneView.Root;
 
             RectTransform paneRect =
-                pane.GetComponent<RectTransform>();
+                paneView.Rect;
 
             paneRect.offsetMin =
                 new Vector2(
@@ -314,8 +301,7 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "QuestJournalHeader",
                     "Quest Journal",
-                    GK2UiMetrics.QuestJournal.SectionHeaderHeight,
-                    true);
+                    GK2UiMetrics.QuestJournal.SectionHeaderHeight);
 
             header.Rect.offsetMin =
                 new Vector2(
@@ -990,33 +976,20 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.LeftPaneWidth +
                 GK2UiMetrics.QuestJournal.PaneGap;
 
-            GameObject pane =
-                GK2UiFactory.CreateImage(
+            GK2UiPagePaneView paneView =
+                GK2UiPagePaneBuilder.Create(
                     _root.transform,
+                    _theme,
                     "QuestDetailsPane",
-                    _theme.NativePaneSurfaceSprite ??
-                    _theme.ContentCellSprite,
-                    (_theme.NativePaneSurfaceSprite ??
-                     _theme.ContentCellSprite) != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    _theme.NativePaneSurfaceSprite != null
-                        ? _theme.NativePaneSurfaceColor
-                        : (_theme.ContentCellSprite != null
-                            ? Color.white
-                            : new Color(
-                                0.13f,
-                                0.145f,
-                                0.17f,
-                                0.98f)));
+                    new Vector2(0.5f, 0.5f));
+
+            GameObject pane =
+                paneView.Root;
 
             RectTransform paneRect =
-                pane.GetComponent<RectTransform>();
+                paneView.Rect;
 
             paneRect.offsetMin =
                 new Vector2(
@@ -1033,8 +1006,7 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "QuestDetailsHeader",
                     "Quest Details",
-                    GK2UiMetrics.QuestJournal.SectionHeaderHeight,
-                    true);
+                    GK2UiMetrics.QuestJournal.SectionHeaderHeight);
 
             paneHeader.Rect.offsetMin =
                 new Vector2(
