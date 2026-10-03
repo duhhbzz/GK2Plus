@@ -88,6 +88,8 @@ Current top-level tabs:
 - Inventory
 - Crafting
 - Farming
+- Movement
+- Tracker
 - Zombies
 - Cheats
 - More
