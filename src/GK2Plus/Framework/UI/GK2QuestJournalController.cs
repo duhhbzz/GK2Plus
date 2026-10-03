@@ -272,14 +272,17 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.LeftPaneWidth;
 
             GameObject pane =
-                GK2UiFactory.CreateRect(
+                GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestListPane",
+                    null,
+                    Image.Type.Simple,
                     new Vector2(0f, 0f),
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
-                    Vector2.zero);
+                    Vector2.zero,
+                    _theme.RowBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -970,14 +973,17 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.PaneGap;
 
             GameObject pane =
-                GK2UiFactory.CreateRect(
+                GK2UiFactory.CreateImage(
                     _root.transform,
                     "QuestDetailsPane",
+                    null,
+                    Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    Vector2.zero);
+                    Vector2.zero,
+                    _theme.RowBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -1127,7 +1133,7 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "DescriptionHeader",
                     "Description",
-                    30f);
+                    26f);
 
             _descriptionHeaderRect =
                 descriptionHeader.Rect;
@@ -1155,7 +1161,7 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "ObjectivesHeader",
                     "Objectives",
-                    30f);
+                    26f);
 
             _objectivesHeaderRect =
                 objectivesHeader.Rect;
@@ -1169,7 +1175,7 @@ namespace GK2Plus.Framework.UI
                     _theme,
                     "Track Quest",
                     Vector2.zero,
-                    new Vector2(132f, 29f),
+                    new Vector2(118f, 26f),
                     () =>
                     {
                         QuestData quest =
@@ -1195,7 +1201,7 @@ namespace GK2Plus.Framework.UI
             if (_trackButtonLabel != null)
             {
                 _trackButtonLabel.rectTransform.offsetMin =
-                    new Vector2(30f, 0f);
+                    new Vector2(25f, 0f);
             }
 
             GameObject pin =
@@ -1208,7 +1214,7 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 0.5f),
                     new Vector2(0f, 0.5f),
                     new Vector2(5f, 0f),
-                    new Vector2(25f, 25f),
+                    new Vector2(21f, 21f),
                     Color.white);
 
             _trackPinIcon =
@@ -1870,7 +1876,7 @@ namespace GK2Plus.Framework.UI
                 new Vector2(0f, -y);
 
             y +=
-                titleHeight + 3f;
+                titleHeight + 2f;
 
             _detailStatus.text =
                 GetQuestStatusText(
@@ -1882,6 +1888,9 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     -portraitReserve,
                     18f);
+
+            float summaryBottom =
+                y + 18f;
 
             bool canTrack =
                 quest.IsActiveQuest &&
@@ -1914,31 +1923,34 @@ namespace GK2Plus.Framework.UI
                     _trackButton.GetComponent<RectTransform>();
 
                 trackRect.anchorMin =
-                    new Vector2(1f, 1f);
+                    new Vector2(0f, 1f);
                 trackRect.anchorMax =
-                    new Vector2(1f, 1f);
+                    new Vector2(0f, 1f);
                 trackRect.pivot =
-                    new Vector2(1f, 1f);
+                    new Vector2(0f, 1f);
                 trackRect.anchoredPosition =
                     new Vector2(
-                        -portraitReserve,
-                        -44f);
+                        0f,
+                        -(y + 21f));
+
+                summaryBottom =
+                    y + 50f;
             }
 
             y =
                 Mathf.Max(
-                    y + 25f,
+                    summaryBottom + 8f,
                     GK2UiMetrics.QuestJournal.DetailPortraitSize +
-                    12f);
+                    8f);
 
             _descriptionHeaderRect.gameObject.SetActive(
                 true);
             _descriptionHeaderRect.anchoredPosition =
                 new Vector2(0f, -y);
             _descriptionHeaderRect.sizeDelta =
-                new Vector2(0f, 30f);
+                new Vector2(0f, 26f);
 
-            y += 36f;
+            y += 31f;
 
             _detailDescription.text =
                 quest.Description ??
@@ -1982,9 +1994,9 @@ namespace GK2Plus.Framework.UI
                 _objectivesHeaderRect.anchoredPosition =
                     new Vector2(0f, -y);
                 _objectivesHeaderRect.sizeDelta =
-                    new Vector2(0f, 30f);
+                    new Vector2(0f, 26f);
 
-                y += 37f;
+                y += 31f;
 
                 int columns =
                     Mathf.Max(
