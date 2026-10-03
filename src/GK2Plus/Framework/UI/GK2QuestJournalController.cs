@@ -263,37 +263,6 @@ namespace GK2Plus.Framework.UI
             // into the left and right panes, matching Character/Inspirations.
         }
 
-        private void AddPaneFrame(
-            Transform parent)
-        {
-            if (_theme?.WindowFrameSprite == null)
-            {
-                return;
-            }
-
-            GameObject frame =
-                GK2UiFactory.CreateImage(
-                    parent,
-                    "Frame",
-                    _theme.WindowFrameSprite,
-                    Image.Type.Sliced,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    Color.white);
-
-            RectTransform rect =
-                frame.GetComponent<RectTransform>();
-
-            rect.offsetMin =
-                Vector2.zero;
-            rect.offsetMax =
-                Vector2.zero;
-            frame.transform.SetAsLastSibling();
-        }
-
         private void BuildQuestList()
         {
             float left =
@@ -303,17 +272,14 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.LeftPaneWidth;
 
             GameObject pane =
-                GK2UiFactory.CreateImage(
+                GK2UiFactory.CreateRect(
                     _root.transform,
                     "QuestListPane",
-                    null,
-                    Image.Type.Simple,
                     new Vector2(0f, 0f),
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
-                    Vector2.zero,
-                    _theme.ContentBackground);
+                    Vector2.zero);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -326,9 +292,6 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     left + width,
                     -GK2UiMetrics.QuestJournal.OuterPadding);
-
-            AddPaneFrame(
-                pane.transform);
 
             GK2UiSectionHeaderView header =
                 GK2UiSectionHeaderBuilder.Create(
@@ -1007,21 +970,14 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.PaneGap;
 
             GameObject pane =
-                GK2UiFactory.CreateImage(
+                GK2UiFactory.CreateRect(
                     _root.transform,
                     "QuestDetailsPane",
-                    _theme.InspirationCardSprite,
-                    _theme.InspirationCardSprite != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    Vector2.zero,
-                    _theme.InspirationCardSprite != null
-                        ? new Color(0.58f, 0.60f, 0.62f, 0.96f)
-                        : _theme.ContentBackground);
+                    Vector2.zero);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -1034,9 +990,6 @@ namespace GK2Plus.Framework.UI
                 new Vector2(
                     -GK2UiMetrics.QuestJournal.OuterPadding,
                     -GK2UiMetrics.QuestJournal.OuterPadding);
-
-            AddPaneFrame(
-                pane.transform);
 
             GK2UiSectionHeaderView paneHeader =
                 GK2UiSectionHeaderBuilder.Create(
