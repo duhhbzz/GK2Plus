@@ -15,7 +15,9 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
+| General / UI | [RPG Quest Journal](#rpg-quest-journal) |
 | Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
+| Tracker | [Unified Tracker](#unified-tracker) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
 | Inventory | [Shared Storage](#shared-storage) |
 | Cheats | [Functional Cheats](#functional-cheats) |
@@ -63,6 +65,46 @@ The value comes from native save metadata and updates after a successful save.
 
 ---
 
+## RPG Quest Journal
+
+**Category:** General / UI  
+**Setting mode:** Live enable/disable from the GK2+ menu.
+
+RPG Quest Journal replaces the native **Quests** tab's branching quest-tree
+visualization with a traditional RPG/MMO-style journal while leaving GK2's
+quest progression and save data untouched.
+
+The native Character window and its normal top tabs remain in place. Selecting
+**Quests** mounts the GK2+ journal into the same page area.
+
+The initial journal provides:
+
+- **Active** and **Completed** filters;
+- a scrollable quest list using native quest icons;
+- a selected-quest details pane with status and localized description;
+- native-style item requirement cells for quest objectives;
+- direct integration with the Unified Tracker's parchment tracking control.
+
+The replacement is presentation-only. GK2 remains authoritative for quest
+state, completion, localization, requirements, rewards, and persistence.
+
+Disabling RPG Quest Journal restores the native quest tree. The replacement
+also falls back to the native tree automatically if the journal cannot
+initialize against the current game build.
+
+### Validation required
+
+- switch repeatedly between Character / Quests / Map and verify page lifecycle;
+- Active and Completed list filtering;
+- long quest titles/descriptions and scrolling;
+- quests with zero, one, and several item requirements;
+- selecting quests and preserving a sensible current selection;
+- tracking/untracking an active quest from the journal;
+- controller/gamepad navigation follow-up before release;
+- disable the feature and confirm the vanilla quest tree returns.
+
+---
+
 ## Backwards Compatible Extensions
 
 **Category:** Crafting  
@@ -96,6 +138,59 @@ The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAtta
 - Fine Tool Rack recipes continue to require the Fine Tool Rack normally;
 - disabling the option restores vanilla Tool Rack requirements;
 - unrelated extensions and workbenches are unaffected.
+
+---
+
+## Unified Tracker
+
+**Category:** Tracker  
+**Setting mode:** Pin management while a save is loaded; overall feature enable/disable from the main menu.
+
+The Unified Tracker provides one compact HUD for **active quests**, **known crafts/recipes**, and **custom item quantity targets**.
+
+### Native tracking + Tracker tab
+
+The primary tracking flow now lives in GK2's normal gameplay UI:
+
+- **right-click an active quest in the quest tree** to track or untrack it;
+- **right-click a supported craft/recipe row** to track or untrack it;
+- **right-click supported construction/town-building rows** to add or remove that plan;
+- optionally enable **Auto-track New Quests** so a quest is pinned when GK2 starts it;
+- optionally enable **Remove Completed Quests** so completed quest pins clean themselves up.
+
+The Tracker tab remains the management/fallback UI. While a save is loaded it exposes searchable selectors for active quests, known crafts/recipes, normal item definitions, and common target quantities for custom item pins.
+
+The tracker supports up to **6 total pins across Quests, Crafts, and Items** so the combined HUD remains compact and does not grow into a full-screen sidebar. It stores only GK2+ tracker metadata; it does not alter quest, crafting, building, or inventory state.
+
+### HUD behavior
+
+The compact HUD refreshes its displayed values four times per second rather than doing expensive game-data discovery every frame. The original IMGUI prototype has been replaced with a persistent Unity/TMP panel using GK2's loaded fonts, frame/background sprites, and rich-text/sprite rendering.
+
+- **Quest pins** show the localized quest name, current description/objective, and item requirements when the quest exposes them.
+- **Craft pins** show the localized/result name and the player's current count versus each recipe requirement.
+- **Item pins** show the player's current inventory count against the configured target and mark the row complete when the target is reached.
+
+Pins remain until the player removes or clears them; completing a quest or reaching an item target does not silently delete the pin.
+
+### Current scope
+
+Initial material/item counts use the **player inventory**. Shared Storage-aware tracker scopes can be added after the core tracker UX is validated.
+
+The initial HUD is intentionally a lightweight vertical slice so quest/craft/item data behavior can be runtime-tested before final native-style presentation polish.
+
+### Validation required
+
+- right-click active quest nodes to track/untrack;
+- enable Auto-track New Quests and start a new quest;
+- complete a tracked quest with Remove Completed Quests enabled;
+- right-click supported craft/build rows to track/untrack;
+- search and pin a known craft;
+- search and pin several normal items with different target quantities;
+- verify counts update as items enter/leave player inventory;
+- verify quest completion/status changes update without mutating the quest;
+- save/reload and confirm tracker pins persist through GK2+ configuration;
+- confirm Clear Pins and HUD toggle behavior;
+- check common resolutions for clipping/overlap before final UI polish.
 
 ---
 
