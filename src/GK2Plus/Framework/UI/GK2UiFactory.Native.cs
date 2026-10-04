@@ -387,8 +387,8 @@ namespace GK2Plus.Framework.UI
                     16f;
                 label.enableAutoSizing =
                     false;
-                label.enableWordWrapping =
-                    false;
+                label.textWrappingMode =
+                    TextWrappingModes.NoWrap;
                 label.overflowMode =
                     TextOverflowModes.Overflow;
                 label.alignment =
@@ -419,8 +419,8 @@ namespace GK2Plus.Framework.UI
                     new Vector2(13f, 0f);
                 label.rectTransform.offsetMax =
                     new Vector2(-13f, 0f);
-                label.enableWordWrapping =
-                    false;
+                label.textWrappingMode =
+                    TextWrappingModes.NoWrap;
                 label.overflowMode =
                     TextOverflowModes.Overflow;
                 label.color =
