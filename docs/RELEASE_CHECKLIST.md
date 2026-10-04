@@ -204,6 +204,7 @@ Run these in one play session where practical instead of treating every line as 
 - [ ] Open Character -> Quests and confirm the RPG Journal replaces only the native quest-tree presentation.
 - [ ] Switch repeatedly Character -> Quests -> Map -> Quests and confirm no duplicate journal trees or stale native quest tree appears.
 - [ ] Test **Active** and **Completed** filters and their counts.
+- [ ] With a controller, enter the journal and confirm focus starts on the filter row and navigation reaches NPC groups, quest rows, and detail actions without getting trapped on tiny pin icons.
 - [ ] Expand/collapse several NPC groups; verify all child quests remain inside one shared group panel.
 - [ ] Select several quests and verify title, portrait, status, description, and item objectives.
 - [ ] Test a quest with no item objective and a quest with multiple item objectives.
