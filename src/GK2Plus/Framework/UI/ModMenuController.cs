@@ -588,25 +588,6 @@ namespace GK2Plus.Framework.UI
                 "Center"
             );
 
-            if (dividerSprite != null)
-            {
-                CreateFixedImage(
-                    window.transform,
-                    "HeaderDivider",
-                    dividerSprite,
-                    Image.Type.Sliced,
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(
-                        0f,
-                        GK2UiMetrics.Menu.HeaderDividerY),
-                    new Vector2(
-                        GK2UiMetrics.Menu.WindowSize.x - 54f,
-                        5f)
-                );
-            }
-
             float gap =
                 GK2UiMetrics.Menu.TabGap;
 
@@ -635,7 +616,7 @@ namespace GK2Plus.Framework.UI
                 float x = firstX + i * (tabWidth + gap);
 
                 Button tabButton =
-                    GK2UiFactory.CreateFlatButton(
+                    GK2UiFactory.CreateNativeWindowTab(
                         window.transform,
                         tab + "TabButton",
                         _theme,
@@ -646,33 +627,77 @@ namespace GK2Plus.Framework.UI
                         new Vector2(
                             tabWidth,
                             tabHeight),
-                        () => SetActiveTab(tab),
                         string.Equals(
                             tab,
                             _activeTab,
-                            StringComparison.OrdinalIgnoreCase));
+                            StringComparison.OrdinalIgnoreCase),
+                        () => SetActiveTab(tab));
 
                 _tabButtons[tab] =
                     tabButton.gameObject;
             }
 
-            if (dividerSprite != null)
+            if (_theme.MainWindowHeaderSeparatorSprite != null)
             {
-                CreateFixedImage(
+                for (int i = 0; i < Tabs.Length - 1; i++)
+                {
+                    float separatorX =
+                        firstX +
+                        (tabWidth / 2f) +
+                        i * (tabWidth + gap) +
+                        (gap / 2f);
+
+                    GK2UiFactory.CreateImage(
+                        window.transform,
+                        "TabSeparator" + i,
+                        _theme.MainWindowHeaderSeparatorSprite,
+                        Image.Type.Simple,
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(
+                            separatorX,
+                            GK2UiMetrics.Menu.TabY),
+                        new Vector2(40f, 26f),
+                        Color.white,
+                        false);
+                }
+            }
+
+            if (_theme.MainWindowHeaderTabLeftSprite != null)
+            {
+                GK2UiFactory.CreateImage(
                     window.transform,
-                    "TabDivider",
-                    dividerSprite,
-                    Image.Type.Sliced,
+                    "TabDecorLeft",
+                    _theme.MainWindowHeaderTabLeftSprite,
+                    Image.Type.Simple,
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(
-                        0f,
-                        GK2UiMetrics.Menu.ContentTopY + 8f),
+                        -rowWidth / 2f + 30f,
+                        GK2UiMetrics.Menu.TabY),
+                    new Vector2(60f, 26f),
+                    Color.white,
+                    false);
+            }
+
+            if (_theme.MainWindowHeaderTabRightSprite != null)
+            {
+                GK2UiFactory.CreateImage(
+                    window.transform,
+                    "TabDecorRight",
+                    _theme.MainWindowHeaderTabRightSprite,
+                    Image.Type.Simple,
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
                     new Vector2(
-                        GK2UiMetrics.Menu.WindowSize.x - 54f,
-                        5f)
-                );
+                        rowWidth / 2f - 30f,
+                        GK2UiMetrics.Menu.TabY),
+                    new Vector2(60f, 26f),
+                    Color.white,
+                    false);
             }
 
             GameObject content = new GameObject(
@@ -859,14 +884,21 @@ namespace GK2Plus.Framework.UI
             _menuButtonLabelTemplate = buttonLabelTemplate;
             _menuButtonSprite = redButtonSprite;
 
-            _pageTitle = CreateNativeTitleText(
-                titleTemplate,
-                content.transform,
-                "General",
-                new Vector2(0f, -14f),
-                new Vector2(230f, 20f),
-                GK2UiMetrics.Menu.SectionTitleScale
-            );
+            GK2UiSectionHeaderView pageHeader =
+                GK2UiSectionHeaderBuilder.Create(
+                    content.transform,
+                    _theme,
+                    "PageHeader",
+                    "General",
+                    22f);
+
+            pageHeader.Rect.anchoredPosition =
+                new Vector2(0f, -5f);
+            pageHeader.Rect.sizeDelta =
+                new Vector2(-24f, 22f);
+
+            _pageTitle =
+                pageHeader.Title.gameObject;
 
             _pageText = CreateBodyText(
                 listTextTemplate,
@@ -3028,14 +3060,14 @@ Button close = closeButton.GetComponent<Button>();
                 return;
             }
 
-            Transform label =
-                button.transform.Find("Label");
+            TextMeshProUGUI label =
+                button.GetComponentInChildren<TextMeshProUGUI>(
+                    true);
 
             if (label != null)
             {
-                SetText(
-                    label.gameObject,
-                    text);
+                label.text =
+                    text ?? string.Empty;
             }
         }
 
@@ -3048,15 +3080,13 @@ Button close = closeButton.GetComponent<Button>();
             Vector2 size)
         {
             Button button =
-                GK2UiFactory.CreateButton(
+                GK2UiFactory.CreateNativeRedButton(
                     parent,
                     text + "Button",
                     _theme,
                     text,
                     anchoredPosition,
-                    size,
-                    null,
-                    GK2UiButtonTone.Neutral);
+                    size);
 
             Navigation navigation =
                 button.navigation;
@@ -3080,17 +3110,12 @@ Button close = closeButton.GetComponent<Button>();
 
             foreach (var kvp in _tabButtons)
             {
-                Image image = kvp.Value.GetComponent<Image>();
-                if (image == null)
-                {
-                    continue;
-                }
-
-                image.color = kvp.Key == tabName
-                    ? (_theme?.TabSelected ??
-                       new Color(0.38f, 0.30f, 0.20f, 0.98f))
-                    : (_theme?.TabNeutral ??
-                       new Color(0.15f, 0.17f, 0.21f, 0.96f));
+                GK2UiFactory.SetNativeWindowTabSelected(
+                    kvp.Value,
+                    string.Equals(
+                        kvp.Key,
+                        tabName,
+                        StringComparison.OrdinalIgnoreCase));
             }
 
             SetText(_pageTitle, tabName);
