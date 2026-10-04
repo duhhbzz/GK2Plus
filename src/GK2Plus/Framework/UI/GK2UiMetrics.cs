@@ -11,6 +11,55 @@ namespace GK2Plus.Framework.UI
     /// </summary>
     internal static class GK2UiMetrics
     {
+        /// <summary>
+        /// Measurements captured directly from GK2 v1.008 native UI.
+        /// Keep these separate from feature-specific layout tuning.
+        /// </summary>
+        internal static class Native
+        {
+            // comm-frame_1-border + comm-frame_bg_1.
+            public const float WindowBackInset = 13f;
+
+            // comm-btn-simple_red-*.
+            public static readonly Vector2 RedButtonSize =
+                new Vector2(162f, 26f);
+            public const int RedButtonPaddingHorizontal = 10;
+            public const int RedButtonPaddingTop = 2;
+            public const int RedButtonPaddingBottom = 0;
+            public const float RedButtonFontSize = 16f;
+
+            // UIItemCell.
+            public const float ItemCellSize = 42f;
+            public const float ItemCellBackgroundSize = 44f;
+            public const float ItemIconSize = 48f;
+
+            // Inspiration progress bar.
+            public const float ProgressHorizontalInset = 2f;
+            public const float ProgressBottomInset = 1.5f;
+            public const float ProgressTopInset = 2.5f;
+            public const float ProgressLabelFontSize = 16f;
+
+            // UITooltip.
+            public const int TooltipPadding = 14;
+            public const float TooltipSpacing = 2f;
+            public const float TooltipMinWidth = 60f;
+            public const float TooltipPreferredWidth = 200f;
+            public const float TooltipTextSize = 16f;
+            public const float TooltipSeparatorWidth = 96f;
+            public const float TooltipSeparatorHeight = 6f;
+            public const float TooltipTailSize = 10f;
+
+            // UIDialogWindow.
+            public const float DialogMinimumWidth = 200f;
+            public const float DialogMinimumHeight = 100f;
+            public const int DialogPaddingHorizontal = 24;
+            public const int DialogPaddingTop = 47;
+            public const int DialogPaddingBottom = 23;
+            public const float DialogContentSpacing = 6f;
+            public const float DialogShadowAlpha = 0.4f;
+            public const int DialogSortingOrder = 415;
+        }
+
         internal static class Menu
         {
             public static readonly Vector2 WindowSize =
