@@ -269,12 +269,12 @@ Run these in one play session where practical instead of treating every line as 
 ### Final packaging / publish
 
 - [ ] Run `tools/release/Build-ReleasePackage.ps1` from a clean tree.
-- [ ] Install and test the **Release** DLL from the generated archive, not only the Debug build.
+- [x] Install and test the **Release** DLL from the generated archive, not only the Debug build.
 - [x] Record the canonical ZIP SHA256: `0A25A10FF76D88C5151D765C51AC6669700C5FEFAC8FB4C3AC92F5236F5BC2C4`.
 - [x] Build the Thunderstore package from the same source/version and validate its manifest/icon/layout.
 - [x] Build the Steam Workshop staging package from the canonical release ZIP.
 - [x] Verify Workshop/Thunderstore/Nexus copy mentions the current 2.0 feature set and configurable/controller menu access.
-- [ ] Capture final screenshots of the F2 menu, Quest Journal, Unified Tracker HUD, and one representative settings group.
+- [x] Capture final screenshots of the F2 menu, Quest Journal, Unified Tracker HUD, and one representative settings group.
 - [ ] Merge the 2.0 release branch to `main`, tag `v2.0.0`, and publish the same canonical artifact to the intended channels.
 
 ---
