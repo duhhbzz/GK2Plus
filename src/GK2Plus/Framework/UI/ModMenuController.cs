@@ -3696,7 +3696,7 @@ Button close = closeButton.GetComponent<Button>();
 
             AddTabSection(
                 "General",
-                "Features",
+                "General Settings",
                 -64f);
             AddTabSection(
                 "Inventory",
