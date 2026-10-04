@@ -1315,12 +1315,10 @@ namespace GK2Plus.Framework.UI
 
             ApplyFilterStyle(
                 _activeFilterButton,
-                _activeFilterLabel,
                 _filter == JournalFilter.Active);
 
             ApplyFilterStyle(
                 _completedFilterButton,
-                _completedFilterLabel,
                 _filter == JournalFilter.Completed);
 
             List<QuestData> filtered =
@@ -1382,50 +1380,65 @@ namespace GK2Plus.Framework.UI
             _questGroupPool.Begin();
             _questRowPool.Begin();
 
-            float y = 0f;
+            float y =
+                0f;
 
             foreach (IGrouping<string, QuestData> group in groups)
             {
                 List<QuestData> quests =
                     group.ToList();
 
-                QuestGroupView groupView =
-                    _questGroupPool.Rent();
-
                 bool expanded =
                     _expandedQuestGroups.Contains(
                         group.Key);
+
+                float groupHeight =
+                    GK2UiMetrics.QuestJournal.QuestGroupHeight;
+
+                if (expanded)
+                {
+                    groupHeight +=
+                        quests.Count *
+                        (GK2UiMetrics.QuestJournal.QuestRowHeight +
+                         GK2UiMetrics.QuestJournal.QuestRowGap);
+                }
+
+                QuestGroupView groupView =
+                    _questGroupPool.Rent();
 
                 ConfigureQuestGroup(
                     groupView,
                     group.Key,
                     quests,
                     expanded,
-                    y);
+                    y,
+                    groupHeight);
+
+                if (expanded)
+                {
+                    float rowY =
+                        GK2UiMetrics.QuestJournal.QuestGroupHeight;
+
+                    foreach (QuestData quest in quests)
+                    {
+                        QuestRowView row =
+                            _questRowPool.Rent();
+
+                        ConfigureQuestRow(
+                            row,
+                            groupView.Root.transform,
+                            quest,
+                            rowY);
+
+                        rowY +=
+                            GK2UiMetrics.QuestJournal.QuestRowHeight +
+                            GK2UiMetrics.QuestJournal.QuestRowGap;
+                    }
+                }
 
                 y +=
-                    GK2UiMetrics.QuestJournal.QuestGroupHeight +
+                    groupHeight +
                     GK2UiMetrics.QuestJournal.QuestRowGap;
-
-                if (!expanded)
-                {
-                    continue;
-                }
-
-                foreach (QuestData quest in quests)
-                {
-                    QuestRowView row =
-                        _questRowPool.Rent();
-
-                    ConfigureQuestRow(
-                        row,
-                        quest,
-                        y);
-
-                    y +=
-                        GK2UiMetrics.QuestJournal.QuestRowHeight +
-                        GK2UiMetrics.QuestJournal.QuestRowGap;
-                }
             }
 
             _questGroupPool.End();
@@ -1470,65 +1483,16 @@ namespace GK2Plus.Framework.UI
 
         private void ApplyFilterStyle(
             Button button,
-            TextMeshProUGUI label,
             bool selected)
         {
-            Image image =
-                button?.targetGraphic as Image;
-
-            if (image != null)
+            if (button == null)
             {
-                Sprite sprite =
-                    selected
-                        ? (_theme.SectionHeaderSprite ??
-                           _theme.SectionHeaderInactiveSprite)
-                        : (_theme.SectionHeaderInactiveSprite ??
-                           _theme.SectionHeaderSprite);
-
-                image.sprite =
-                    sprite;
-                image.type =
-                    sprite != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple;
-                image.color =
-                    sprite != null
-                        ? Color.white
-                        : (selected
-                            ? _theme.TabSelected
-                            : _theme.TabNeutral);
+                return;
             }
 
-            if (label != null)
-            {
-                TextMeshProUGUI source =
-                    _theme.TitleTextTemplate;
-
-                if (source != null)
-                {
-                    label.font =
-                        source.font;
-                    label.fontSharedMaterial =
-                        source.fontSharedMaterial;
-                    label.spriteAsset =
-                        source.spriteAsset;
-                }
-
-                label.fontSize =
-                    10.5f;
-                label.fontSizeMin =
-                    10.5f;
-                label.fontSizeMax =
-                    10.5f;
-                label.color =
-                    selected
-                        ? _theme.AccentText
-                        : new Color(
-                            0.82f,
-                            0.76f,
-                            0.66f,
-                            1f);
-            }
+            GK2UiFactory.SetNativeWindowTabSelected(
+                button.gameObject,
+                selected);
         }
 
         private void ConfigureQuestGroup(
@@ -1536,7 +1500,8 @@ namespace GK2Plus.Framework.UI
             string groupKey,
             List<QuestData> quests,
             bool expanded,
-            float y)
+            float y,
+            float groupHeight)
         {
             if (view == null ||
                 quests == null ||
@@ -1551,17 +1516,32 @@ namespace GK2Plus.Framework.UI
             view.Root.SetActive(
                 true);
 
+            view.Root.transform.SetParent(
+                _questListContent,
+                false);
+
             view.GroupKey =
                 groupKey;
 
+            view.Rect.anchorMin =
+                new Vector2(0f, 1f);
+            view.Rect.anchorMax =
+                new Vector2(1f, 1f);
+            view.Rect.pivot =
+                new Vector2(0.5f, 1f);
             view.Rect.anchoredPosition =
                 new Vector2(
                     0f,
                     -y);
+            view.Rect.sizeDelta =
+                new Vector2(
+                    0f,
+                    groupHeight);
 
             bool groupCompleted =
                 quests.All(quest =>
-                    quest.status == QuestStatus.Completed);
+                    quest.status ==
+                    QuestStatus.Completed);
 
             view.Background.sprite =
                 _theme.ContentCellSprite;
@@ -1573,22 +1553,36 @@ namespace GK2Plus.Framework.UI
                 _theme.ContentCellSprite != null
                     ? (groupCompleted
                         ? new Color(
-                            0.90f,
-                            0.96f,
+                            0.92f,
+                            0.95f,
                             0.90f,
                             1f)
                         : Color.white)
                     : (groupCompleted
                         ? new Color(
+                            0.15f,
                             0.17f,
-                            0.19f,
-                            0.17f,
+                            0.15f,
                             0.96f)
-                        : new Color(
-                            0.18f,
-                            0.19f,
-                            0.22f,
-                            0.96f));
+                        : _theme.RowBackground);
+
+            Sprite headerSprite =
+                expanded
+                    ? (_theme.SectionHeaderSprite ??
+                       _theme.SectionHeaderInactiveSprite)
+                    : (_theme.SectionHeaderInactiveSprite ??
+                       _theme.SectionHeaderSprite);
+
+            view.HeaderBackground.sprite =
+                headerSprite;
+            view.HeaderBackground.type =
+                headerSprite != null
+                    ? Image.Type.Sliced
+                    : Image.Type.Simple;
+            view.HeaderBackground.color =
+                headerSprite != null
+                    ? Color.white
+                    : _theme.HeaderBackground;
 
             view.Title.text =
                 GetQuestGroupDisplayName(
@@ -1601,8 +1595,8 @@ namespace GK2Plus.Framework.UI
 
             view.Chevron.text =
                 expanded
-                    ? "▼"
-                    : "▶";
+                    ? "-"
+                    : "+";
 
             try
             {
@@ -1654,10 +1648,12 @@ namespace GK2Plus.Framework.UI
 
         private void ConfigureQuestRow(
             QuestRowView row,
+            Transform parent,
             QuestData quest,
             float y)
         {
             if (row == null ||
+                parent == null ||
                 quest == null)
             {
                 return;
@@ -1666,17 +1662,26 @@ namespace GK2Plus.Framework.UI
             row.Root.SetActive(
                 true);
 
+            row.Root.transform.SetParent(
+                parent,
+                false);
+
             row.Quest =
                 quest;
 
             float indent =
                 GK2UiMetrics.QuestJournal.QuestSubRowIndent;
 
+            row.Rect.anchorMin =
+                new Vector2(0f, 1f);
+            row.Rect.anchorMax =
+                new Vector2(1f, 1f);
+            row.Rect.pivot =
+                new Vector2(0.5f, 1f);
             row.Rect.anchoredPosition =
                 new Vector2(
                     indent / 2f,
                     -y);
-
             row.Rect.sizeDelta =
                 new Vector2(
                     -indent,
@@ -1689,32 +1694,17 @@ namespace GK2Plus.Framework.UI
                     StringComparison.OrdinalIgnoreCase);
 
             row.Background.sprite =
-                _theme.ContentCellSprite;
+                null;
             row.Background.type =
-                _theme.ContentCellSprite != null
-                    ? Image.Type.Sliced
-                    : Image.Type.Simple;
-
-            Color rowColor =
-                quest.status ==
-                    QuestStatus.Completed
-                    ? new Color(
-                        0.90f,
-                        0.94f,
-                        0.88f,
-                        1f)
-                    : Color.white;
-
+                Image.Type.Simple;
             row.Background.color =
                 selected
                     ? new Color(
-                        rowColor.r,
-                        Mathf.Min(
-                            1f,
-                            rowColor.g * 0.95f),
                         0.78f,
-                        1f)
-                    : rowColor;
+                        0.58f,
+                        0.26f,
+                        0.16f)
+                    : Color.clear;
 
             row.Title.text =
                 GetQuestTitle(
@@ -1727,6 +1717,34 @@ namespace GK2Plus.Framework.UI
             row.Status.text =
                 GetQuestStatusText(
                     quest);
+
+            if (quest.status ==
+                QuestStatus.Completed)
+            {
+                row.Title.color =
+                    new Color(
+                        0.78f,
+                        0.82f,
+                        0.72f,
+                        1f);
+                row.Description.color =
+                    new Color(
+                        0.62f,
+                        0.66f,
+                        0.58f,
+                        1f);
+            }
+            else
+            {
+                row.Title.color =
+                    Color.white;
+                row.Description.color =
+                    new Color(
+                        0.76f,
+                        0.72f,
+                        0.66f,
+                        1f);
+            }
 
             List<QuestPhraseRequirement> requirements =
                 GetItemRequirements(
@@ -1741,24 +1759,22 @@ namespace GK2Plus.Framework.UI
             bool showProgress =
                 target > 0;
 
-            row.ProgressRoot.SetActive(
+            row.Progress.Root.SetActive(
                 showProgress);
 
             if (showProgress)
             {
-                row.ProgressFill.fillAmount =
-                    Mathf.Clamp01(
-                        progress01);
-
-                row.ProgressLabel.text =
-                    $"{current}/{target}";
+                row.Progress.SetProgress(
+                    progress01,
+                    1f,
+                    $"{current}/{target}");
             }
             else
             {
-                row.ProgressFill.fillAmount =
-                    0f;
-                row.ProgressLabel.text =
-                    string.Empty;
+                row.Progress.SetProgress(
+                    0f,
+                    1f,
+                    string.Empty);
             }
 
             try
