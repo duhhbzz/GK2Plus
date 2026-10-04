@@ -321,10 +321,18 @@ namespace GK2Plus.Framework.UI
             TooltipSeparatorSprite ??=
                 FindSprite("hint-text_separator");
 
-            ButtonTextTemplate ??=
+            TextMeshProUGUI nativeButtonText =
                 FindTmpByStyle(
                     "small_font_bold",
                     "btn_red_active");
+
+            if (nativeButtonText != null)
+            {
+                // Upgrade an earlier generic fallback once the vanilla red
+                // button style has actually been loaded by the game.
+                ButtonTextTemplate =
+                    nativeButtonText;
+            }
 
             ProgressTextTemplate ??=
                 FindTmpByStyle(
