@@ -8,6 +8,7 @@ using HarmonyLib;
 using LazyBearTechnology;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace GK2Plus.Framework.UI
@@ -156,6 +157,7 @@ namespace GK2Plus.Framework.UI
                 }
 
                 Refresh();
+                EnsureControllerFocus();
 
                 return true;
             }
@@ -167,6 +169,29 @@ namespace GK2Plus.Framework.UI
                 RestoreNativeTree();
                 return false;
             }
+        }
+
+        private void EnsureControllerFocus()
+        {
+            if (EventSystem.current == null ||
+                _root == null ||
+                _activeFilterButton == null)
+            {
+                return;
+            }
+
+            GameObject selected =
+                EventSystem.current.currentSelectedGameObject;
+
+            if (selected != null &&
+                selected.transform.IsChildOf(
+                    _root.transform))
+            {
+                return;
+            }
+
+            EventSystem.current.SetSelectedGameObject(
+                _activeFilterButton.gameObject);
         }
 
         internal void Hide()
@@ -886,6 +911,13 @@ namespace GK2Plus.Framework.UI
                 pinIcon;
             pinButton.transition =
                 Selectable.Transition.ColorTint;
+
+            Navigation pinNavigation =
+                pinButton.navigation;
+            pinNavigation.mode =
+                Navigation.Mode.None;
+            pinButton.navigation =
+                pinNavigation;
 
             TextMeshProUGUI description =
                 GK2UiFactory.CreateText(
