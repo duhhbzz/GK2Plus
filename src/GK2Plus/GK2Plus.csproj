@@ -82,6 +82,11 @@
       <Private>false</Private>
     </Reference>
 
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
