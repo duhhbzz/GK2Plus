@@ -9,6 +9,7 @@ namespace GK2Plus.Framework.UI
         public GameObject Root;
         public RectTransform Rect;
         public TextMeshProUGUI Label;
+        public TextMeshProUGUI Subtitle;
         public Button ActionButton;
     }
 
@@ -26,7 +27,8 @@ namespace GK2Plus.Framework.UI
             string labelObjectName,
             string buttonObjectName,
             string buttonText,
-            bool child = false)
+            bool child = false,
+            string subtitle = null)
         {
             GameObject row =
                 GK2UiFactory.CreateRect(
@@ -74,6 +76,10 @@ namespace GK2Plus.Framework.UI
             float rightPadding =
                 9f;
 
+            bool hasSubtitle =
+                !string.IsNullOrWhiteSpace(
+                    subtitle);
+
             TextMeshProUGUI labelText =
                 GK2UiFactory.CreateText(
                     row.transform,
@@ -81,24 +87,63 @@ namespace GK2Plus.Framework.UI
                     theme?.BodyTextTemplate,
                     label,
                     child
-                        ? 8.5f
-                        : 9f,
+                        ? 9f
+                        : 10f,
                     TextAlignmentOptions.Left,
                     new Vector2(0f, 0f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 0.5f),
                     new Vector2(
                         leftPadding,
-                        0f),
+                        hasSubtitle
+                            ? 5f
+                            : 0f),
                     new Vector2(
                         -(buttonWidth +
                           rightPadding +
                           leftPadding),
-                        0f));
+                        hasSubtitle
+                            ? -11f
+                            : 0f));
 
             labelText.color =
-                theme?.AccentText ??
-                new Color(1f, 0.82f, 0.45f, 1f);
+                child
+                    ? new Color(0.88f, 0.80f, 0.64f, 1f)
+                    : (theme?.AccentText ??
+                       new Color(1f, 0.82f, 0.45f, 1f));
+
+            TextMeshProUGUI subtitleText =
+                null;
+
+            if (hasSubtitle)
+            {
+                subtitleText =
+                    GK2UiFactory.CreateText(
+                        row.transform,
+                        labelObjectName + "Subtitle",
+                        theme?.BodyTextTemplate,
+                        subtitle,
+                        7.5f,
+                        TextAlignmentOptions.Left,
+                        new Vector2(0f, 0f),
+                        new Vector2(1f, 1f),
+                        new Vector2(0f, 0.5f),
+                        new Vector2(
+                            leftPadding,
+                            -8f),
+                        new Vector2(
+                            -(buttonWidth +
+                              rightPadding +
+                              leftPadding),
+                            -14f));
+
+                subtitleText.color =
+                    new Color(
+                        0.66f,
+                        0.62f,
+                        0.57f,
+                        0.95f);
+            }
 
             Button action =
                 GK2UiFactory.CreateNativeRedButton(
@@ -109,7 +154,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     new Vector2(
                         buttonWidth,
-                        GK2UiMetrics.Menu.ControlRowHeight - 2f));
+                        GK2UiMetrics.Native.RedButtonSize.y));
 
             RectTransform actionRect =
                 action.GetComponent<RectTransform>();
@@ -130,6 +175,7 @@ namespace GK2Plus.Framework.UI
                 Root = row,
                 Rect = row.GetComponent<RectTransform>(),
                 Label = labelText,
+                Subtitle = subtitleText,
                 ActionButton = action
             };
         }
