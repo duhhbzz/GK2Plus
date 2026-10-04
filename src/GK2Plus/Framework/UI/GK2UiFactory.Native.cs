@@ -322,7 +322,7 @@ namespace GK2Plus.Framework.UI
                     theme?.ButtonTextTemplate ??
                     theme?.BodyTextTemplate,
                     text,
-                    12.5f,
+                    10f,
                     TextAlignmentOptions.Center,
                     Vector2.zero,
                     Vector2.one,
@@ -331,9 +331,13 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero);
 
             label.rectTransform.offsetMin =
-                new Vector2(13f, 0f);
+                new Vector2(8f, 0f);
             label.rectTransform.offsetMax =
-                new Vector2(-13f, 0f);
+                new Vector2(-8f, 0f);
+            label.enableWordWrapping =
+                false;
+            label.overflowMode =
+                TextOverflowModes.Overflow;
             label.color =
                 new Color(
                     1f,
@@ -403,17 +407,18 @@ namespace GK2Plus.Framework.UI
             try
             {
                 template.fontSize =
-                    12.5f;
+                    10f;
 
                 Vector2 preferred =
                     template.GetPreferredValues(
                         text ?? string.Empty);
 
-                // Native CharPageTabButton content uses 13 units of
-                // left/right padding around the label.
+                // We have nine tabs in the mod menu, so preserve the native
+                // bold look while tightening the horizontal padding enough to
+                // keep every label on one line.
                 return Mathf.Max(
                     minimum,
-                    preferred.x + 26f);
+                    preferred.x + 16f);
             }
             finally
             {
