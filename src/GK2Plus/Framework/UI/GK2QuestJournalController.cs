@@ -995,11 +995,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     _theme.ContentCellSprite != null
                         ? Color.white
-                        : new Color(
-                            0.13f,
-                            0.145f,
-                            0.17f,
-                            0.98f));
+                        : _theme.RowBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -1046,13 +1042,13 @@ namespace GK2Plus.Framework.UI
 
             viewportRect.offsetMin =
                 new Vector2(
-                    7f,
-                    7f);
+                    GK2UiMetrics.QuestJournal.DetailPadding,
+                    GK2UiMetrics.QuestJournal.DetailPadding);
             viewportRect.offsetMax =
                 new Vector2(
-                    -7f,
+                    -GK2UiMetrics.QuestJournal.DetailPadding,
                     -(GK2UiMetrics.QuestJournal.SectionHeaderHeight +
-                      7f));
+                      GK2UiMetrics.QuestJournal.DetailPadding));
 
             viewport.AddComponent<RectMask2D>();
 
@@ -1082,13 +1078,60 @@ namespace GK2Plus.Framework.UI
                 true;
             _detailScroll.movementType =
                 ScrollRect.MovementType.Clamped;
+            _detailScroll.inertia =
+                false;
             _detailScroll.scrollSensitivity =
                 28f;
 
+            _detailSummaryPanel =
+                GK2UiFactory.CreateImage(
+                    _detailContent,
+                    "QuestSummary",
+                    _theme.ContentCellSprite,
+                    _theme.ContentCellSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    Vector2.zero,
+                    new Vector2(
+                        0f,
+                        GK2UiMetrics.QuestJournal.DetailSummaryHeight),
+                    _theme.ContentCellSprite != null
+                        ? Color.white
+                        : _theme.RowBackground,
+                    false);
+
+            _detailSummaryRect =
+                _detailSummaryPanel.GetComponent<RectTransform>();
+
+            GK2UiPortraitView detailPortrait =
+                GK2UiPortraitBuilder.CreateStonePortrait(
+                    _detailSummaryPanel.transform,
+                    _theme,
+                    "DetailQuestPortrait",
+                    new Vector2(
+                        8f,
+                        -8f),
+                    GK2UiMetrics.QuestJournal.DetailPortraitSize,
+                    1.25f);
+
+            _detailIcon =
+                detailPortrait.Portrait;
+            _detailPortraitRect =
+                detailPortrait.Rect;
+
+            float summaryTextOffset =
+                8f +
+                GK2UiMetrics.QuestJournal.DetailPortraitSize +
+                GK2UiMetrics.QuestJournal.DetailPortraitGap;
+
             _detailTitle =
                 GK2UiFactory.CreateText(
-                    _detailContent,
+                    _detailSummaryPanel.transform,
                     "DetailTitle",
+                    _theme.MainWindowTabTextTemplate ??
                     _theme.TitleTextTemplate,
                     string.Empty,
                     GK2UiMetrics.QuestJournal.DetailTitleSize,
@@ -1096,42 +1139,21 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
-                    Vector2.zero,
-                    new Vector2(-78f, 34f));
+                    new Vector2(
+                        summaryTextOffset,
+                        -8f),
+                    new Vector2(
+                        -(summaryTextOffset + 112f),
+                        36f));
 
             _detailTitle.color =
-                _theme.AccentText;
+                Color.white;
             _detailTitle.textWrappingMode =
                 TextWrappingModes.Normal;
 
-            _detailIcon =
-                GK2UiFactory.CreateImage(
-                    _detailContent,
-                    "DetailQuestIcon",
-                    null,
-                    Image.Type.Simple,
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    Vector2.zero,
-                    new Vector2(
-                        GK2UiMetrics.QuestJournal.DetailPortraitSize,
-                        GK2UiMetrics.QuestJournal.DetailPortraitSize),
-                    Color.white)
-                    .GetComponent<Image>();
-
-            _detailIcon.preserveAspect =
-                true;
-
-            if (_theme?.ItemIconMaterial != null)
-            {
-                _detailIcon.material =
-                    _theme.ItemIconMaterial;
-            }
-
             _detailStatus =
                 GK2UiFactory.CreateText(
-                    _detailContent,
+                    _detailSummaryPanel.transform,
                     "DetailStatus",
                     _theme.BodyTextTemplate,
                     string.Empty,
@@ -1140,11 +1162,67 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
-                    Vector2.zero,
-                    new Vector2(-78f, 18f));
+                    new Vector2(
+                        summaryTextOffset,
+                        -46f),
+                    new Vector2(
+                        -(summaryTextOffset + 112f),
+                        18f));
 
-            GK2UiSubsectionHeaderView descriptionHeader =
-                GK2UiSubsectionHeaderBuilder.Create(
+            _detailStatus.color =
+                new Color(
+                    0.72f,
+                    0.68f,
+                    0.61f,
+                    1f);
+
+            _trackButton =
+                GK2UiFactory.CreateNativeRedButton(
+                    _detailSummaryPanel.transform,
+                    "TrackQuestButton",
+                    _theme,
+                    "Track Quest",
+                    Vector2.zero,
+                    new Vector2(
+                        104f,
+                        GK2UiMetrics.Native.RedButtonSize.y),
+                    () =>
+                    {
+                        QuestData quest =
+                            ResolveSelectedQuest();
+
+                        if (quest == null)
+                        {
+                            return;
+                        }
+
+                        UnifiedTrackerFeature.ToggleQuestFromExternalUi(
+                            quest);
+
+                        Refresh();
+                    });
+
+            RectTransform trackRect =
+                _trackButton.GetComponent<RectTransform>();
+
+            trackRect.anchorMin =
+                new Vector2(1f, 0f);
+            trackRect.anchorMax =
+                new Vector2(1f, 0f);
+            trackRect.pivot =
+                new Vector2(1f, 0f);
+            trackRect.anchoredPosition =
+                new Vector2(
+                    -8f,
+                    8f);
+
+            _trackButtonLabel =
+                _trackButton
+                    .GetComponentInChildren<TextMeshProUGUI>(
+                        true);
+
+            GK2UiSectionHeaderView descriptionHeader =
+                GK2UiSectionHeaderBuilder.Create(
                     _detailContent,
                     _theme,
                     "DescriptionHeader",
@@ -1166,13 +1244,21 @@ namespace GK2Plus.Framework.UI
                     new Vector2(1f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
-                    new Vector2(0f, 80f));
+                    new Vector2(
+                        0f,
+                        80f));
 
             _detailDescription.textWrappingMode =
                 TextWrappingModes.Normal;
+            _detailDescription.color =
+                new Color(
+                    0.82f,
+                    0.78f,
+                    0.71f,
+                    1f);
 
-            GK2UiSubsectionHeaderView objectivesHeader =
-                GK2UiSubsectionHeaderBuilder.Create(
+            GK2UiSectionHeaderView objectivesHeader =
+                GK2UiSectionHeaderBuilder.Create(
                     _detailContent,
                     _theme,
                     "ObjectivesHeader",
@@ -1183,61 +1269,6 @@ namespace GK2Plus.Framework.UI
                 objectivesHeader.Rect;
             _objectivesTitle =
                 objectivesHeader.Title;
-
-            _trackButton =
-                GK2UiFactory.CreateFlatButton(
-                    _detailContent,
-                    "TrackQuestButton",
-                    _theme,
-                    "Track Quest",
-                    Vector2.zero,
-                    new Vector2(118f, 26f),
-                    () =>
-                    {
-                        QuestData quest =
-                            ResolveSelectedQuest();
-
-                        if (quest == null)
-                        {
-                            return;
-                        }
-
-                        UnifiedTrackerFeature.ToggleQuestFromExternalUi(
-                            quest);
-
-                        Refresh();
-                    },
-                    false);
-
-            _trackButtonLabel =
-                _trackButton
-                    .GetComponentInChildren<TextMeshProUGUI>(
-                        true);
-
-            if (_trackButtonLabel != null)
-            {
-                _trackButtonLabel.rectTransform.offsetMin =
-                    new Vector2(25f, 0f);
-            }
-
-            GameObject pin =
-                GK2UiFactory.CreateImage(
-                    _trackButton.transform,
-                    "TrackerPin",
-                    UnifiedTrackerFeature.GetTrackerPinSpriteForExternalUi(),
-                    Image.Type.Simple,
-                    new Vector2(0f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(5f, 0f),
-                    new Vector2(21f, 21f),
-                    Color.white);
-
-            _trackPinIcon =
-                pin.GetComponent<Image>();
-
-            _trackPinIcon.preserveAspect =
-                true;
 
             _objectivePool =
                 new GK2UiPool<GK2UiItemRequirementView>(
