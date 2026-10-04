@@ -136,15 +136,29 @@ namespace GK2Plus.Framework.UI
             backRect.offsetMax =
                 Vector2.zero;
 
+            float nativeScale =
+                Mathf.Max(
+                    0.45f,
+                    size.y /
+                    GK2UiMetrics.Native.RedButtonSize.y);
+
             HorizontalLayoutGroup backLayout =
                 back.AddComponent<HorizontalLayoutGroup>();
 
             backLayout.padding =
                 new RectOffset(
-                    GK2UiMetrics.Native.RedButtonPaddingHorizontal,
-                    GK2UiMetrics.Native.RedButtonPaddingHorizontal,
-                    GK2UiMetrics.Native.RedButtonPaddingTop,
-                    GK2UiMetrics.Native.RedButtonPaddingBottom);
+                    Mathf.RoundToInt(
+                        GK2UiMetrics.Native.RedButtonPaddingHorizontal *
+                        nativeScale),
+                    Mathf.RoundToInt(
+                        GK2UiMetrics.Native.RedButtonPaddingHorizontal *
+                        nativeScale),
+                    Mathf.RoundToInt(
+                        GK2UiMetrics.Native.RedButtonPaddingTop *
+                        nativeScale),
+                    Mathf.RoundToInt(
+                        GK2UiMetrics.Native.RedButtonPaddingBottom *
+                        nativeScale));
             backLayout.spacing =
                 0f;
             backLayout.childAlignment =
@@ -164,7 +178,8 @@ namespace GK2Plus.Framework.UI
                     "Label",
                     theme?.ButtonTextTemplate,
                     text,
-                    GK2UiMetrics.Native.RedButtonFontSize,
+                    GK2UiMetrics.Native.RedButtonFontSize *
+                    nativeScale,
                     TextAlignmentOptions.Center,
                     Vector2.zero,
                     Vector2.one,
@@ -235,6 +250,175 @@ namespace GK2Plus.Framework.UI
             }
 
             return button;
+        }
+
+        public static Button CreateNativeWindowTab(
+            Transform parent,
+            string name,
+            GK2UiTheme theme,
+            string text,
+            Vector2 anchoredPosition,
+            Vector2 size,
+            bool selected,
+            UnityAction onClick = null)
+        {
+            GameObject root =
+                CreateRect(
+                    parent,
+                    name,
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    anchoredPosition,
+                    size);
+
+            GameObject activeBack =
+                CreateImage(
+                    root.transform,
+                    "ActiveBack",
+                    theme?.MainWindowHeaderButtonSprite,
+                    Image.Type.Sliced,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    Color.white,
+                    false);
+
+            RectTransform activeBackRect =
+                activeBack.GetComponent<RectTransform>();
+            activeBackRect.offsetMin =
+                Vector2.zero;
+            activeBackRect.offsetMax =
+                Vector2.zero;
+            activeBack.SetActive(
+                selected);
+
+            Image selection =
+                CreateImage(
+                    root.transform,
+                    "Selection",
+                    theme?.MainWindowHeaderButtonOverSprite,
+                    Image.Type.Sliced,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Color(1f, 1f, 1f, 0f),
+                    true)
+                .GetComponent<Image>();
+
+            selection.rectTransform.offsetMin =
+                Vector2.zero;
+            selection.rectTransform.offsetMax =
+                Vector2.zero;
+
+            TextMeshProUGUI label =
+                CreateText(
+                    root.transform,
+                    "Label",
+                    theme?.BodyTextTemplate ??
+                    theme?.ButtonTextTemplate,
+                    text,
+                    10f,
+                    TextAlignmentOptions.Center,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero);
+
+            label.rectTransform.offsetMin =
+                new Vector2(6f, 0f);
+            label.rectTransform.offsetMax =
+                new Vector2(-6f, 0f);
+            label.color =
+                new Color(
+                    1f,
+                    0.82f,
+                    0.45f,
+                    1f);
+
+            Button button =
+                root.AddComponent<Button>();
+
+            button.targetGraphic =
+                selection;
+            button.transition =
+                Selectable.Transition.ColorTint;
+
+            ColorBlock colors =
+                button.colors;
+
+            colors.normalColor =
+                new Color(1f, 1f, 1f, 0f);
+            colors.highlightedColor =
+                Color.white;
+            colors.pressedColor =
+                new Color(
+                    1f,
+                    0.678f,
+                    0.227f,
+                    1f);
+            colors.selectedColor =
+                Color.white;
+            colors.disabledColor =
+                new Color(1f, 1f, 1f, 0f);
+            colors.fadeDuration =
+                0.05f;
+
+            button.colors =
+                colors;
+
+            if (onClick != null)
+            {
+                button.onClick.AddListener(
+                    onClick);
+            }
+
+            return button;
+        }
+
+        public static void SetNativeWindowTabSelected(
+            GameObject tab,
+            bool selected)
+        {
+            if (tab == null)
+            {
+                return;
+            }
+
+            Transform activeBack =
+                tab.transform.Find(
+                    "ActiveBack");
+
+            if (activeBack != null)
+            {
+                activeBack.gameObject.SetActive(
+                    selected);
+            }
+
+            TextMeshProUGUI label =
+                tab.GetComponentInChildren<TextMeshProUGUI>(
+                    true);
+
+            if (label != null)
+            {
+                label.color =
+                    selected
+                        ? new Color(
+                            1f,
+                            0.92f,
+                            0.64f,
+                            1f)
+                        : new Color(
+                            1f,
+                            0.82f,
+                            0.45f,
+                            1f);
+            }
         }
 
         public static GK2UiProgressBarView CreateNativeProgressBar(
