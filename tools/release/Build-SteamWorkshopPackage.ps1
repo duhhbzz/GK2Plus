@@ -53,7 +53,9 @@ Copy/merge the included BepInEx folder into the Graveyard Keeper 2 game folder.
 Expected DLL:
 Graveyard Keeper 2\BepInEx\plugins\GK2Plus\GK2Plus.dll
 
-Press F2 in game to open GK2+.
+Press F2 in game to open GK2+ by default.
+The keyboard shortcut is configurable in the General tab.
+Controller / Steam Deck: hold L3 + R3 to toggle; B closes.
 https://github.com/duhhbzz/GK2Plus
 "@
 [IO.File]::WriteAllText((Join-Path $content 'WORKSHOP_INSTALL.txt'), $install, [Text.UTF8Encoding]::new($false))
@@ -106,13 +108,14 @@ GK2+ - one mod, your way.
 Modular Graveyard Keeper 2 QoL/gameplay suite.
 
 v$version highlights:
-- Shared Storage with Current Zone / Global scope
-- Character Inventory Access
-- Use supported consumables from Shared Storage
-- Craft/build from Global Shared Storage
-- Bigger Item Stacks
-- Spawn Item cheat
-- Manual Save and save safety
+- Native-style GK2+ menu with configurable keyboard/controller access
+- RPG Quest Journal with NPC grouping and Unified Tracker integration
+- Unified Tracker for quests, crafts/builds, and item targets
+- Continuous Planting
+- Sprinting
+- Backwards Compatible Extensions
+- Shared Storage and Bigger Item Stacks
+- Spawn Item, Manual Save, cheats, and save safety
 
 Requires BepInEx 5.4.23.5.
 Tested with GK2 v$gameVersion.
