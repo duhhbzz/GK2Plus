@@ -49,6 +49,8 @@ namespace GK2Plus.Framework.UI
         public Sprite MainWindowHeaderButtonSprite { get; private set; }
         public Sprite MainWindowHeaderButtonOverSprite { get; private set; }
         public Sprite MainWindowHeaderSeparatorSprite { get; private set; }
+        public Sprite MainWindowHeaderTabLeftSprite { get; private set; }
+        public Sprite MainWindowHeaderTabRightSprite { get; private set; }
 
         // Native inspiration progress bar.
         public Sprite ProgressFrameSprite { get; private set; }
@@ -311,6 +313,10 @@ namespace GK2Plus.Framework.UI
                 FindSprite("main_window-header_1-button-over");
             MainWindowHeaderSeparatorSprite ??=
                 FindSprite("main_window-header_1-dec_separator");
+            MainWindowHeaderTabLeftSprite ??=
+                FindSprite("main_window-header_1-dec_left");
+            MainWindowHeaderTabRightSprite ??=
+                FindSprite("main_window-header_1-dec_right");
 
             ProgressFrameSprite ??=
                 FindSprite("inspiration-plate-green-value_frame");
