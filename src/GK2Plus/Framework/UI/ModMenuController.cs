@@ -637,33 +637,6 @@ namespace GK2Plus.Framework.UI
                     tabButton.gameObject;
             }
 
-            if (_theme.MainWindowHeaderSeparatorSprite != null)
-            {
-                for (int i = 0; i < Tabs.Length - 1; i++)
-                {
-                    float separatorX =
-                        firstX +
-                        (tabWidth / 2f) +
-                        i * (tabWidth + gap) +
-                        (gap / 2f);
-
-                    GK2UiFactory.CreateImage(
-                        window.transform,
-                        "TabSeparator" + i,
-                        _theme.MainWindowHeaderSeparatorSprite,
-                        Image.Type.Simple,
-                        new Vector2(0.5f, 1f),
-                        new Vector2(0.5f, 1f),
-                        new Vector2(0.5f, 1f),
-                        new Vector2(
-                            separatorX,
-                            GK2UiMetrics.Menu.TabY),
-                        new Vector2(20f, 26f),
-                        Color.white,
-                        false);
-                }
-            }
-
             GameObject content = new GameObject(
                 "Content",
                 typeof(RectTransform)
