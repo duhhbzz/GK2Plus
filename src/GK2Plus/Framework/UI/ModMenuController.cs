@@ -34,7 +34,6 @@ namespace GK2Plus.Framework.UI
         private GameObject _pageTitle;
         private GameObject _pageText;
         private GameObject _featureSettingsNote;
-        private GameObject _moreAboutText;
 
         private readonly Dictionary<string, List<GameObject>> _tabBodyDecor =
             new Dictionary<string, List<GameObject>>(
@@ -3456,7 +3455,6 @@ Button close = closeButton.GetComponent<Button>();
             }
 
             _tabBodyDecor.Clear();
-            _moreAboutText = null;
 
             AddTabSection(
                 "General",
@@ -3509,7 +3507,7 @@ Button close = closeButton.GetComponent<Button>();
                 "About",
                 -134f);
 
-            _moreAboutText =
+            GameObject moreAboutText =
                 CreateBodyText(
                     _bodyTextTemplate,
                     _contentRoot.transform,
@@ -3531,7 +3529,7 @@ Button close = closeButton.GetComponent<Button>();
 
             RegisterTabBodyDecor(
                 "More",
-                _moreAboutText);
+                moreAboutText);
 
             RefreshTabBodyDecor();
         }
@@ -3832,7 +3830,6 @@ Button close = closeButton.GetComponent<Button>();
             _pageTitle = null;
             _pageText = null;
             _featureSettingsNote = null;
-            _moreAboutText = null;
             _tabBodyDecor.Clear();
             _featureOptionPickerRoot = null;
             _activeFeatureOptionPickerControl = null;
