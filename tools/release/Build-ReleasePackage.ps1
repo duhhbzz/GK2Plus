@@ -22,7 +22,7 @@ if ([string]::IsNullOrWhiteSpace($version)) {
 
 if (-not $SkipBuild) {
     Write-Host "Building GK2+ v$version (Release)..."
-    dotnet build $projectPath -c Release
+    dotnet build $projectPath -c Release --warnaserror
 
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet build failed with exit code $LASTEXITCODE"
