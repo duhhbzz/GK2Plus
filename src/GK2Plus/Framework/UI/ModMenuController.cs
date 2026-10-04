@@ -592,7 +592,7 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.Menu.TabGap;
 
             float availableTabWidth =
-                GK2UiMetrics.Menu.WindowSize.x - 40f;
+                GK2UiMetrics.Menu.WindowSize.x - 28f;
 
             float tabHeight =
                 GK2UiMetrics.Menu.TabHeight;
