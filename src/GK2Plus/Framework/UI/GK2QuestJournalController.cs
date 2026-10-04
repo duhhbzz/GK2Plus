@@ -29,9 +29,7 @@ namespace GK2Plus.Framework.UI
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Description;
             public TextMeshProUGUI Status;
-            public GameObject ProgressRoot;
-            public Image ProgressFill;
-            public TextMeshProUGUI ProgressLabel;
+            public GK2UiProgressBarView Progress;
             public Button SelectButton;
             public Button PinButton;
             public Image PinIcon;
@@ -43,6 +41,7 @@ namespace GK2Plus.Framework.UI
             public GameObject Root;
             public RectTransform Rect;
             public Image Background;
+            public Image HeaderBackground;
             public Image Portrait;
             public TextMeshProUGUI Title;
             public TextMeshProUGUI Count;
@@ -79,11 +78,13 @@ namespace GK2Plus.Framework.UI
         private TextMeshProUGUI _detailDescription;
         private TextMeshProUGUI _objectivesTitle;
         private TextMeshProUGUI _detailPaneHeaderTitle;
+        private GameObject _detailSummaryPanel;
+        private RectTransform _detailSummaryRect;
+        private RectTransform _detailPortraitRect;
         private RectTransform _descriptionHeaderRect;
         private RectTransform _objectivesHeaderRect;
         private Image _detailIcon;
         private Button _trackButton;
-        private Image _trackPinIcon;
         private TextMeshProUGUI _trackButtonLabel;
         private GK2UiPool<GK2UiItemRequirementView> _objectivePool;
 
@@ -231,14 +232,18 @@ namespace GK2Plus.Framework.UI
                 GK2UiFactory.CreateImage(
                     host.transform,
                     "GK2PlusQuestJournal",
-                    null,
-                    Image.Type.Simple,
+                    _theme.ContentStoneSprite,
+                    _theme.ContentStoneSprite != null
+                        ? Image.Type.Tiled
+                        : Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    _theme.ContentBackground,
+                    _theme.ContentStoneSprite != null
+                        ? Color.white
+                        : _theme.ContentBackground,
                     true);
 
             _rootRect =
