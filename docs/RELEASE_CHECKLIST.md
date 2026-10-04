@@ -154,6 +154,131 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
 
 ---
 
+## v2.0.0 — Native UI / Tracker / Journal Release
+
+### Static release state
+
+- [x] `VERSION` is `2.0.0`.
+- [x] `GAME_VERSION` is `1.008`.
+- [x] Feature Catalog documents the 2.0 feature set.
+- [x] UI framework/menu visual contract is documented.
+- [x] Configurable keyboard menu access is implemented.
+- [x] Controller / Steam Deck L3 + R3 menu access is implemented.
+- [x] RPG Quest Journal uses the shared native-style UI framework.
+- [x] Quest Journal includes quest-only **Unpin All** integration with Unified Tracker.
+
+### Automated preflight
+
+Before the in-game pass, run:
+
+~~~powershell
+.\tools\release\Test-2.0Readiness.ps1
+~~~
+
+This fails on compiler warnings, builds Debug + Release, builds/verifies the canonical
+release and Thunderstore archives, stages the Steam Workshop package, validates
+the expected archive contents/dependency/version, and prints the canonical ZIP
+SHA256.
+
+Latest successful v2.0.0 preflight:
+
+~~~text
+Canonical release ZIP:
+  dist/GK2Plus-2.0.0.zip
+  SHA256 0A25A10FF76D88C5151D765C51AC6669700C5FEFAC8FB4C3AC92F5236F5BC2C4
+
+Thunderstore package:
+  dist/GK2Plus-2.0.0-Thunderstore.zip
+  SHA256 F82CF6C44AFCF367FCD278BAF97F7C89424CB26BF930E77FDA29CEF312810A3D
+
+Steam Workshop item:
+  3808769342
+~~~
+
+The preflight passed with **0 warnings / 0 errors** in both Debug and Release.
+
+### One-pass runtime validation
+
+Run these in one play session where practical instead of treating every line as a separate test.
+
+#### Menu / input / native UI
+
+- [x] Build Debug and Release with **0 errors / 0 warnings**.
+- [x] Main menu: open/close GK2+ with the configured keyboard hotkey.
+- [x] Change the hotkey in **General**, confirm the header hint updates immediately, old key stops toggling, and new key works.
+- [x] Restart GK2 and confirm the selected hotkey persists.
+- [x] With controller shortcut enabled, hold **L3 + R3** for about half a second and confirm the menu toggles only once per hold.
+- [x] Confirm **B** closes the top-most GK2+ picker/menu surface and **Esc** still behaves identically.
+- [x] Confirm controller opening gives navigation focus to the active top tab; exercise D-pad/stick navigation through representative controls.
+- [x] Disable the controller shortcut and confirm L3 + R3 / B no longer control GK2+.
+- [x] Sweep every F2 tab for clipping, overlap, stale old-font text, or non-native controls.
+- [x] Expand/collapse parent settings with child options and confirm one shared dark panel contains the whole group.
+- [x] Confirm collapsing a group does not change its saved feature/child values.
+- [x] Load a save and confirm main-menu-only settings are read-only while live-safe controls remain editable.
+
+#### RPG Quest Journal / Unified Tracker
+
+- [x] Open Character -> Quests and confirm the RPG Journal replaces only the native quest-tree presentation.
+- [x] Switch repeatedly Character -> Quests -> Map -> Quests and confirm no duplicate journal trees or stale native quest tree appears.
+- [x] Test **Active** and **Completed** filters and their counts.
+- [x] With a controller, enter the journal and confirm focus starts on the filter row and navigation reaches NPC groups, quest rows, and detail actions without getting trapped on tiny pin icons.
+- [x] Expand/collapse several NPC groups; verify all child quests remain inside one shared group panel.
+- [x] Select several quests and verify title, portrait, status, description, and item objectives.
+- [x] Test a quest with no item objective and a quest with multiple item objectives.
+- [x] Track/untrack individual active quests from both the quest row pin and the detail action.
+- [x] Pin several quests, use **Unpin All**, and confirm only quest pins are removed; craft/item/plan pins remain.
+- [x] Confirm the compact HUD remains bounded with several tracked entries and does not grow off-screen.
+- [x] Disable RPG Quest Journal and confirm the vanilla quest tree returns cleanly.
+- [x] Re-enable it and confirm the journal remounts without duplicate UI.
+
+#### Sprinting
+
+- [x] Enable Sprinting and verify configured key + multiplier are shown in the Movement tab.
+- [x] Hold the sprint key during normal free movement and verify the speed increase.
+- [x] Release the key and verify native speed returns immediately.
+- [x] Change sprint key and multiplier, reload, and verify values persist.
+- [x] Sanity-check a non-free movement state so sprint does not obviously leak into scripted movement.
+
+#### Continuous Planting
+
+- [x] Enable Continuous Planting.
+- [x] Plant a seed and confirm the same seed remains selected while more remain in inventory.
+- [x] Use the normal cancel/menu/tab action and confirm GK2+ does not restore the canceled seed selection.
+- [x] Use the last seed and confirm planting selection ends normally.
+- [x] Disable the feature and confirm vanilla one-shot planting behavior returns.
+
+#### Backwards Compatible Extensions
+
+- [x] Enable the feature with a compatible workstation + **Fine Tool Rack** attached.
+- [x] Confirm a recipe requiring basic **Tool Rack** becomes craftable through the Fine Tool Rack.
+- [x] Confirm a recipe that genuinely requires Fine Tool Rack still requires it normally.
+- [x] Disable the feature and confirm the basic Tool Rack requirement returns to vanilla behavior.
+- [x] Open an unrelated workstation/extension combination and confirm it is unaffected.
+
+#### Existing 0.1.x regression smoke
+
+- [x] Manual Save still saves/reloads the same location and representative world/inventory state.
+- [x] Shared Storage Current Zone / Global access still works.
+- [x] Bigger Item Stacks still applies the configured multiplier.
+- [x] Spawn Item still inserts a normal inventory item through the native path.
+- [x] Damage the player, use **Heal Player**, and confirm HP actually restores.
+- [x] Use **Refill Energy** and confirm the visible work-energy resource restores.
+- [x] Trigger one cheat flow and confirm warning/taint/checkpoint behavior is unchanged.
+- [x] When practical, observe a naturally triggered platform achievement attempt being blocked on a tainted save.
+
+### Final packaging / publish
+
+- [ ] Run `tools/release/Build-ReleasePackage.ps1` from a clean tree.
+- [x] Install and test the **Release** DLL from the generated archive, not only the Debug build.
+- [x] Record the canonical ZIP SHA256: `0A25A10FF76D88C5151D765C51AC6669700C5FEFAC8FB4C3AC92F5236F5BC2C4`.
+- [x] Build the Thunderstore package from the same source/version and validate its manifest/icon/layout.
+- [x] Build the Steam Workshop staging package from the canonical release ZIP.
+- [x] Verify Workshop/Thunderstore/Nexus copy mentions the current 2.0 feature set and configurable/controller menu access.
+- [x] Capture final screenshots of the F2 menu, Quest Journal, Unified Tracker HUD, and one representative settings group.
+- [ ] Merge the 2.0 release branch to `main`, tag `v2.0.0`, and publish the same canonical artifact to the intended channels.
+
+---
+
 ## v0.1.0 — First Gameplay Release
 
 ### Functional validation

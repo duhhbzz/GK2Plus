@@ -34,7 +34,9 @@ https://github.com/duhhbzz/GK2Plus/blob/main/CHANGELOG.md
 
 ### Controls
 
-Press **F2** to open/close GK2+.
+**F2** opens/closes GK2+ by default and can be changed from the **General** tab.
+
+Controller / Steam Deck users can hold **L3 + R3** to open/close the menu; **B** closes it. The controller shortcut can also be disabled from General.
 
 The menu works from both the main menu and active gameplay.
 
@@ -66,7 +68,7 @@ BepInEx/plugins/GK2Plus/GK2Plus.dll
 
 5. Launch the game normally.
 6. Confirm the GK2+ status badge appears on the main menu.
-7. Press **F2** to open the mod menu.
+7. Press **F2** (default) or use the configured/controller shortcut to open the mod menu.
 
 ## Source / Bugs / Features
 

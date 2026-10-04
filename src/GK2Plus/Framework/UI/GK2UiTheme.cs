@@ -27,10 +27,46 @@ namespace GK2Plus.Framework.UI
         public Sprite WindowFrameSprite { get; private set; }
         public Sprite WindowBackgroundSprite { get; private set; }
         public Sprite DividerSprite { get; private set; }
+        // Native red action button.
         public Sprite ButtonSprite { get; private set; }
+        public Sprite ButtonHighlightedSprite { get; private set; }
+        public Sprite ButtonPressedSprite { get; private set; }
+        public Sprite ButtonDisabledSprite { get; private set; }
+
         public Sprite ContentCellSprite { get; private set; }
+        public Sprite ContentStoneSprite { get; private set; }
+
+        // Native inventory/item cell.
         public Sprite ItemSlotSprite { get; private set; }
+        public Sprite ItemSelectionSprite { get; private set; }
+        public Sprite ItemInactiveSprite { get; private set; }
         public Material ItemIconMaterial { get; private set; }
+
+        // Native CharacterWindow header/tab chrome.
+        public Sprite MainWindowHeaderSprite { get; private set; }
+        public Sprite MainWindowHeaderSideSprite { get; private set; }
+        public Sprite MainWindowHeaderSplitterSprite { get; private set; }
+        public Sprite MainWindowHeaderButtonSprite { get; private set; }
+        public Sprite MainWindowHeaderButtonOverSprite { get; private set; }
+        public Sprite MainWindowHeaderSeparatorSprite { get; private set; }
+        public Sprite MainWindowHeaderTabLeftSprite { get; private set; }
+        public Sprite MainWindowHeaderTabRightSprite { get; private set; }
+        public TextMeshProUGUI MainWindowTabTextTemplate { get; private set; }
+
+        // Native inspiration progress bar.
+        public Sprite ProgressFrameSprite { get; private set; }
+        public Sprite ProgressFillSprite { get; private set; }
+        public TextMeshProUGUI ProgressTextTemplate { get; private set; }
+
+        // Native tooltip.
+        public Sprite TooltipFrameSprite { get; private set; }
+        public Sprite TooltipTailSprite { get; private set; }
+        public Sprite TooltipSeparatorSprite { get; private set; }
+        public TextMeshProUGUI TooltipRegularTextTemplate { get; private set; }
+        public TextMeshProUGUI TooltipAdditionalTextTemplate { get; private set; }
+
+        // Native dialog body style.
+        public TextMeshProUGUI DialogBodyTextTemplate { get; private set; }
 
         public Sprite SectionHeaderSprite { get; private set; }
         public Sprite SectionHeaderInactiveSprite { get; private set; }
@@ -99,6 +135,10 @@ namespace GK2Plus.Framework.UI
             if (_current != null &&
                 _current.IsReady)
             {
+                // Retry exact name/style lookups because some native UI assets
+                // are loaded lazily as their vanilla screens are opened.
+                _current.ResolveKnownNativeAssets();
+
                 TextMeshProUGUI nativeTitle =
                     ResolveInventoryHeaderTemplate();
 
@@ -122,13 +162,16 @@ namespace GK2Plus.Framework.UI
                         FindTmp(bodyFallback);
                 }
 
-                TextMeshProUGUI laterButtonTemplate =
-                    FindTmp(buttonFallback);
-
-                if (laterButtonTemplate != null)
+                if (_current.ButtonTextTemplate == null)
                 {
-                    _current.ButtonTextTemplate =
-                        laterButtonTemplate;
+                    TextMeshProUGUI laterButtonTemplate =
+                        FindTmp(buttonFallback);
+
+                    if (laterButtonTemplate != null)
+                    {
+                        _current.ButtonTextTemplate =
+                            laterButtonTemplate;
+                    }
                 }
 
                 if (_current.CountTextTemplate == null ||
@@ -159,16 +202,7 @@ namespace GK2Plus.Framework.UI
                 _current ??
                 new GK2UiTheme();
 
-            theme.WindowFrameSprite =
-                FindSprite("comm-frame_1-border");
-            theme.WindowBackgroundSprite =
-                FindSprite("titlescreen-menu-bg");
-            theme.DividerSprite =
-                FindSprite("widget_perks-text_decor-drk_1");
-            theme.ButtonSprite =
-                FindSprite("comm-btn-simple_red-active");
-            theme.ContentCellSprite =
-                FindSprite("comm-cell_dark_2");
+            theme.ResolveKnownNativeAssets();
 
             theme.TitleTextTemplate =
                 ResolveInventoryHeaderTemplate();
@@ -176,8 +210,11 @@ namespace GK2Plus.Framework.UI
             theme.BodyTextTemplate =
                 ResolveBuildingListTemplate();
 
-            theme.ButtonTextTemplate =
-                FindTmp(buttonFallback);
+            if (theme.ButtonTextTemplate == null)
+            {
+                theme.ButtonTextTemplate =
+                    FindTmp(buttonFallback);
+            }
 
             if (theme.ButtonTextTemplate == null)
             {
@@ -227,6 +264,177 @@ namespace GK2Plus.Framework.UI
         public static void Reset()
         {
             _current = null;
+        }
+
+        /// <summary>
+        /// Resolve the exact native primitives harvested from GK2 v1.008.
+        /// These are explicit asset/style names rather than heuristic
+        /// "looks close enough" matches. Missing assets are left null and
+        /// retried on later Resolve calls as vanilla screens load.
+        /// </summary>
+        private void ResolveKnownNativeAssets()
+        {
+            WindowFrameSprite ??=
+                FindSprite("comm-frame_1-border");
+            WindowBackgroundSprite ??=
+                FindSprite("comm-frame_bg_1");
+
+            DividerSprite ??=
+                FindSprite("widget_perks-text_decor-drk_1");
+            ContentCellSprite ??=
+                FindSprite("comm-cell_dark_2");
+            ContentStoneSprite ??=
+                FindSprite("comm-content_bg_dark-side-small");
+
+            ButtonSprite ??=
+                FindSprite("comm-btn-simple_red-active");
+            ButtonHighlightedSprite ??=
+                FindSprite("comm-btn-simple_red-over");
+            ButtonPressedSprite ??=
+                FindSprite("comm-btn-simple_red-press");
+            ButtonDisabledSprite ??=
+                FindSprite("comm-btn-simple_red-inactive");
+
+            ItemSlotSprite ??=
+                FindSprite("widget_items_cell-inventory_item_cell");
+            ItemSelectionSprite ??=
+                FindSprite("selection");
+            ItemInactiveSprite ??=
+                FindSprite("comm-item-inactive_shade");
+
+            MainWindowHeaderSprite ??=
+                FindSprite("main_window-header_1");
+            MainWindowHeaderSideSprite ??=
+                FindSprite("main_window-header_1-dec_side_3");
+            MainWindowHeaderSplitterSprite ??=
+                FindSprite("comm-header_frame_splitter");
+            MainWindowHeaderButtonSprite ??=
+                FindSprite("main_window-header_1-button");
+            MainWindowHeaderButtonOverSprite ??=
+                FindSprite("main_window-header_1-button-over");
+            MainWindowHeaderSeparatorSprite ??=
+                FindSprite("main_window-header_1-dec_separator");
+            MainWindowHeaderTabLeftSprite ??=
+                FindSprite("main_window-header_1-dec_left");
+            MainWindowHeaderTabRightSprite ??=
+                FindSprite("main_window-header_1-dec_right");
+            MainWindowTabTextTemplate ??=
+                ResolveMainWindowTabTextTemplate();
+
+            ProgressFrameSprite ??=
+                FindSprite("inspiration-plate-green-value_frame");
+            ProgressFillSprite ??=
+                FindSprite("inspiration-plate-green-bar_fill");
+
+            TooltipFrameSprite ??=
+                FindSprite("hint-frame");
+            TooltipTailSprite ??=
+                FindSprite("hint-frame_tail");
+            TooltipSeparatorSprite ??=
+                FindSprite("hint-text_separator");
+
+            TextMeshProUGUI nativeButtonText =
+                ResolveNativeRedButtonTextTemplate() ??
+                FindTmpByStyle(
+                    "small_font_bold",
+                    "btn_red_active");
+
+            if (nativeButtonText != null)
+            {
+                // Upgrade an earlier generic fallback once the vanilla red
+                // button style has actually been loaded by the game.
+                ButtonTextTemplate =
+                    nativeButtonText;
+            }
+
+            ProgressTextTemplate ??=
+                FindTmpByStyle(
+                    "tiny_font",
+                    "inspiration-plate_bar_progress");
+
+            TooltipRegularTextTemplate ??=
+                FindTmpByStyle(
+                    "small_font",
+                    "hint_regular_text");
+
+            TooltipAdditionalTextTemplate ??=
+                FindTmpByStyle(
+                    "tiny_font",
+                    "hint_additional_text");
+
+            DialogBodyTextTemplate ??=
+                FindTmpByStyle(
+                    "small_font",
+                    "regular_text_3");
+        }
+
+        private static TextMeshProUGUI ResolveNativeRedButtonTextTemplate()
+        {
+            foreach (TextMeshProUGUI label in
+                     Resources.FindObjectsOfTypeAll<TextMeshProUGUI>())
+            {
+                if (label == null ||
+                    label.font == null ||
+                    !string.Equals(
+                        label.font.name,
+                        "small_font_bold",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                Transform current =
+                    label.transform;
+
+                for (int depth = 0;
+                     current != null && depth < 5;
+                     current = current.parent, depth++)
+                {
+                    Image image =
+                        current.GetComponent<Image>();
+
+                    if (image?.sprite != null &&
+                        string.Equals(
+                            image.sprite.name,
+                            "comm-btn-simple_red-active",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        return label;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static TextMeshProUGUI ResolveMainWindowTabTextTemplate()
+        {
+            foreach (MonoBehaviour behaviour in
+                     Resources.FindObjectsOfTypeAll<MonoBehaviour>())
+            {
+                if (behaviour == null ||
+                    behaviour.GetType().Name != "CharPageTabButton")
+                {
+                    continue;
+                }
+
+                Transform labelTransform =
+                    behaviour.transform.Find("Label");
+
+                TextMeshProUGUI label =
+                    labelTransform != null
+                        ? labelTransform.GetComponent<TextMeshProUGUI>()
+                        : behaviour.GetComponentInChildren<TextMeshProUGUI>(
+                            true);
+
+                if (label != null &&
+                    label.font != null)
+                {
+                    return label;
+                }
+            }
+
+            return null;
         }
 
         private void ResolveItemCellStyle()
@@ -423,6 +631,25 @@ namespace GK2Plus.Framework.UI
                         sprite.name,
                         name,
                         StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static TextMeshProUGUI FindTmpByStyle(
+            string fontName,
+            string materialNameFragment)
+        {
+            return Resources
+                .FindObjectsOfTypeAll<TextMeshProUGUI>()
+                .FirstOrDefault(text =>
+                    text != null &&
+                    text.font != null &&
+                    string.Equals(
+                        text.font.name,
+                        fontName,
+                        StringComparison.OrdinalIgnoreCase) &&
+                    text.fontSharedMaterial != null &&
+                    text.fontSharedMaterial.name.IndexOf(
+                        materialNameFragment,
+                        StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         internal static TextMeshProUGUI FindTmp(

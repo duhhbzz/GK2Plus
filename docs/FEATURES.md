@@ -31,13 +31,15 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 
 ## GK2+ Mod Menu
 
-Press **F2** to open or close GK2+. **Esc** closes it.
+The default keyboard shortcut is **F2** to open or close GK2+. **Esc** closes it.
+
+The keyboard shortcut is configurable from the **General** tab. Controller / Steam Deck access is enabled by default: hold **L3 + R3** briefly to open or close GK2+, and **B** closes an open GK2+ menu.
 
 The menu persists between the main menu and gameplay and organizes features into categories such as Inventory, Farming, Cheats, and More.
 
 Where practical, features are independently configurable so players can disable an overlapping GK2+ feature without uninstalling the entire suite.
 
-Settings are ordered intentionally within each tab. Child options stay visually attached beneath their parent feature, and parent-disabled options remain visible but greyed/non-interactive so their saved values are still understandable.
+Settings are ordered intentionally within each tab. Parent features with child options use one expandable native panel; collapsing the panel is presentation-only and preserves the saved child values.
 
 ---
 
@@ -85,7 +87,7 @@ The initial journal provides:
 - a scrollable quest list using native quest icons;
 - a selected-quest details pane with status and localized description;
 - native-style item requirement cells for quest objectives;
-- direct integration with the Unified Tracker's parchment tracking control.
+- direct integration with the Unified Tracker, including per-quest tracking and a quest-only **Unpin All** action.
 
 The replacement is presentation-only. GK2 remains authoritative for quest
 state, completion, localization, requirements, rewards, and persistence.
@@ -102,7 +104,7 @@ initialize against the current game build.
 - quests with zero, one, and several item requirements;
 - selecting quests and preserving a sensible current selection;
 - tracking/untracking an active quest from the journal;
-- controller/gamepad navigation follow-up before release;
+- controller/gamepad navigation through filters, NPC groups, quest rows, and detail actions;
 - disable the feature and confirm the vanilla quest tree returns.
 
 ---

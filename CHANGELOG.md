@@ -16,13 +16,16 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - **Sprinting** with configurable keyboard binding and movement-speed multiplier for normal free movement.
 - **Backwards Compatible Extensions**, initially allowing Fine Tool Rack to satisfy compatible recipes that still require Tool Rack.
 - Reusable native-style UI framework components, centralized theme/metrics helpers, pooled UI controls, item-requirement cells, section builders, portrait components, and shared tracker/journal presentation primitives.
+- Configurable GK2+ keyboard menu hotkey plus controller / Steam Deck access: hold L3 + R3 to toggle and B to close.
+- Quest Journal quest-only **Unpin All** action for clearing tracked quests without removing craft/item/plan pins.
 
 ### Changed
 
 - GK2+ now targets and has been runtime-tested against **Graveyard Keeper 2 v1.008**.
 - Mod-menu layout and feature controls were expanded for Tracker and Movement configuration while retaining the existing persistent F2 menu lifecycle.
 - Tracker pin capacity and presentation were refined around a compact combined HUD.
-- Quest Journal presentation was iterated toward a denser native-style two-pane layout with grouped NPC navigation and compact quest cards.
+- The F2 menu was rebuilt around native GK2 window/header/tab/button primitives with grouped expandable feature settings.
+- Quest Journal presentation was rebuilt around the shared native UI framework with native filters, NPC-group panels, native progress bars, native red actions, and grouped detail sections.
 
 ### Validation
 
@@ -30,10 +33,11 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - RPG Quest Journal Active/Completed navigation, NPC grouping, quest selection/details, and tracker integration were exercised during iterative in-game UI testing.
 - Unified Tracker behavior and native gameplay integrations were exercised during development against the current game build.
 - Existing Manual Save, Shared Storage, Bigger Item Stacks, Spawn Item, cheat-safety, and menu behavior continued to operate normally during v1.008 testing.
+- Final combined v2.0 runtime validation passed for configurable keyboard/controller menu access, native F2-menu grouping, RPG Quest Journal lifecycle/navigation, Unified Tracker pin/unpin behavior, Sprinting, Continuous Planting, Backwards Compatible Extensions, and the retained 0.1.x regression smoke tests.
 
 ### Notes
 
-- The 2.0 release intentionally prioritizes the current functional UI over further visual-polish work; additional native-material/texture fidelity can continue after release without blocking functionality.
+- The 2.0 release establishes the native-style UI framework and visual contract used by the F2 menu and RPG Quest Journal; future features should reuse those builders instead of introducing one-off menu styling.
 - Backwards Compatible Extensions is opt-in and remains narrowly scoped to the supported Tool Rack compatibility rule.
 
 ---

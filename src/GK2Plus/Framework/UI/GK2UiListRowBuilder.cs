@@ -9,6 +9,8 @@ namespace GK2Plus.Framework.UI
         public GameObject Root;
         public RectTransform Rect;
         public TextMeshProUGUI Label;
+        public TextMeshProUGUI Subtitle;
+        public Button ExpandButton;
         public Button ActionButton;
     }
 
@@ -26,7 +28,11 @@ namespace GK2Plus.Framework.UI
             string labelObjectName,
             string buttonObjectName,
             string buttonText,
-            bool child = false)
+            bool child = false,
+            string subtitle = null,
+            bool expandable = false,
+            bool expanded = true,
+            bool drawBackground = true)
         {
             GameObject row =
                 GK2UiFactory.CreateRect(
@@ -43,12 +49,34 @@ namespace GK2Plus.Framework.UI
             Image background =
                 row.AddComponent<Image>();
 
-            background.color =
-                child
-                    ? (theme?.ChildRowBackground ??
-                       new Color(0.095f, 0.105f, 0.13f, 0.82f))
-                    : (theme?.RowBackground ??
-                       new Color(0.12f, 0.13f, 0.16f, 0.88f));
+            if (drawBackground)
+            {
+                background.sprite =
+                    theme?.ContentCellSprite;
+                background.type =
+                    theme?.ContentCellSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple;
+                background.color =
+                    theme?.ContentCellSprite != null
+                        ? (child
+                            ? new Color(0.88f, 0.88f, 0.88f, 0.92f)
+                            : Color.white)
+                        : (child
+                            ? (theme?.ChildRowBackground ??
+                               new Color(0.095f, 0.105f, 0.13f, 0.82f))
+                            : (theme?.RowBackground ??
+                               new Color(0.12f, 0.13f, 0.16f, 0.88f)));
+            }
+            else
+            {
+                background.sprite =
+                    null;
+                background.type =
+                    Image.Type.Simple;
+                background.color =
+                    Color.clear;
+            }
 
             background.raycastTarget =
                 false;
@@ -64,34 +92,142 @@ namespace GK2Plus.Framework.UI
             float rightPadding =
                 9f;
 
+            bool hasSubtitle =
+                !string.IsNullOrWhiteSpace(
+                    subtitle);
+
             TextMeshProUGUI labelText =
                 GK2UiFactory.CreateText(
                     row.transform,
                     labelObjectName,
                     theme?.BodyTextTemplate,
-                    label,
+                    expandable
+                        ? $"{(expanded ? "-" : "+")}  {label}"
+                        : label,
                     child
-                        ? 8.5f
-                        : 9f,
+                        ? 9f
+                        : 10f,
                     TextAlignmentOptions.Left,
                     new Vector2(0f, 0f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, 0.5f),
                     new Vector2(
                         leftPadding,
-                        0f),
+                        hasSubtitle
+                            ? 5f
+                            : 0f),
                     new Vector2(
                         -(buttonWidth +
                           rightPadding +
                           leftPadding),
-                        0f));
+                        hasSubtitle
+                            ? -11f
+                            : 0f));
 
             labelText.color =
-                theme?.AccentText ??
-                new Color(1f, 0.82f, 0.45f, 1f);
+                child
+                    ? new Color(0.88f, 0.80f, 0.64f, 1f)
+                    : (theme?.AccentText ??
+                       new Color(1f, 0.82f, 0.45f, 1f));
+
+            TextMeshProUGUI subtitleText =
+                null;
+
+            if (hasSubtitle)
+            {
+                subtitleText =
+                    GK2UiFactory.CreateText(
+                        row.transform,
+                        labelObjectName + "Subtitle",
+                        theme?.BodyTextTemplate,
+                        subtitle,
+                        7.5f,
+                        TextAlignmentOptions.Left,
+                        new Vector2(0f, 0f),
+                        new Vector2(1f, 1f),
+                        new Vector2(0f, 0.5f),
+                        new Vector2(
+                            leftPadding,
+                            -8f),
+                        new Vector2(
+                            -(buttonWidth +
+                              rightPadding +
+                              leftPadding),
+                            -14f));
+
+                subtitleText.color =
+                    new Color(
+                        0.66f,
+                        0.62f,
+                        0.57f,
+                        0.95f);
+            }
+
+            Button expandButton =
+                null;
+
+            if (expandable)
+            {
+                expandButton =
+                    labelText.gameObject.AddComponent<Button>();
+
+                expandButton.targetGraphic =
+                    labelText;
+                expandButton.transition =
+                    Selectable.Transition.ColorTint;
+
+                ColorBlock expandColors =
+                    expandButton.colors;
+
+                Color normal =
+                    labelText.color;
+
+                // Let the Button state own the visible tint so the normal
+                // accent is not multiplied by itself by Unity's ColorTint.
+                labelText.color =
+                    Color.white;
+
+                expandColors.normalColor =
+                    normal;
+                expandColors.highlightedColor =
+                    new Color(
+                        1f,
+                        0.678f,
+                        0.227f,
+                        1f);
+                expandColors.pressedColor =
+                    new Color(
+                        1f,
+                        0.678f,
+                        0.227f,
+                        1f);
+                expandColors.selectedColor =
+                    normal;
+                expandColors.disabledColor =
+                    new Color(
+                        normal.r,
+                        normal.g,
+                        normal.b,
+                        0.5f);
+                expandColors.fadeDuration =
+                    0.05f;
+
+                expandButton.colors =
+                    expandColors;
+
+                labelText.raycastTarget =
+                    true;
+
+                Navigation expandNavigation =
+                    expandButton.navigation;
+                expandNavigation.mode =
+                    Navigation.Mode.Automatic;
+                expandButton.navigation =
+                    expandNavigation;
+            }
 
             Button action =
-                GK2UiFactory.CreateButton(
+                GK2UiFactory.CreateNativeRedButton(
                     row.transform,
                     buttonObjectName,
                     theme,
@@ -99,9 +235,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     new Vector2(
                         buttonWidth,
-                        GK2UiMetrics.Menu.ControlRowHeight - 2f),
-                    null,
-                    GK2UiButtonTone.Neutral);
+                        GK2UiMetrics.Native.RedButtonSize.y));
 
             RectTransform actionRect =
                 action.GetComponent<RectTransform>();
@@ -122,6 +256,8 @@ namespace GK2Plus.Framework.UI
                 Root = row,
                 Rect = row.GetComponent<RectTransform>(),
                 Label = labelText,
+                Subtitle = subtitleText,
+                ExpandButton = expandButton,
                 ActionButton = action
             };
         }

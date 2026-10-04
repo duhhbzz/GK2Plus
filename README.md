@@ -70,12 +70,16 @@ Release-specific additions and fixes are tracked separately in the [Changelog](C
 
 GK2+ uses a persistent UI controller attached to the game's persistent GUI root.
 
-Press:
+Default controls:
 
 ~~~text
-F2  Open / close GK2+
-ESC Close GK2+
+F2            Open / close GK2+ (configurable)
+ESC           Close GK2+
+L3 + R3 hold  Open / close GK2+ on controller / Steam Deck
+B             Close GK2+ on controller
 ~~~
+
+The keyboard shortcut and controller shortcut can be changed from the **General** tab.
 
 The menu works from both:
 
@@ -267,7 +271,7 @@ GK2+
 └── Misc
 ~~~
 
-Near-term planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, and additional carefully gated convenience/cheat tools.
+Near-term planned work focuses on deeper inventory/crafting automation, zombie management, world/building quality-of-life, reminders/wiki tooling, and additional carefully gated convenience/cheat tools.
 
 See the maintained **[Feature Roadmap](docs/ROADMAP.md)** for high-confidence planned features, intended behavior, and suggested development waves.
 

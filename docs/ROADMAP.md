@@ -34,7 +34,7 @@ GK2+ already provides the framework needed to build the roadmap below:
 - ✅ Sprinting
 - ✅ Unified Tracker for quests, crafts/builds, and item targets
 - ✅ RPG Quest Journal
-- 🧪 Configurable GK2+ menu hotkey
+- ✅ Configurable GK2+ menu hotkey and controller / Steam Deck shortcut
 - ✅ Continuous Planting
 
 ---

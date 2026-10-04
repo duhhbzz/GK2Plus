@@ -22,34 +22,51 @@ namespace GK2Plus.Framework.UI
             GK2UiTheme theme,
             float size)
         {
+            float scale =
+                Mathf.Max(0.1f, size) /
+                GK2UiMetrics.Native.ItemCellSize;
+
             GameObject root =
-                GK2UiFactory.CreateImage(
+                GK2UiFactory.CreateRect(
                     parent,
                     "ItemRequirement",
-                    theme?.ItemSlotSprite,
-                    theme?.ItemSlotSprite != null
-                        ? Image.Type.Sliced
-                        : Image.Type.Simple,
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     new Vector2(0f, 1f),
                     Vector2.zero,
-                    new Vector2(size, size),
-                    theme?.ItemSlotSprite != null
-                        ? Color.white
-                        : new Color(0.08f, 0.09f, 0.11f, 0.95f));
+                    new Vector2(size, size));
+
+            // Native UIItemCell: 42x42 logical cell with a 44x44 Simple
+            // background image centered over it.
+            GK2UiFactory.CreateImage(
+                root.transform,
+                "Background",
+                theme?.ItemSlotSprite,
+                Image.Type.Simple,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(
+                    GK2UiMetrics.Native.ItemCellBackgroundSize * scale,
+                    GK2UiMetrics.Native.ItemCellBackgroundSize * scale),
+                theme?.ItemSlotSprite != null
+                    ? Color.white
+                    : new Color(0.08f, 0.09f, 0.11f, 0.95f));
 
             Image icon =
                 GK2UiFactory.CreateImage(
                     root.transform,
-                    "Icon",
+                    "ItemIcon",
                     null,
                     Image.Type.Simple,
                     new Vector2(0.5f, 0.5f),
                     new Vector2(0.5f, 0.5f),
                     new Vector2(0.5f, 0.5f),
-                    new Vector2(0f, 1f),
-                    new Vector2(size - 8f, size - 8f),
+                    Vector2.zero,
+                    new Vector2(
+                        GK2UiMetrics.Native.ItemIconSize * scale,
+                        GK2UiMetrics.Native.ItemIconSize * scale),
                     Color.white)
                     .GetComponent<Image>();
 
@@ -65,22 +82,31 @@ namespace GK2Plus.Framework.UI
             TextMeshProUGUI count =
                 GK2UiFactory.CreateText(
                     root.transform,
-                    "Count",
+                    "CountLabel",
                     theme?.CountTextTemplate ??
                     theme?.BodyTextTemplate,
                     string.Empty,
-                    Mathf.Max(10f, size * 0.24f),
-                    TextAlignmentOptions.BottomRight,
+                    16f * scale,
+                    TextAlignmentOptions.TopRight,
                     Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    Vector2.zero);
+                    new Vector2(1f, 0f),
+                    new Vector2(
+                        -2f * scale,
+                        2f * scale),
+                    new Vector2(
+                        44f * scale,
+                        10f * scale));
 
-            count.rectTransform.offsetMin =
-                Vector2.zero;
-            count.rectTransform.offsetMax =
-                new Vector2(-2f, -1f);
+            // Native count label is golden and uses tiny_font's
+            // item_quantity material. CountNormal/CountRed styles will
+            // replace this during Bind when available.
+            count.color =
+                new Color(
+                    1f,
+                    0.765f,
+                    0f,
+                    1f);
 
             return new GK2UiItemRequirementView
             {

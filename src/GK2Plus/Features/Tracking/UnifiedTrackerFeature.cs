@@ -884,6 +884,45 @@ namespace GK2Plus.Features.Tracking
                     quest);
         }
 
+        internal static bool HasTrackedQuestsForExternalUi()
+        {
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
+            return feature != null &&
+                   feature.CanManageTracker() &&
+                   feature._pins.Any(pin =>
+                       pin.Type ==
+                           TrackerPinType.Quest);
+        }
+
+        internal static void UnpinAllQuestsFromExternalUi()
+        {
+            UnifiedTrackerFeature feature =
+                _activeInstance;
+
+            if (feature == null ||
+                !feature.CanManageTracker())
+            {
+                return;
+            }
+
+            int removed =
+                feature._pins.RemoveAll(pin =>
+                    pin.Type ==
+                        TrackerPinType.Quest);
+
+            if (removed <= 0)
+            {
+                return;
+            }
+
+            feature.SavePins();
+
+            feature.Logger.LogInfo(
+                $"Unified Tracker unpinned {removed} quest pin(s) from the Quest Journal.");
+        }
+
         internal static Sprite GetTrackerPinSpriteForExternalUi()
         {
             return GetTrackerPinSprite();
