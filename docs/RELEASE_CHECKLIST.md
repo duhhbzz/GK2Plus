@@ -180,6 +180,23 @@ release and Thunderstore archives, stages the Steam Workshop package, validates
 the expected archive contents/dependency/version, and prints the canonical ZIP
 SHA256.
 
+Latest successful v2.0.0 preflight:
+
+~~~text
+Canonical release ZIP:
+  dist/GK2Plus-2.0.0.zip
+  SHA256 0A25A10FF76D88C5151D765C51AC6669700C5FEFAC8FB4C3AC92F5236F5BC2C4
+
+Thunderstore package:
+  dist/GK2Plus-2.0.0-Thunderstore.zip
+  SHA256 F82CF6C44AFCF367FCD278BAF97F7C89424CB26BF930E77FDA29CEF312810A3D
+
+Steam Workshop item:
+  3808769342
+~~~
+
+The preflight passed with **0 warnings / 0 errors** in both Debug and Release.
+
 ### One-pass runtime validation
 
 Run these in one play session where practical instead of treating every line as a separate test.
@@ -253,10 +270,10 @@ Run these in one play session where practical instead of treating every line as 
 
 - [ ] Run `tools/release/Build-ReleasePackage.ps1` from a clean tree.
 - [ ] Install and test the **Release** DLL from the generated archive, not only the Debug build.
-- [ ] Record the canonical ZIP SHA256.
-- [ ] Build the Thunderstore package from the same source/version and validate its manifest/icon/layout.
-- [ ] Build the Steam Workshop staging package from the canonical release ZIP.
-- [ ] Verify Workshop/Thunderstore/Nexus copy mentions the current 2.0 feature set and configurable/controller menu access.
+- [x] Record the canonical ZIP SHA256: `0A25A10FF76D88C5151D765C51AC6669700C5FEFAC8FB4C3AC92F5236F5BC2C4`.
+- [x] Build the Thunderstore package from the same source/version and validate its manifest/icon/layout.
+- [x] Build the Steam Workshop staging package from the canonical release ZIP.
+- [x] Verify Workshop/Thunderstore/Nexus copy mentions the current 2.0 feature set and configurable/controller menu access.
 - [ ] Capture final screenshots of the F2 menu, Quest Journal, Unified Tracker HUD, and one representative settings group.
 - [ ] Merge the 2.0 release branch to `main`, tag `v2.0.0`, and publish the same canonical artifact to the intended channels.
 
