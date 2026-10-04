@@ -36,7 +36,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 
 ### Notes
 
-- The 2.0 release intentionally prioritizes the current functional UI over further visual-polish work; additional native-material/texture fidelity can continue after release without blocking functionality.
+- The 2.0 release establishes the native-style UI framework and visual contract used by the F2 menu and RPG Quest Journal; future features should reuse those builders instead of introducing one-off menu styling.
 - Backwards Compatible Extensions is opt-in and remains narrowly scoped to the supported Tool Rack compatibility rule.
 
 ---
