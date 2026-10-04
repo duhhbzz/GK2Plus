@@ -54,7 +54,10 @@ Creates shared Unity UI primitives:
 - RectTransform roots
 - images/panels
 - TMP labels copied from native templates
-- native-style action buttons
+- legacy/shared action buttons
+- exact native red SpriteSwap buttons
+- native inspiration-style progress bars
+- native tooltip containers, text, and separators
 - flat category/tab buttons
 
 ### `GK2UiWindowBuilder`
@@ -66,7 +69,9 @@ Creates modal GK2+ window chrome:
 - native frame/background
 - content safe area
 
-The F2 mod menu now uses this builder.
+The F2 mod menu now uses this builder. Its frame interior uses the exact
+`comm-frame_bg_1` + 13-unit inset recipe rather than the old title-screen
+background approximation.
 
 ### `GK2UiListRowBuilder`
 
@@ -97,6 +102,108 @@ Small reusable view pool. Runtime HUDs and future dynamic lists should use it
 rather than destroying/recreating rows every refresh.
 
 The tracker HUD uses pooled ingredient cells.
+
+## Native GK2 v1.008 catalog
+
+The reusable native primitives below were captured directly from live GK2
+v1.008 UI with UnityExplorer. UnityExplorer is discovery tooling only; GK2+
+does **not** depend on UnityExplorer or UniverseLib at runtime.
+
+### Window frame
+
+Native window stone is a two-layer composition:
+
+- border: `comm-frame_1-border`, Sliced
+- interior: `comm-frame_bg_1`, Simple
+- interior inset: 13 logical UI units on all four sides
+
+Do not use `titlescreen-menu-bg` as a generic window interior. It is not the
+stone panel used by normal GK2 windows.
+
+### Red action button
+
+`GK2UiFactory.CreateNativeRedButton` uses the native SpriteSwap set:
+
+- normal: `comm-btn-simple_red-active`
+- hover/selected: `comm-btn-simple_red-over`
+- pressed: `comm-btn-simple_red-press`
+- disabled: `comm-btn-simple_red-inactive`
+
+The native control is 162x26 in the pause menu, uses a Tiled background,
+10-unit left/right text padding, 2-unit top padding, and
+`small_font_bold` at 16.
+
+### Item cell
+
+The reusable item requirement cell now follows the native `UIItemCell`
+geometry:
+
+- logical cell: 42x42
+- background: `widget_items_cell-inventory_item_cell`, Simple, 44x44
+- item art: 48x48 with the native `ItemCellMaterial`
+- selection: `selection`, Sliced
+- inactive shade: `comm-item-inactive_shade`
+
+The builder scales these native proportions when a feature requests a larger
+or smaller logical cell.
+
+### Inspiration progress bar
+
+`GK2UiFactory.CreateNativeProgressBar` reproduces the vanilla inspiration
+bar:
+
+- frame: `inspiration-plate-green-value_frame`, Sliced
+- fill: `inspiration-plate-green-bar_fill`, Sliced
+- non-interactable Unity `Slider`, left-to-right, range 0..1
+- fill is driven by the Slider's fill RectTransform, not Image.fillAmount
+- label: `tiny_font`, 16, centered, using the native progress material
+
+### Tooltip
+
+`GK2UiFactory.CreateNativeTooltip` and its text/separator helpers reproduce
+the native tooltip container:
+
+- frame: `hint-frame`, Sliced, 20-unit sprite border
+- padding: 14 on all sides
+- spacing: 2
+- minimum width: 60
+- preferred width: 200
+- separator: `hint-text_separator`, 96x6
+- optional tail asset: `hint-frame_tail`, 10x10
+- regular text: `small_font`, 16
+- additional/meta text: `tiny_font`, 16
+- native tooltip sorting order: 700
+
+Tail corner/orientation behavior remains data in the theme until a feature
+actually needs a directional tooltip pointer; no guessed rotation logic is
+used.
+
+### Confirmation dialog
+
+`GK2UiDialogBuilder` reproduces the reusable `UIDialogWindow` shell:
+
+- overlay shadow: black at 40% alpha
+- sorting order: 415
+- minimum window: 200x100
+- GenericWindowLayout padding: left/right 24, top 47, bottom 23
+- content spacing: 6
+- body: `small_font`, 16, native `regular_text_3` material
+- actions use the native red-button builder
+
+### Main-window header/tab assets
+
+The theme also caches the exact CharacterWindow header/tab primitives for
+future builders:
+
+- `main_window-header_1`
+- `main_window-header_1-dec_side_3`
+- `comm-header_frame_splitter`
+- `main_window-header_1-button`
+- `main_window-header_1-button-over`
+- `main_window-header_1-dec_separator`
+
+These are deliberately cataloged without inventing geometry that was not
+captured.
 
 ## Controller rules
 
