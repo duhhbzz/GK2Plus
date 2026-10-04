@@ -167,6 +167,19 @@ See [PERFORMANCE.md](PERFORMANCE.md) and [SAVE_SAFETY.md](SAVE_SAFETY.md).
 - [x] RPG Quest Journal uses the shared native-style UI framework.
 - [x] Quest Journal includes quest-only **Unpin All** integration with Unified Tracker.
 
+### Automated preflight
+
+Before the in-game pass, run:
+
+~~~powershell
+.\tools\release\Test-2.0Readiness.ps1
+~~~
+
+This fails on compiler warnings, builds Debug + Release, builds/verifies the canonical
+release and Thunderstore archives, stages the Steam Workshop package, validates
+the expected archive contents/dependency/version, and prints the canonical ZIP
+SHA256.
+
 ### One-pass runtime validation
 
 Run these in one play session where practical instead of treating every line as a separate test.
