@@ -322,7 +322,7 @@ namespace GK2Plus.Framework.UI
                     theme?.ButtonTextTemplate ??
                     theme?.BodyTextTemplate,
                     text,
-                    10f,
+                    11.5f,
                     TextAlignmentOptions.Center,
                     Vector2.zero,
                     Vector2.one,
@@ -331,25 +331,21 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero);
 
             label.rectTransform.offsetMin =
-                new Vector2(8f, 0f);
+                new Vector2(6f, 0f);
             label.rectTransform.offsetMax =
-                new Vector2(-8f, 0f);
+                new Vector2(-6f, 0f);
             label.enableWordWrapping =
                 false;
             label.overflowMode =
                 TextOverflowModes.Overflow;
             label.color =
-                new Color(
-                    1f,
-                    0.82f,
-                    0.45f,
-                    1f);
+                Color.white;
 
             Button button =
                 root.AddComponent<Button>();
 
             button.targetGraphic =
-                selection;
+                label;
             button.transition =
                 Selectable.Transition.ColorTint;
 
@@ -357,9 +353,13 @@ namespace GK2Plus.Framework.UI
                 button.colors;
 
             colors.normalColor =
-                new Color(1f, 1f, 1f, 0f);
-            colors.highlightedColor =
                 Color.white;
+            colors.highlightedColor =
+                new Color(
+                    1f,
+                    0.678f,
+                    0.227f,
+                    1f);
             colors.pressedColor =
                 new Color(
                     1f,
@@ -369,7 +369,7 @@ namespace GK2Plus.Framework.UI
             colors.selectedColor =
                 Color.white;
             colors.disabledColor =
-                new Color(1f, 1f, 1f, 0f);
+                Color.white;
             colors.fadeDuration =
                 0.05f;
 
@@ -407,7 +407,7 @@ namespace GK2Plus.Framework.UI
             try
             {
                 template.fontSize =
-                    10f;
+                    11.5f;
 
                 Vector2 preferred =
                     template.GetPreferredValues(
@@ -418,7 +418,7 @@ namespace GK2Plus.Framework.UI
                 // keep every label on one line.
                 return Mathf.Max(
                     minimum,
-                    preferred.x + 16f);
+                    preferred.x + 12f);
             }
             finally
             {
@@ -453,17 +453,7 @@ namespace GK2Plus.Framework.UI
             if (label != null)
             {
                 label.color =
-                    selected
-                        ? new Color(
-                            1f,
-                            0.92f,
-                            0.64f,
-                            1f)
-                        : new Color(
-                            1f,
-                            0.82f,
-                            0.45f,
-                            1f);
+                    Color.white;
             }
         }
 
