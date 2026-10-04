@@ -71,9 +71,9 @@ namespace GK2Plus.Framework.UI
             public const float HeaderTitleY = -17f;
             public const float HeaderDividerY = -38f;
             public const float TabY = -57f;
-            public const float TabHeight = 20f;
-            public const float TabGap = 3f;
-            public const float ContentTopY = -79f;
+            public const float TabHeight = 26f;
+            public const float TabGap = -1f;
+            public const float ContentTopY = -86f;
 
             public static readonly Vector2 ContentSize =
                 new Vector2(452f, 202f);
