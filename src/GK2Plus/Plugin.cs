@@ -45,6 +45,9 @@ namespace GK2Plus
                 "External config edits should be treated as next-launch changes."
             );
 
+            GK2MenuInputSettings.Bind(
+                Config);
+
             _harmony = new Harmony(ModInfo.Guid);
 
             _compatibilityManager =
@@ -56,6 +59,9 @@ namespace GK2Plus
                 new GK2Services(Logger);
 
             _services.Initialize();
+
+            GK2MenuInputSettings.RegisterControls(
+                _services.UI);
 
             FrameworkDiagnostics.LogReady(Logger);
 
