@@ -4,6 +4,11 @@ GK2+ targets the Graveyard Keeper 2 Steam Workshop in addition to GitHub, Nexus 
 
 Graveyard Keeper 2 uses Steam App ID 4358690.
 
+**Live GK2+ Workshop item:**  
+https://steamcommunity.com/sharedfiles/filedetails/?id=3808769342
+
+**PublishedFileId:** `3808769342`
+
 Steam publishing stays local because SteamCMD can require the maintainer's password and Steam Guard challenge. Credentials must not be stored in the repository or CI.
 
 ## Build
@@ -65,4 +70,4 @@ After the first upload:
 - confirm the content contains BepInEx\plugins\GK2Plus\GK2Plus.dll;
 - install/merge it into a clean BepInEx setup;
 - launch GK2 and verify the GK2+ version and F2 menu;
-- record the final Workshop URL in the repository for future releases.
+- confirm the published item remains available at https://steamcommunity.com/sharedfiles/filedetails/?id=3808769342.

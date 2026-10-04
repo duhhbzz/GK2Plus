@@ -228,6 +228,8 @@ See [docs/THUNDERSTORE.md](docs/THUNDERSTORE.md).
 
 ### Steam Workshop
 
+GK2+ is available on the **[Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3808769342)**.
+
 Graveyard Keeper 2 has a public Steam Workshop. GK2+ includes a local SteamCMD packaging/publishing flow so Steam credentials and Steam Guard remain on the maintainer's machine rather than in CI.
 
 The Workshop package uses the same canonical GK2Plus.dll as the GitHub/Nexus release.

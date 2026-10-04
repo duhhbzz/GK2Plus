@@ -193,6 +193,7 @@ Thunderstore package:
 
 Steam Workshop item:
   3808769342
+  https://steamcommunity.com/sharedfiles/filedetails/?id=3808769342
 ~~~
 
 The preflight passed with **0 warnings / 0 errors** in both Debug and Release.
