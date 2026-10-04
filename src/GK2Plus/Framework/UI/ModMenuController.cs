@@ -62,6 +62,10 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<GK2FeatureOptionControl, GameObject> _featureOptionRows =
             new Dictionary<GK2FeatureOptionControl, GameObject>();
 
+        private readonly HashSet<string> _collapsedFeatureGroups =
+            new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+
         private GameObject _featureOptionPickerRoot;
         private GK2FeatureOptionControl _activeFeatureOptionPickerControl;
         private GameObject _featureOptionPickerPageText;
@@ -1333,11 +1337,22 @@ Button close = closeButton.GetComponent<Button>();
                             StringComparer.OrdinalIgnoreCase)
                         .ToList();
 
+                bool expanded =
+                    !_collapsedFeatureGroups.Contains(
+                        toggle.Id);
+
                 foreach (GK2FeatureOptionControl child in children)
                 {
+                    attachedOptions.Add(
+                        child);
+
+                    if (!expanded)
+                    {
+                        continue;
+                    }
+
                     y -= childStep;
                     positions[child.Id] = y;
-                    attachedOptions.Add(child);
                 }
 
                 y -= featureGapStep;
@@ -1409,6 +1424,21 @@ Button close = closeButton.GetComponent<Button>();
                             ? resolvedY
                             : GK2UiMetrics.Menu.ControlFirstRowY;
 
+                    bool hasChildren =
+                        _featureOptionControls.Any(option =>
+                            string.Equals(
+                                option.Tab,
+                                control.Tab,
+                                StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(
+                                option.ParentFeatureId,
+                                control.Id,
+                                StringComparison.OrdinalIgnoreCase));
+
+                    bool expanded =
+                        !_collapsedFeatureGroups.Contains(
+                            control.Id);
+
                     GK2UiListRowView rowView =
                         GK2UiListRowBuilder.Create(
                             _contentRoot.transform,
@@ -1421,10 +1451,23 @@ Button close = closeButton.GetComponent<Button>();
                             "OFF",
                             child: false,
                             subtitle: GetFeatureDescription(
-                                control.Id));
+                                control.Id),
+                            expandable: hasChildren,
+                            expanded: expanded);
 
                     GameObject row =
                         rowView.Root;
+
+                    if (rowView.ExpandButton != null)
+                    {
+                        rowView.ExpandButton
+                            .onClick
+                            .AddListener(() =>
+                            {
+                                ToggleFeatureGroup(
+                                    control.Id);
+                            });
+                    }
 
                     GameObject toggleButton =
                         rowView.ActionButton.gameObject;
@@ -1596,6 +1639,28 @@ Button close = closeButton.GetComponent<Button>();
                         StringComparison.OrdinalIgnoreCase));
         }
 
+        private void ToggleFeatureGroup(
+            string featureId)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    featureId))
+            {
+                return;
+            }
+
+            if (!_collapsedFeatureGroups.Add(
+                    featureId))
+            {
+                _collapsedFeatureGroups.Remove(
+                    featureId);
+            }
+
+            BuildFeatureToggleRows();
+            BuildFeatureOptionRows();
+            SetActiveTab(
+                _activeTab);
+        }
+
         private void BuildFeatureOptionRows()
         {
             foreach (GameObject existing in _featureOptionRows.Values)
@@ -1719,7 +1784,14 @@ Button close = closeButton.GetComponent<Button>();
                     continue;
                 }
 
+                bool parentCollapsed =
+                    !string.IsNullOrWhiteSpace(
+                        control.ParentFeatureId) &&
+                    _collapsedFeatureGroups.Contains(
+                        control.ParentFeatureId);
+
                 bool visible =
+                    !parentCollapsed &&
                     string.Equals(
                         control.Tab,
                         _activeTab,
@@ -3826,6 +3898,7 @@ Button close = closeButton.GetComponent<Button>();
             _registeredActionButtons.Clear();
             _featureToggleRows.Clear();
             _featureOptionRows.Clear();
+            _collapsedFeatureGroups.Clear();
             _tabNotices.Clear();
             _pageTitle = null;
             _pageText = null;
