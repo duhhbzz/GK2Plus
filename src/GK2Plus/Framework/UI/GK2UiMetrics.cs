@@ -101,26 +101,32 @@ namespace GK2Plus.Framework.UI
 
         internal static class QuestJournal
         {
-            public const float OuterPadding = 10f;
+            public const float OuterPadding = 8f;
             public const float PaneGap = 8f;
-            public const float LeftPaneWidth = 275f;
-            public const float SectionHeaderHeight = 39f;
-            public const float FilterHeight = 25f;
-            public const float FilterGap = 5f;
-            public const float QuestGroupHeight = 54f;
-            public const float QuestGroupIconSize = 48f;
-            public const float QuestSubRowIndent = 16f;
-            public const float QuestRowHeight = 72f;
-            public const float QuestRowGap = 5f;
-            public const float QuestIconSize = 58f;
-            public const float QuestCardPadding = 8f;
+            public const float LeftPaneWidth = 282f;
+            public const float SectionHeaderHeight = 26f;
+            public const float FilterHeight = 26f;
+            public const float FilterGap = -1f;
+
+            // NPC group = one shared native panel. Quest rows are transparent
+            // children inside that panel rather than independent framed cards.
+            public const float QuestGroupHeight = 52f;
+            public const float QuestGroupIconSize = 42f;
+            public const float QuestSubRowIndent = 8f;
+            public const float QuestRowHeight = 64f;
+            public const float QuestRowGap = 3f;
+            public const float QuestIconSize = 38f;
+            public const float QuestCardPadding = 6f;
             public const float QuestProgressHeight = 12f;
-            public const float DetailPadding = 12f;
-            public const float DetailPortraitSize = 70f;
-            public const float DetailPortraitGap = 10f;
+
+            public const float DetailPadding = 8f;
+            public const float DetailSummaryHeight = 82f;
+            public const float DetailPortraitSize = 58f;
+            public const float DetailPortraitGap = 8f;
             public const float DetailTitleSize = 15f;
-            public const float DetailBodySize = 10.5f;
+            public const float DetailBodySize = 10f;
             public const float DetailStatusSize = 9f;
+
             public const float ObjectiveCellSize = 44f;
             public const float ObjectiveCellGap = 6f;
             public const int ObjectiveColumns = 4;
