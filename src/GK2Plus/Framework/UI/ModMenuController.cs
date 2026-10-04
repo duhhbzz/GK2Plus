@@ -658,46 +658,10 @@ namespace GK2Plus.Framework.UI
                         new Vector2(
                             separatorX,
                             GK2UiMetrics.Menu.TabY),
-                        new Vector2(40f, 26f),
+                        new Vector2(20f, 26f),
                         Color.white,
                         false);
                 }
-            }
-
-            if (_theme.MainWindowHeaderTabLeftSprite != null)
-            {
-                GK2UiFactory.CreateImage(
-                    window.transform,
-                    "TabDecorLeft",
-                    _theme.MainWindowHeaderTabLeftSprite,
-                    Image.Type.Simple,
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(
-                        -rowWidth / 2f + 30f,
-                        GK2UiMetrics.Menu.TabY),
-                    new Vector2(60f, 26f),
-                    Color.white,
-                    false);
-            }
-
-            if (_theme.MainWindowHeaderTabRightSprite != null)
-            {
-                GK2UiFactory.CreateImage(
-                    window.transform,
-                    "TabDecorRight",
-                    _theme.MainWindowHeaderTabRightSprite,
-                    Image.Type.Simple,
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(0.5f, 1f),
-                    new Vector2(
-                        rowWidth / 2f - 30f,
-                        GK2UiMetrics.Menu.TabY),
-                    new Vector2(60f, 26f),
-                    Color.white,
-                    false);
             }
 
             GameObject content = new GameObject(
