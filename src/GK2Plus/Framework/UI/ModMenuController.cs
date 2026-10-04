@@ -594,21 +594,58 @@ namespace GK2Plus.Framework.UI
             float availableTabWidth =
                 GK2UiMetrics.Menu.WindowSize.x - 40f;
 
-            float tabWidth =
-                (availableTabWidth -
-                 ((Tabs.Length - 1) * gap)) /
-                Tabs.Length;
-
             float tabHeight =
                 GK2UiMetrics.Menu.TabHeight;
 
-            float rowWidth =
-                (Tabs.Length * tabWidth) +
-                ((Tabs.Length - 1) * gap);
+            float[] tabWidths =
+                new float[Tabs.Length];
 
-            float firstX =
-                -rowWidth / 2f +
-                tabWidth / 2f;
+            float preferredWidthSum =
+                0f;
+
+            for (int i = 0; i < Tabs.Length; i++)
+            {
+                tabWidths[i] =
+                    GK2UiFactory.GetNativeWindowTabPreferredWidth(
+                        _theme,
+                        Tabs[i],
+                        40f);
+
+                preferredWidthSum +=
+                    tabWidths[i];
+            }
+
+            float spacingWidth =
+                (Tabs.Length - 1) * gap;
+
+            float usableTabWidth =
+                availableTabWidth - spacingWidth;
+
+            if (preferredWidthSum > usableTabWidth &&
+                preferredWidthSum > 0f)
+            {
+                float scale =
+                    usableTabWidth /
+                    preferredWidthSum;
+
+                for (int i = 0; i < tabWidths.Length; i++)
+                {
+                    tabWidths[i] *=
+                        scale;
+                }
+            }
+
+            float rowWidth =
+                spacingWidth;
+
+            for (int i = 0; i < tabWidths.Length; i++)
+            {
+                rowWidth +=
+                    tabWidths[i];
+            }
+
+            float currentLeft =
+                -rowWidth / 2f;
 
             // Native CharacterWindow tabs sit on a continuous
             // main_window-header_1 strip. Without this backing the inactive
@@ -669,12 +706,16 @@ namespace GK2Plus.Framework.UI
 
             if (_theme.MainWindowHeaderSeparatorSprite != null)
             {
+                float separatorCursor =
+                    currentLeft;
+
                 for (int i = 0; i < Tabs.Length - 1; i++)
                 {
+                    separatorCursor +=
+                        tabWidths[i];
+
                     float separatorX =
-                        firstX +
-                        (tabWidth / 2f) +
-                        i * (tabWidth + gap) +
+                        separatorCursor +
                         (gap / 2f);
 
                     GK2UiFactory.CreateImage(
@@ -691,13 +732,26 @@ namespace GK2Plus.Framework.UI
                         new Vector2(40f, 26f),
                         Color.white,
                         false);
+
+                    separatorCursor +=
+                        gap;
                 }
             }
 
+            float tabCursor =
+                currentLeft;
+
             for (int i = 0; i < Tabs.Length; i++)
             {
-                string tab = Tabs[i];
-                float x = firstX + i * (tabWidth + gap);
+                string tab =
+                    Tabs[i];
+
+                float tabWidth =
+                    tabWidths[i];
+
+                float x =
+                    tabCursor +
+                    (tabWidth / 2f);
 
                 Button tabButton =
                     GK2UiFactory.CreateNativeWindowTab(
@@ -719,6 +773,9 @@ namespace GK2Plus.Framework.UI
 
                 _tabButtons[tab] =
                     tabButton.gameObject;
+
+                tabCursor +=
+                    tabWidth + gap;
             }
 
             GameObject content = new GameObject(
