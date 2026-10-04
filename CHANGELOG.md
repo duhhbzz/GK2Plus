@@ -33,6 +33,7 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - RPG Quest Journal Active/Completed navigation, NPC grouping, quest selection/details, and tracker integration were exercised during iterative in-game UI testing.
 - Unified Tracker behavior and native gameplay integrations were exercised during development against the current game build.
 - Existing Manual Save, Shared Storage, Bigger Item Stacks, Spawn Item, cheat-safety, and menu behavior continued to operate normally during v1.008 testing.
+- Final combined v2.0 runtime validation passed for configurable keyboard/controller menu access, native F2-menu grouping, RPG Quest Journal lifecycle/navigation, Unified Tracker pin/unpin behavior, Sprinting, Continuous Planting, Backwards Compatible Extensions, and the retained 0.1.x regression smoke tests.
 
 ### Notes
 
