@@ -31,7 +31,8 @@ namespace GK2Plus.Framework.UI
             bool child = false,
             string subtitle = null,
             bool expandable = false,
-            bool expanded = true)
+            bool expanded = true,
+            bool drawBackground = true)
         {
             GameObject row =
                 GK2UiFactory.CreateRect(
@@ -48,22 +49,34 @@ namespace GK2Plus.Framework.UI
             Image background =
                 row.AddComponent<Image>();
 
-            background.sprite =
-                theme?.ContentCellSprite;
-            background.type =
-                theme?.ContentCellSprite != null
-                    ? Image.Type.Sliced
-                    : Image.Type.Simple;
-            background.color =
-                theme?.ContentCellSprite != null
-                    ? (child
-                        ? new Color(0.88f, 0.88f, 0.88f, 0.92f)
-                        : Color.white)
-                    : (child
-                        ? (theme?.ChildRowBackground ??
-                           new Color(0.095f, 0.105f, 0.13f, 0.82f))
-                        : (theme?.RowBackground ??
-                           new Color(0.12f, 0.13f, 0.16f, 0.88f)));
+            if (drawBackground)
+            {
+                background.sprite =
+                    theme?.ContentCellSprite;
+                background.type =
+                    theme?.ContentCellSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple;
+                background.color =
+                    theme?.ContentCellSprite != null
+                        ? (child
+                            ? new Color(0.88f, 0.88f, 0.88f, 0.92f)
+                            : Color.white)
+                        : (child
+                            ? (theme?.ChildRowBackground ??
+                               new Color(0.095f, 0.105f, 0.13f, 0.82f))
+                            : (theme?.RowBackground ??
+                               new Color(0.12f, 0.13f, 0.16f, 0.88f)));
+            }
+            else
+            {
+                background.sprite =
+                    null;
+                background.type =
+                    Image.Type.Simple;
+                background.color =
+                    Color.clear;
+            }
 
             background.raycastTarget =
                 false;
