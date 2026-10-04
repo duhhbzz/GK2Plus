@@ -78,12 +78,16 @@ background approximation.
 Creates a consistent settings/list row with:
 
 - native list typography
-- shared row/child-row colors
-- standard label indentation
-- right-aligned action control
+- title + muted secondary description
+- standard parent/child indentation
+- right-aligned native action control
+- optional expand/collapse behavior on parent rows
+- optional transparent child rows when a parent group owns the shared panel
 - centralized row/button sizing
 
-Feature toggles and options in the F2 menu use this builder.
+Feature toggles and options in the F2 menu use this builder. Parent features with
+sub-options render as a single expandable group rather than a stack of unrelated
+boxes.
 
 ### `GK2UiSectionPanelBuilder`
 
@@ -221,17 +225,132 @@ captured.
 
 ### F2 mod menu
 
-The shell now uses:
+The F2 menu is the reference implementation for GK2+ native-style feature
+configuration.
 
-- shared native theme cache
-- centralized menu metrics
-- shared modal window builder
-- shared flat tab controls
-- reusable native settings rows
-- shared action-button creation
+Its shell uses:
 
-This gives the menu a darker GK2-style slate body, parchment/brown header,
-native header/list typography, and adjustable dimensions from one metrics file.
+- `comm-frame_1-border` + `comm-frame_bg_1` for the window;
+- the native CharacterWindow header/tab asset family;
+- the exact native CharacterWindow tab-label template (`small_font_bold`, 16);
+- exact native red SpriteSwap buttons;
+- native section headers;
+- native list/cell backgrounds;
+- one scrollable body viewport shared by every top-level tab.
+
+The current top-level tabs are:
+
+~~~text
+General
+Inventory
+Crafting
+Farming
+Movement
+Tracker
+Zombies
+Cheats
+More
+~~~
+
+#### Feature-page visual contract
+
+New feature UI added to the F2 menu should follow this hierarchy unless a
+feature has a documented reason not to:
+
+~~~text
+[ PAGE TITLE ]
+
+short one-line page description
+
+[ SECTION HEADER ]
+
+[ expandable parent feature                           ON/OFF ]
+  short muted description
+    child option                                      value
+    child option                                      value
+
+[ another feature                                    ON/OFF ]
+~~~
+
+Rules:
+
+1. **Use the existing page shell.** Do not create a second visual language,
+   custom window skin, or feature-specific top-level menu.
+2. **Keep page copy short.** Use one concise introductory line, then let native
+   section headers and grouped controls carry the hierarchy.
+3. **Use section headers for meaningful groups, not for every control.** Good
+   examples are `Currency`, `Player`, `Item Spawning`, `Project Links`,
+   or a feature family. Do not wrap every individual button in its own section.
+4. **Parent features own their children.** If a feature has sub-options, the
+   parent row keeps the ON/OFF control and the parent label area expands or
+   collapses its children.
+5. **Expanded parent + children share one dark native panel.** Child options do
+   not draw separate embedded background boxes. Collapsing the parent shrinks
+   the shared panel and removes the children's reserved vertical space.
+6. **Collapse state is UI-only.** Expanding/collapsing does not change the
+   feature/config state.
+7. **Turning a parent OFF preserves child values.** Child settings remain part
+   of the group and may be inspected when expanded, but controls that depend on
+   the parent should be non-interactive while it is disabled.
+8. **Descriptions belong in the row.** Parent rows should use a short muted
+   secondary description instead of floating explanatory text elsewhere.
+9. **Use native red buttons for explicit actions/values.** Keep labels concise:
+   `ON`, `OFF`, `Spawn`, `Select`, `2x`, etc. Do not put sentences in
+   buttons.
+10. **Use native 26-unit red-button typography.** Do not scale the native
+    `small_font_bold` label down with short button heights; resizing the text
+    causes the font to look smeared.
+11. **Group repeated actions.** Action-heavy pages such as Cheats should group
+    related actions into a section/grid rather than presenting a vertical stack
+    of unrelated buttons.
+12. **Scroll only when content needs it.** Body height is content-driven and the
+    scrollbar should stay hidden for pages that fit.
+13. **Use framework primitives.** Theme assets come from `GK2UiTheme`,
+    dimensions from `GK2UiMetrics`, and controls from the shared factories /
+    builders. New feature modules should register with `GK2UIService` instead
+    of drawing directly inside `ModMenuController`.
+14. **Prefer native templates over reconstructed TMP styling.** When GK2 uses a
+    styled TMP label, clone the proven native template so TextStyle/material
+    behavior is preserved.
+
+#### Current page organization
+
+The current menu establishes these grouping patterns:
+
+~~~text
+General
+  Features
+
+Inventory
+  Inventory Features
+
+Crafting
+  Crafting Features
+
+Farming
+  Farming Features
+
+Movement
+  Movement
+
+Tracker
+  Tracker Settings
+
+Zombies
+  Zombie Systems
+
+Cheats
+  Currency
+  Player
+  Item Spawning
+
+More
+  Project Links
+  About
+~~~
+
+These labels can evolve with the feature set, but the grouping behavior above
+is the default for future additions.
 
 ### RPG Quest Journal
 
@@ -255,14 +374,19 @@ changed.
 
 ## Adding future UI
 
-For a new feature screen:
+For a new feature screen or menu entry:
 
 1. Register the feature/action with `GK2UIService`.
-2. Add any reusable dimensions to `GK2UiMetrics`.
-3. Use `GK2UiTheme.Current` / `Resolve` for native styling.
-4. Build static controls with `GK2UiFactory`.
-5. Use `GK2UiPool<T>` for repeated/dynamic rows.
-6. Prefer a dedicated controller/view class instead of extending
+2. Put a feature toggle at the parent level when practical.
+3. Declare child options with the parent feature ID so the menu can render them
+   inside the same expandable group.
+4. Add any reusable dimensions to `GK2UiMetrics`.
+5. Use `GK2UiTheme.Current` / `Resolve` for native styling.
+6. Build static controls with `GK2UiFactory` / the shared row/section
+   builders.
+7. Follow the **F2 feature-page visual contract** above.
+8. Use `GK2UiPool<T>` for repeated/dynamic rows.
+9. Prefer a dedicated controller/view class instead of extending
    `ModMenuController` with feature-specific rendering logic.
 
 The long-term direction is to keep `ModMenuController` as navigation/window
