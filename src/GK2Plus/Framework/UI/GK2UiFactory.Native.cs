@@ -136,29 +136,19 @@ namespace GK2Plus.Framework.UI
             backRect.offsetMax =
                 Vector2.zero;
 
-            float nativeScale =
-                Mathf.Max(
-                    0.45f,
-                    size.y /
-                    GK2UiMetrics.Native.RedButtonSize.y);
-
+            // GK2's small_font_bold button face is authored for 16 logical
+            // pixels. Scaling it down with short mod-menu buttons makes the
+            // SDF/pixel treatment look smeared. Keep the native typography at
+            // its authored size and only resize the button chrome.
             HorizontalLayoutGroup backLayout =
                 back.AddComponent<HorizontalLayoutGroup>();
 
             backLayout.padding =
                 new RectOffset(
-                    Mathf.RoundToInt(
-                        GK2UiMetrics.Native.RedButtonPaddingHorizontal *
-                        nativeScale),
-                    Mathf.RoundToInt(
-                        GK2UiMetrics.Native.RedButtonPaddingHorizontal *
-                        nativeScale),
-                    Mathf.RoundToInt(
-                        GK2UiMetrics.Native.RedButtonPaddingTop *
-                        nativeScale),
-                    Mathf.RoundToInt(
-                        GK2UiMetrics.Native.RedButtonPaddingBottom *
-                        nativeScale));
+                    GK2UiMetrics.Native.RedButtonPaddingHorizontal,
+                    GK2UiMetrics.Native.RedButtonPaddingHorizontal,
+                    GK2UiMetrics.Native.RedButtonPaddingTop,
+                    GK2UiMetrics.Native.RedButtonPaddingBottom);
             backLayout.spacing =
                 0f;
             backLayout.childAlignment =
@@ -231,8 +221,7 @@ namespace GK2Plus.Framework.UI
                     Quaternion.identity;
 
                 float fontSize =
-                    GK2UiMetrics.Native.RedButtonFontSize *
-                    nativeScale;
+                    GK2UiMetrics.Native.RedButtonFontSize;
 
                 label.text =
                     text ?? string.Empty;
@@ -267,8 +256,7 @@ namespace GK2Plus.Framework.UI
                         "Label",
                         null,
                         text,
-                        GK2UiMetrics.Native.RedButtonFontSize *
-                        nativeScale,
+                        GK2UiMetrics.Native.RedButtonFontSize,
                         TextAlignmentOptions.Center,
                         Vector2.zero,
                         Vector2.one,
