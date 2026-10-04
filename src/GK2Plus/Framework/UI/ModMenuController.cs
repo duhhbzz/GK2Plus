@@ -471,20 +471,69 @@ namespace GK2Plus.Framework.UI
                 $"GK2+ UI framework built mod-menu shell; " +
                 $"safeSize={safeAreaRect.rect.size}.");
 
-            GK2UiFactory.CreateImage(
-                window.transform,
-                "HeaderBar",
-                null,
-                Image.Type.Simple,
-                new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f),
-                new Vector2(0f, -8f),
-                new Vector2(
-                    GK2UiMetrics.Menu.WindowSize.x - 24f,
-                    29f),
-                _theme.HeaderBackground,
-                false);
+            GameObject headerGroup =
+                GK2UiFactory.CreateRect(
+                    window.transform,
+                    "HeaderGroup",
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0f, -11f),
+                    new Vector2(-22f, 26f));
+
+            GameObject headerBack =
+                GK2UiFactory.CreateImage(
+                    headerGroup.transform,
+                    "Background",
+                    _theme.MainWindowHeaderSprite,
+                    Image.Type.Sliced,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    Vector2.zero,
+                    Color.white,
+                    false);
+
+            RectTransform headerBackRect =
+                headerBack.GetComponent<RectTransform>();
+            headerBackRect.offsetMin =
+                Vector2.zero;
+            headerBackRect.offsetMax =
+                Vector2.zero;
+
+            if (_theme.MainWindowHeaderSideSprite != null)
+            {
+                GK2UiFactory.CreateImage(
+                    headerGroup.transform,
+                    "DecorLeft",
+                    _theme.MainWindowHeaderSideSprite,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0.5f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(14f, 0f),
+                    new Vector2(28f, 26f),
+                    Color.white,
+                    false);
+
+                GameObject rightDecor =
+                    GK2UiFactory.CreateImage(
+                        headerGroup.transform,
+                        "DecorRight",
+                        _theme.MainWindowHeaderSideSprite,
+                        Image.Type.Simple,
+                        new Vector2(1f, 0.5f),
+                        new Vector2(1f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(-14f, 0f),
+                        new Vector2(28f, 26f),
+                        Color.white,
+                        false);
+
+                rightDecor.transform.localScale =
+                    new Vector3(-1f, 1f, 1f);
+            }
 
             CreateNativeTitleText(
                 titleTemplate,
@@ -644,8 +693,16 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.Menu.ContentSize;
 
             Image contentBg = content.AddComponent<Image>();
+            contentBg.sprite =
+                _theme.ContentStoneSprite;
+            contentBg.type =
+                _theme.ContentStoneSprite != null
+                    ? Image.Type.Tiled
+                    : Image.Type.Simple;
             contentBg.color =
-                _theme.ContentBackground;
+                _theme.ContentStoneSprite != null
+                    ? Color.white
+                    : _theme.ContentBackground;
             contentBg.raycastTarget = false;
 
             GameObject bodyViewport = new GameObject(
