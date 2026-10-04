@@ -56,6 +56,10 @@ namespace GK2Plus.Framework.UI
         private readonly Dictionary<GK2FeatureToggleControl, GameObject> _featureToggleRows =
             new Dictionary<GK2FeatureToggleControl, GameObject>();
 
+        private readonly Dictionary<string, GameObject> _featureGroupBackgrounds =
+            new Dictionary<string, GameObject>(
+                StringComparer.OrdinalIgnoreCase);
+
         private readonly List<GK2FeatureOptionControl> _featureOptionControls =
             new List<GK2FeatureOptionControl>();
 
@@ -1388,7 +1392,16 @@ Button close = closeButton.GetComponent<Button>();
                 }
             }
 
+            foreach (GameObject existing in _featureGroupBackgrounds.Values)
+            {
+                if (existing != null)
+                {
+                    Destroy(existing);
+                }
+            }
+
             _featureToggleRows.Clear();
+            _featureGroupBackgrounds.Clear();
 
             if (_contentRoot == null ||
                 _bodyTextTemplate == null ||
@@ -1424,20 +1437,69 @@ Button close = closeButton.GetComponent<Button>();
                             ? resolvedY
                             : GK2UiMetrics.Menu.ControlFirstRowY;
 
+                    List<GK2FeatureOptionControl> childOptions =
+                        _featureOptionControls
+                            .Where(option =>
+                                string.Equals(
+                                    option.Tab,
+                                    control.Tab,
+                                    StringComparison.OrdinalIgnoreCase) &&
+                                string.Equals(
+                                    option.ParentFeatureId,
+                                    control.Id,
+                                    StringComparison.OrdinalIgnoreCase))
+                            .OrderBy(option => option.Order)
+                            .ThenBy(
+                                option => option.Label,
+                                StringComparer.OrdinalIgnoreCase)
+                            .ToList();
+
                     bool hasChildren =
-                        _featureOptionControls.Any(option =>
-                            string.Equals(
-                                option.Tab,
-                                control.Tab,
-                                StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(
-                                option.ParentFeatureId,
-                                control.Id,
-                                StringComparison.OrdinalIgnoreCase));
+                        childOptions.Count > 0;
 
                     bool expanded =
                         !_collapsedFeatureGroups.Contains(
                             control.Id);
+
+                    if (hasChildren)
+                    {
+                        float groupHeight =
+                            GK2UiMetrics.Menu.ControlRowHeight +
+                            (expanded
+                                ? childOptions.Count *
+                                  GK2UiMetrics.Menu.ControlChildStep
+                                : 0f);
+
+                        GameObject groupBackground =
+                            GK2UiFactory.CreateImage(
+                                _contentRoot.transform,
+                                control.Id + "FeatureGroupBackground",
+                                _theme?.ContentCellSprite,
+                                _theme?.ContentCellSprite != null
+                                    ? Image.Type.Sliced
+                                    : Image.Type.Simple,
+                                new Vector2(0.5f, 1f),
+                                new Vector2(0.5f, 1f),
+                                new Vector2(0.5f, 1f),
+                                new Vector2(
+                                    0f,
+                                    BodyY(rowY)),
+                                new Vector2(
+                                    GK2UiMetrics.Menu.BodyContentWidth,
+                                    groupHeight),
+                                _theme?.ContentCellSprite != null
+                                    ? Color.white
+                                    : (_theme?.RowBackground ??
+                                       new Color(
+                                           0.12f,
+                                           0.13f,
+                                           0.16f,
+                                           0.88f)),
+                                false);
+
+                        _featureGroupBackgrounds[control.Id] =
+                            groupBackground;
+                    }
 
                     GK2UiListRowView rowView =
                         GK2UiListRowBuilder.Create(
@@ -1453,7 +1515,8 @@ Button close = closeButton.GetComponent<Button>();
                             subtitle: GetFeatureDescription(
                                 control.Id),
                             expandable: hasChildren,
-                            expanded: expanded);
+                            expanded: expanded,
+                            drawBackground: !hasChildren);
 
                     GameObject row =
                         rowView.Root;
@@ -1541,6 +1604,15 @@ Button close = closeButton.GetComponent<Button>();
                         StringComparison.OrdinalIgnoreCase);
 
                 row.SetActive(visible);
+
+                if (_featureGroupBackgrounds.TryGetValue(
+                        control.Id,
+                        out GameObject groupBackground) &&
+                    groupBackground != null)
+                {
+                    groupBackground.SetActive(
+                        visible);
+                }
 
                 if (!visible)
                 {
@@ -1728,7 +1800,8 @@ Button close = closeButton.GetComponent<Button>();
                             "Select",
                             child,
                             subtitle: GetFeatureOptionDescription(
-                                control.Id));
+                                control.Id),
+                            drawBackground: !child);
 
                     GameObject row =
                         rowView.Root;
@@ -3897,6 +3970,7 @@ Button close = closeButton.GetComponent<Button>();
             _tabButtons.Clear();
             _registeredActionButtons.Clear();
             _featureToggleRows.Clear();
+            _featureGroupBackgrounds.Clear();
             _featureOptionRows.Clear();
             _collapsedFeatureGroups.Clear();
             _tabNotices.Clear();
