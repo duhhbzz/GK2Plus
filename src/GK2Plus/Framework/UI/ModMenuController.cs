@@ -610,6 +610,90 @@ namespace GK2Plus.Framework.UI
                 -rowWidth / 2f +
                 tabWidth / 2f;
 
+            // Native CharacterWindow tabs sit on a continuous
+            // main_window-header_1 strip. Without this backing the inactive
+            // tabs look like floating labels and the active tab looks like an
+            // isolated ornate button.
+            GameObject tabStrip =
+                GK2UiFactory.CreateImage(
+                    window.transform,
+                    "TabsHeaderGroup",
+                    _theme.MainWindowHeaderSprite,
+                    Image.Type.Sliced,
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(
+                        0f,
+                        GK2UiMetrics.Menu.TabY),
+                    new Vector2(
+                        rowWidth,
+                        26f),
+                    Color.white,
+                    false);
+
+            // The native left/right tab decorations are mostly transparent
+            // ornament, so keep their original 60x26 geometry and draw them
+            // behind the tab controls.
+            if (_theme.MainWindowHeaderTabLeftSprite != null)
+            {
+                GK2UiFactory.CreateImage(
+                    tabStrip.transform,
+                    "DecorLeft",
+                    _theme.MainWindowHeaderTabLeftSprite,
+                    Image.Type.Simple,
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 0.5f),
+                    Vector2.zero,
+                    new Vector2(60f, 0f),
+                    Color.white,
+                    false);
+            }
+
+            if (_theme.MainWindowHeaderTabRightSprite != null)
+            {
+                GK2UiFactory.CreateImage(
+                    tabStrip.transform,
+                    "DecorRight",
+                    _theme.MainWindowHeaderTabRightSprite,
+                    Image.Type.Simple,
+                    new Vector2(1f, 0f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 0.5f),
+                    Vector2.zero,
+                    new Vector2(60f, 0f),
+                    Color.white,
+                    false);
+            }
+
+            if (_theme.MainWindowHeaderSeparatorSprite != null)
+            {
+                for (int i = 0; i < Tabs.Length - 1; i++)
+                {
+                    float separatorX =
+                        firstX +
+                        (tabWidth / 2f) +
+                        i * (tabWidth + gap) +
+                        (gap / 2f);
+
+                    GK2UiFactory.CreateImage(
+                        window.transform,
+                        "TabSeparator" + i,
+                        _theme.MainWindowHeaderSeparatorSprite,
+                        Image.Type.Simple,
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(0.5f, 1f),
+                        new Vector2(
+                            separatorX,
+                            GK2UiMetrics.Menu.TabY),
+                        new Vector2(40f, 26f),
+                        Color.white,
+                        false);
+                }
+            }
+
             for (int i = 0; i < Tabs.Length; i++)
             {
                 string tab = Tabs[i];
@@ -1381,11 +1465,14 @@ Button close = closeButton.GetComponent<Button>();
                     continue;
                 }
 
-                string text = mainMenu
-                    ? (control.EnabledProvider()
+                // Keep the compact native button label bounded to the
+                // button even while the control is read-only in gameplay.
+                // Longer feature status text belongs in the page/status copy,
+                // not inside a 92-unit action button.
+                string text =
+                    control.EnabledProvider()
                         ? "ON"
-                        : "OFF")
-                    : control.StatusProvider();
+                        : "OFF";
 
                 SetButtonText(
                     toggle.gameObject,
