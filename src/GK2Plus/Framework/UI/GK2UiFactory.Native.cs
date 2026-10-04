@@ -59,6 +59,98 @@ namespace GK2Plus.Framework.UI
     /// </summary>
     internal static partial class GK2UiFactory
     {
+        public static TextMeshProUGUI CreateNativeTemplateText(
+            Transform parent,
+            string name,
+            TextMeshProUGUI template,
+            string text,
+            float fontSize,
+            TextAlignmentOptions alignment,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 pivot,
+            Vector2 anchoredPosition,
+            Vector2 size)
+        {
+            if (template == null)
+            {
+                return CreateText(
+                    parent,
+                    name,
+                    null,
+                    text,
+                    fontSize,
+                    alignment,
+                    anchorMin,
+                    anchorMax,
+                    pivot,
+                    anchoredPosition,
+                    size);
+            }
+
+            GameObject clone =
+                Object.Instantiate(
+                    template.gameObject,
+                    parent,
+                    false);
+
+            clone.name =
+                name;
+            clone.SetActive(
+                true);
+
+            foreach (Component component in
+                     clone.GetComponents<Component>())
+            {
+                if (component == null)
+                {
+                    continue;
+                }
+
+                string typeName =
+                    component.GetType().Name;
+
+                if (typeName == "LocalizedLabel" ||
+                    typeName == "LocalizedVerticalOffset" ||
+                    typeName == "LanguageRtlLabelState")
+                {
+                    Object.Destroy(
+                        component);
+                }
+            }
+
+            TextMeshProUGUI label =
+                clone.GetComponent<TextMeshProUGUI>();
+
+            RectTransform rect =
+                label.rectTransform;
+
+            ApplyRect(
+                rect,
+                anchorMin,
+                anchorMax,
+                pivot,
+                anchoredPosition,
+                size);
+
+            label.text =
+                text ?? string.Empty;
+            label.fontSize =
+                fontSize;
+            label.fontSizeMin =
+                fontSize;
+            label.fontSizeMax =
+                fontSize;
+            label.enableAutoSizing =
+                false;
+            label.alignment =
+                alignment;
+            label.raycastTarget =
+                false;
+
+            return label;
+        }
+
         public static Button CreateNativeRedButton(
             Transform parent,
             string name,
