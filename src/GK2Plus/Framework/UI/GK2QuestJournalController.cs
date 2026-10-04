@@ -635,7 +635,7 @@ namespace GK2Plus.Framework.UI
                 pad + portraitSize + 8f;
 
             TextMeshProUGUI title =
-                GK2UiFactory.CreateText(
+                GK2UiFactory.CreateNativeTemplateText(
                     root.transform,
                     "GroupTitle",
                     _theme.MainWindowTabTextTemplate ??
@@ -687,7 +687,7 @@ namespace GK2Plus.Framework.UI
                     1f);
 
             TextMeshProUGUI chevron =
-                GK2UiFactory.CreateText(
+                GK2UiFactory.CreateNativeTemplateText(
                     root.transform,
                     "Chevron",
                     _theme.MainWindowTabTextTemplate ??
@@ -804,7 +804,7 @@ namespace GK2Plus.Framework.UI
                 pad + iconSize + 7f;
 
             TextMeshProUGUI title =
-                GK2UiFactory.CreateText(
+                GK2UiFactory.CreateNativeTemplateText(
                     root.transform,
                     "QuestTitle",
                     _theme.MainWindowTabTextTemplate ??
@@ -1128,7 +1128,7 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.QuestJournal.DetailPortraitGap;
 
             _detailTitle =
-                GK2UiFactory.CreateText(
+                GK2UiFactory.CreateNativeTemplateText(
                     _detailSummaryPanel.transform,
                     "DetailTitle",
                     _theme.MainWindowTabTextTemplate ??
