@@ -16,13 +16,16 @@ GK2+ follows [Semantic Versioning](https://semver.org/).
 - **Sprinting** with configurable keyboard binding and movement-speed multiplier for normal free movement.
 - **Backwards Compatible Extensions**, initially allowing Fine Tool Rack to satisfy compatible recipes that still require Tool Rack.
 - Reusable native-style UI framework components, centralized theme/metrics helpers, pooled UI controls, item-requirement cells, section builders, portrait components, and shared tracker/journal presentation primitives.
+- Configurable GK2+ keyboard menu hotkey plus controller / Steam Deck access: hold L3 + R3 to toggle and B to close.
+- Quest Journal quest-only **Unpin All** action for clearing tracked quests without removing craft/item/plan pins.
 
 ### Changed
 
 - GK2+ now targets and has been runtime-tested against **Graveyard Keeper 2 v1.008**.
 - Mod-menu layout and feature controls were expanded for Tracker and Movement configuration while retaining the existing persistent F2 menu lifecycle.
 - Tracker pin capacity and presentation were refined around a compact combined HUD.
-- Quest Journal presentation was iterated toward a denser native-style two-pane layout with grouped NPC navigation and compact quest cards.
+- The F2 menu was rebuilt around native GK2 window/header/tab/button primitives with grouped expandable feature settings.
+- Quest Journal presentation was rebuilt around the shared native UI framework with native filters, NPC-group panels, native progress bars, native red actions, and grouped detail sections.
 
 ### Validation
 
