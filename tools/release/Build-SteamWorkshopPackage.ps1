@@ -105,23 +105,25 @@ function Escape-Vdf([string]$value) {
 $description = @"
 GK2+ - one mod, your way.
 
-Modular Graveyard Keeper 2 QoL/gameplay suite.
+A modular, configurable quality-of-life and gameplay enhancement suite for Graveyard Keeper 2.
 
-v$version highlights:
-- Native-style GK2+ menu with configurable keyboard/controller access
-- RPG Quest Journal with NPC grouping and Unified Tracker integration
-- Unified Tracker for quests, crafts/builds, and item targets
-- Continuous Planting
-- Sprinting
-- Backwards Compatible Extensions
-- Shared Storage and Bigger Item Stacks
-- Spawn Item, Manual Save, cheats, and save safety
+GK2+ combines a growing set of gameplay improvements, native-style UI upgrades, tracking tools, inventory/storage enhancements, optional cheats, save-safety systems, and other convenience features behind one configurable mod.
 
-Requires BepInEx 5.4.23.5.
+Features are independently configurable where practical, so you can use the parts you want and disable overlapping behavior when another mod does it your way.
+
+Complete current feature list, settings, compatibility notes, and limitations:
+https://github.com/duhhbzz/GK2Plus/blob/main/docs/FEATURES.md
+
+Configuration / controls:
+https://github.com/duhhbzz/GK2Plus/blob/main/docs/CONFIGURATION.md
+
+Release changes:
+https://github.com/duhhbzz/GK2Plus/blob/main/CHANGELOG.md
+
+Installation / requirements:
+https://github.com/duhhbzz/GK2Plus#readme
+
 Tested with GK2 v$gameVersion.
-
-See WORKSHOP_INSTALL.txt for installation.
-https://github.com/duhhbzz/GK2Plus
 "@
 $vdf = @"
 "workshopitem"

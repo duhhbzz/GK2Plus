@@ -2,46 +2,64 @@
 
 **One mod, your way.**
 
-GK2+ is a modular, configurable quality-of-life and gameplay enhancement suite for **Graveyard Keeper 2**.
+GK2+ is a modular, configurable quality-of-life and gameplay enhancement suite for
+**Graveyard Keeper 2**.
 
-This package page intentionally stays concise instead of duplicating every feature.
+It brings a growing set of gameplay improvements, native-style UI upgrades,
+tracking tools, storage/inventory enhancements, optional cheats, save-safety
+systems, and other convenience features together behind one configurable mod.
 
-## Detailed features
+Features are independently configurable where practical, making GK2+ suitable for
+players who want an all-in-one suite without giving up control when another mod
+overlaps with one of its features.
 
-**Feature Catalog:**  
+## Why GK2+?
+
+- One configurable suite instead of many tiny overlapping mods.
+- Native-style in-game UI.
+- Compatibility-conscious, narrow integrations with GK2 systems.
+- Feature-by-feature enable/disable control where practical.
+- Controller / Steam Deck friendly menu access.
+- Shared save-safety infrastructure.
+- Free and open source.
+
+## Complete Feature List
+
+The feature set changes over time, so this package page intentionally stays
+evergreen instead of duplicating a list that can become stale.
+
+The maintained source of truth for all current features, settings, behavior,
+compatibility notes, validation status, and limitations is:
+
+**Feature Catalog**  
 https://github.com/duhhbzz/GK2Plus/blob/main/docs/FEATURES.md
 
-**Changelog:**  
+Release-specific changes:
+
+**Changelog**  
 https://github.com/duhhbzz/GK2Plus/blob/main/CHANGELOG.md
 
-## What GK2+ is for
+## Controls & Configuration
 
-GK2+ combines quality-of-life improvements, gameplay tools, optional cheats, and shared safety/compatibility infrastructure behind one mod.
+GK2+ includes an in-game configuration menu. The keyboard shortcut is configurable,
+and controller / Steam Deck access is supported.
 
-Features are designed to be independently configurable when practical so players can disable an overlapping GK2+ feature when they prefer another mod's implementation.
+Current control and configuration details:
 
-## Controls
+https://github.com/duhhbzz/GK2Plus/blob/main/docs/CONFIGURATION.md
 
-- **F2** — open/close GK2+ by default; configurable in the General tab
-- **Esc** — close GK2+
-- **L3 + R3 (hold)** — open/close GK2+ on controller / Steam Deck
-- **B** — close GK2+ on controller
+## Installation / Requirements
 
-## Save Safety
+Current installation instructions and requirements are maintained in the project
+README:
 
-Protected persistent mutations use GK2+'s shared checkpoint system. Optional cheat features also use per-save cheat tainting and achievement protection.
-
-See the Feature Catalog for exact behavior and settings.
-
-## Requirements
-
-This Thunderstore package declares the Graveyard Keeper 2 community's BepInEx pack as a dependency so compatible mod managers can install the required runtime automatically.
-
-The tested Graveyard Keeper 2 version for each release is recorded in the release metadata.
+https://github.com/duhhbzz/GK2Plus#readme
 
 ## Links
 
 - [Feature Catalog](https://github.com/duhhbzz/GK2Plus/blob/main/docs/FEATURES.md)
+- [Configuration Guide](https://github.com/duhhbzz/GK2Plus/blob/main/docs/CONFIGURATION.md)
+- [Changelog](https://github.com/duhhbzz/GK2Plus/blob/main/CHANGELOG.md)
 - [GitHub / Source](https://github.com/duhhbzz/GK2Plus)
 - [Report an Issue](https://github.com/duhhbzz/GK2Plus/issues)
 - [☕ Support on Buy Me a Coffee](https://buymeacoffee.com/duhhbzz)
