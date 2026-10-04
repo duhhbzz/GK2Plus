@@ -51,6 +51,27 @@ manual .cfg editing
 runtime feature behavior
 ~~~
 
+## Menu access settings
+
+GK2+'s own menu access controls are live-safe framework settings:
+
+~~~ini
+[General]
+MenuHotkey = F2
+ControllerMenuShortcut = true
+~~~
+
+The same values can be changed from the **General** tab without restarting the
+game.
+
+- `MenuHotkey` controls the keyboard open/close key.
+- `ControllerMenuShortcut` enables the built-in controller / Steam Deck
+  shortcut: hold **L3 + R3** briefly to toggle the menu and press **B** to close
+  the top-most GK2+ menu/picker.
+
+Rear Steam Deck paddles are intentionally not hard-coded; players can map them
+through Steam Input if preferred.
+
 ## Feature enable/disable settings
 
 Major gameplay features should expose a normal BepInEx boolean setting when technically practical.
