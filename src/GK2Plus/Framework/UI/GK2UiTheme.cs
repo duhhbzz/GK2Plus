@@ -334,6 +334,7 @@ namespace GK2Plus.Framework.UI
                 FindSprite("hint-text_separator");
 
             TextMeshProUGUI nativeButtonText =
+                ResolveNativeRedButtonTextTemplate() ??
                 FindTmpByStyle(
                     "small_font_bold",
                     "btn_red_active");
@@ -365,6 +366,45 @@ namespace GK2Plus.Framework.UI
                 FindTmpByStyle(
                     "small_font",
                     "regular_text_3");
+        }
+
+        private static TextMeshProUGUI ResolveNativeRedButtonTextTemplate()
+        {
+            foreach (TextMeshProUGUI label in
+                     Resources.FindObjectsOfTypeAll<TextMeshProUGUI>())
+            {
+                if (label == null ||
+                    label.font == null ||
+                    !string.Equals(
+                        label.font.name,
+                        "small_font_bold",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                Transform current =
+                    label.transform;
+
+                for (int depth = 0;
+                     current != null && depth < 5;
+                     current = current.parent, depth++)
+                {
+                    Image image =
+                        current.GetComponent<Image>();
+
+                    if (image?.sprite != null &&
+                        string.Equals(
+                            image.sprite.name,
+                            "comm-btn-simple_red-active",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        return label;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static TextMeshProUGUI ResolveMainWindowTabTextTemplate()
