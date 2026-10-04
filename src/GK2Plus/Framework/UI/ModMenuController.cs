@@ -34,6 +34,11 @@ namespace GK2Plus.Framework.UI
         private GameObject _pageTitle;
         private GameObject _pageText;
         private GameObject _featureSettingsNote;
+        private GameObject _moreAboutText;
+
+        private readonly Dictionary<string, List<GameObject>> _tabBodyDecor =
+            new Dictionary<string, List<GameObject>>(
+                StringComparer.OrdinalIgnoreCase);
 
         private GameObject _githubButton;
         private GameObject _nexusButton;
@@ -987,13 +992,15 @@ namespace GK2Plus.Framework.UI
             );
             _featureSettingsNote.SetActive(false);
 
+            BuildTabBodySections();
+
             _githubButton = CreateActionButton(
                 buttonLabelTemplate,
                 _contentRoot.transform,
                 redButtonSprite,
                 "GitHub",
-                new Vector2(-92f, BodyY(-142f)),
-                new Vector2(78f, 20f)
+                new Vector2(-132f, BodyY(-96f)),
+                new Vector2(108f, 26f)
             );
             _githubButton.GetComponent<Button>().onClick.AddListener(
                 () => Application.OpenURL(ProjectLinks.GitHubUrl));
@@ -1003,8 +1010,8 @@ namespace GK2Plus.Framework.UI
                 _contentRoot.transform,
                 redButtonSprite,
                 ProjectLinks.HasNexusUrl ? "Nexus Mods" : "Nexus Soon",
-                new Vector2(0f, BodyY(-142f)),
-                new Vector2(92f, 20f)
+                new Vector2(0f, BodyY(-96f)),
+                new Vector2(120f, 26f)
             );
             Button nexus = _nexusButton.GetComponent<Button>();
             nexus.interactable = ProjectLinks.HasNexusUrl;
@@ -1020,8 +1027,8 @@ namespace GK2Plus.Framework.UI
                 _contentRoot.transform,
                 redButtonSprite,
                 "Report Bug",
-                new Vector2(100f, BodyY(-142f)),
-                new Vector2(92f, 20f)
+                new Vector2(132f, BodyY(-96f)),
+                new Vector2(108f, 26f)
             );
             _bugButton.GetComponent<Button>().onClick.AddListener(
                 () => Application.OpenURL(ProjectLinks.BugReportUrl));
@@ -1145,12 +1152,22 @@ Button close = closeButton.GetComponent<Button>();
                     continue;
                 }
 
-                const int maxPerRow = 4;
-                const float maxRowWidth = 350f;
-                const float gap = 6f;
-                const float rowGap = 24f;
+                if (string.Equals(
+                        group.Key,
+                        "Cheats",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    BuildCheatActionButtons(
+                        actions);
+                    continue;
+                }
 
-                float firstRowY = -82f;
+                const int maxPerRow = 4;
+                const float maxRowWidth = 480f;
+                const float gap = 8f;
+                const float rowGap = 32f;
+
+                float firstRowY = -98f;
                 Dictionary<string, float> featurePositions =
                     BuildFeatureControlLayout(group.Key);
 
@@ -1199,7 +1216,7 @@ Button close = closeButton.GetComponent<Button>();
                         _menuButtonSprite,
                         action.Label,
                         new Vector2(x, BodyY(y)),
-                        new Vector2(buttonWidth, 20f));
+                        new Vector2(buttonWidth, 26f));
 
                     Button button = buttonObject.GetComponent<Button>();
                     button.onClick.AddListener(() =>
@@ -1403,7 +1420,9 @@ Button close = closeButton.GetComponent<Button>();
                             "FeatureLabel",
                             "ToggleButton",
                             "OFF",
-                            child: false);
+                            child: false,
+                            subtitle: GetFeatureDescription(
+                                control.Id));
 
                     GameObject row =
                         rowView.Root;
@@ -1558,7 +1577,7 @@ Button close = closeButton.GetComponent<Button>();
                 noteRect.anchoredPosition =
                     new Vector2(
                         0f,
-                        BodyY(lowestRowY - 24f));
+                        BodyY(lowestRowY - 44f));
             }
         }
 
@@ -1643,7 +1662,9 @@ Button close = closeButton.GetComponent<Button>();
                             "FeatureOptionLabel",
                             "OptionButton",
                             "Select",
-                            child);
+                            child,
+                            subtitle: GetFeatureOptionDescription(
+                                control.Id));
 
                     GameObject row =
                         rowView.Root;
@@ -2361,7 +2382,9 @@ Button close = closeButton.GetComponent<Button>();
 
             _spawnItemRow = new GameObject(
                 "SpawnItemRow",
-                typeof(RectTransform));
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
 
             _spawnItemRow.transform.SetParent(
                 _contentRoot.transform,
@@ -2373,20 +2396,41 @@ Button close = closeButton.GetComponent<Button>();
             rowRect.anchorMin = new Vector2(0.5f, 1f);
             rowRect.anchorMax = new Vector2(0.5f, 1f);
             rowRect.pivot = new Vector2(0.5f, 1f);
-            rowRect.anchoredPosition = new Vector2(0f, BodyY(-154f));
-            rowRect.sizeDelta = new Vector2(350f, 20f);
+            rowRect.anchoredPosition = new Vector2(0f, BodyY(-262f));
+            rowRect.sizeDelta = new Vector2(
+                GK2UiMetrics.Menu.BodyContentWidth,
+                36f);
+
+            Image rowBackground =
+                _spawnItemRow.GetComponent<Image>();
+
+            rowBackground.sprite =
+                _theme?.ContentCellSprite;
+            rowBackground.type =
+                _theme?.ContentCellSprite != null
+                    ? Image.Type.Sliced
+                    : Image.Type.Simple;
+            rowBackground.color =
+                _theme?.ContentCellSprite != null
+                    ? Color.white
+                    : (_theme?.RowBackground ??
+                       new Color(0.12f, 0.13f, 0.16f, 0.88f));
+            rowBackground.raycastTarget =
+                false;
 
             GameObject spawnButton = CreateActionButton(
                 _menuButtonLabelTemplate,
                 _spawnItemRow.transform,
                 _menuButtonSprite,
                 "Spawn",
-                new Vector2(-140f, 0f),
-                new Vector2(64f, 20f));
+                new Vector2(220f, -5f),
+                new Vector2(92f, 26f));
 
-            spawnButton.GetComponent<RectTransform>().anchorMin =
+            RectTransform spawnRect =
+                spawnButton.GetComponent<RectTransform>();
+            spawnRect.anchorMin =
                 new Vector2(0.5f, 1f);
-            spawnButton.GetComponent<RectTransform>().anchorMax =
+            spawnRect.anchorMax =
                 new Vector2(0.5f, 1f);
 
             spawnButton.GetComponent<Button>().onClick.AddListener(() =>
@@ -2416,8 +2460,8 @@ Button close = closeButton.GetComponent<Button>();
                 _spawnItemRow.transform,
                 _menuButtonSprite,
                 "Item",
-                new Vector2(-20f, 0f),
-                new Vector2(164f, 20f));
+                new Vector2(-72f, -5f),
+                new Vector2(300f, 26f));
 
             _spawnItemButton.GetComponent<Button>().onClick.AddListener(
                 OpenItemPicker);
@@ -2427,8 +2471,8 @@ Button close = closeButton.GetComponent<Button>();
                 _spawnItemRow.transform,
                 "SpawnQuantity",
                 Math.Max(1, _spawnItemControl.QuantityProvider()).ToString(),
-                new Vector2(110f, 0f),
-                new Vector2(56f, 20f),
+                new Vector2(126f, -5f),
+                new Vector2(66f, 26f),
                 numericOnly: true,
                 placeholder: "Qty");
 
@@ -3176,6 +3220,7 @@ Button close = closeButton.GetComponent<Button>();
             SetText(_pageTitle, tabName);
             SetText(_pageText, GetPlaceholderText(tabName));
             LayoutPageTextForTab(tabName);
+            RefreshTabBodyDecor();
 
             bool more = tabName == "More";
 
@@ -3282,31 +3327,22 @@ Button close = closeButton.GetComponent<Button>();
                 return;
             }
 
-            bool compact =
-                string.Equals(
-                    tab,
-                    "Cheats",
-                    StringComparison.OrdinalIgnoreCase) ||
-                HasFeatureControlsForTab(tab);
-
             rect.anchoredPosition =
-                new Vector2(0f, BodyY(-40f));
+                new Vector2(0f, BodyY(-30f));
 
-            rect.sizeDelta = compact
-                ? new Vector2(
+            rect.sizeDelta =
+                new Vector2(
                     GK2UiMetrics.Menu.BodyContentWidth,
-                    GK2UiMetrics.Menu.PageTextCompactHeight)
-                : new Vector2(
-                    GK2UiMetrics.Menu.BodyContentWidth,
-                    GK2UiMetrics.Menu.PageTextWideHeight);
+                    string.Equals(
+                        tab,
+                        "Cheats",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? 34f
+                        : GK2UiMetrics.Menu.PageTextCompactHeight);
         }
 
         private string GetPlaceholderText(string tab)
         {
-            string followText = ProjectLinks.HasNexusUrl
-                ? "Follow development on GitHub or download GK2+ from Nexus Mods."
-                : "Follow development on GitHub. The Nexus Mods page is coming soon.";
-
             if (_tabNotices.TryGetValue(
                     tab,
                     out Func<string> dynamicNoticeProvider))
@@ -3320,60 +3356,382 @@ Button close = closeButton.GetComponent<Button>();
                 }
             }
 
-            if (HasFeatureControlsForTab(tab))
-            {
-                return string.Equals(
-                    DetectContext(),
-                    "MainMenu",
-                    StringComparison.Ordinal)
-                    ? $"Configure {tab.ToLowerInvariant()} features before loading a save."
-                    : $"Current {tab.ToLowerInvariant()} feature status for this save.";
-            }
-
             switch (tab)
             {
                 case "General":
                     return
-                        "Coming Soon\n\n" +
-                        "GK2+ is still under active development.\n" +
-                        "This page will contain global mod settings, UI options, and hotkeys.\n\n" +
-                        followText;
+                        "Core interface and quality-of-life features.";
                 case "Inventory":
                     return
-                        "Coming Soon\n\n" +
-                        "Planned: unified storage, shared chest resources, search/filtering,\n" +
-                        "and stack-size quality-of-life options.\n\n" +
-                        followText;
+                        "Inventory capacity, access, and shared-storage behavior.";
                 case "Crafting":
                     return
-                        "Coming Soon\n\n" +
-                        "Planned: recipe pinning, resource-pull behavior, and crafting QoL.\n\n" +
-                        followText;
+                        "Workbench compatibility and crafting quality-of-life.";
                 case "Farming":
                     return
-                        "Coming Soon\n\n" +
-                        "Planned: continuous planting, seed-selection behavior, and farming QoL.\n\n" +
-                        followText;
+                        "Planting behavior and farming quality-of-life.";
+                case "Movement":
+                    return
+                        "Player movement controls and speed options.";
+                case "Tracker":
+                    return
+                        "Quest, craft, and item tracking behavior.";
                 case "Zombies":
                     return
-                        "Coming Soon\n\n" +
-                        "Planned: a central zombie manager, stats overview, and equipment tools.\n\n" +
-                        followText;
+                        "Zombie management features will appear here as they are added.";
                 case "Cheats":
                     return
-                        "Money cheats use a save-safety checkpoint.\n" +
-                        "Health and stamina refills use native player systems.";
+                        "Cheat actions are protected by GK2+ save-safety checks.";
                 case "More":
                     return
-                        "GK2+ Project Links\n\n" +
-                        "GitHub: source code, development progress, and releases.\n" +
-                        (ProjectLinks.HasNexusUrl
-                            ? "Nexus Mods: downloads, screenshots, posts, and public updates.\n"
-                            : "Nexus Mods: public mod page coming soon.\n") +
-                        "Report Bug: opens a new GitHub issue for GK2+.\n\n" +
-                        "More tools, compatibility information, diagnostics, and About are planned here.";
+                        "Project links, support, and build information.";
                 default:
                     return tab;
+            }
+        }
+
+        private string GetFeatureDescription(
+            string id)
+        {
+            switch (id ?? string.Empty)
+            {
+                case "quest-journal":
+                    return
+                        "Replaces the native quest tree with an RPG-style journal.";
+                case "stack-sizes":
+                    return
+                        "Raises native stack limits for stackable inventory items.";
+                case "shared-chests":
+                    return
+                        "Access eligible storage while preserving native inventory behavior.";
+                case "backwards-compatible-extensions":
+                    return
+                        "Lets supported upgraded extensions satisfy lower-tier recipe requirements.";
+                case "continuous-planting":
+                    return
+                        "Keeps the selected seed active while more of that seed remains.";
+                case "sprinting":
+                    return
+                        "Hold the configured sprint key to temporarily move faster.";
+                case "unified-tracker":
+                    return
+                        "Pin quests, crafts, and item targets to a compact live HUD.";
+                default:
+                    return
+                        "GK2+ feature setting.";
+            }
+        }
+
+        private string GetFeatureOptionDescription(
+            string id)
+        {
+            switch (id ?? string.Empty)
+            {
+                case "stack-sizes.multiplier":
+                    return
+                        "Multiplier applied to GK2's native stack limits.";
+                case "sprinting.key":
+                    return
+                        "Keyboard key held during normal movement.";
+                case "sprinting.multiplier":
+                    return
+                        "Temporary movement-speed multiplier while sprinting.";
+                default:
+                    return null;
+            }
+        }
+
+        private void BuildTabBodySections()
+        {
+            foreach (List<GameObject> objects in
+                     _tabBodyDecor.Values)
+            {
+                foreach (GameObject obj in objects)
+                {
+                    if (obj != null)
+                    {
+                        Destroy(obj);
+                    }
+                }
+            }
+
+            _tabBodyDecor.Clear();
+            _moreAboutText = null;
+
+            AddTabSection(
+                "General",
+                "Features",
+                -64f);
+            AddTabSection(
+                "Inventory",
+                "Inventory Features",
+                -64f);
+            AddTabSection(
+                "Crafting",
+                "Crafting Features",
+                -64f);
+            AddTabSection(
+                "Farming",
+                "Farming Features",
+                -64f);
+            AddTabSection(
+                "Movement",
+                "Movement",
+                -64f);
+            AddTabSection(
+                "Tracker",
+                "Tracker Settings",
+                -64f);
+            AddTabSection(
+                "Zombies",
+                "Zombie Systems",
+                -64f);
+
+            AddTabSection(
+                "Cheats",
+                "Currency",
+                -64f);
+            AddTabSection(
+                "Cheats",
+                "Player",
+                -168f);
+            AddTabSection(
+                "Cheats",
+                "Item Spawning",
+                -232f);
+
+            AddTabSection(
+                "More",
+                "Project Links",
+                -64f);
+            AddTabSection(
+                "More",
+                "About",
+                -134f);
+
+            _moreAboutText =
+                CreateBodyText(
+                    _bodyTextTemplate,
+                    _contentRoot.transform,
+                    "MoreAboutText",
+                    "Graveyard Keeper Plus\n" +
+                    GameCompatibility.DisplayText +
+                    "\nNative-style quality-of-life tools for GK2.",
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(
+                        0f,
+                        BodyY(-166f)),
+                    new Vector2(
+                        GK2UiMetrics.Menu.BodyContentWidth,
+                        46f),
+                    9f,
+                    "Center");
+
+            RegisterTabBodyDecor(
+                "More",
+                _moreAboutText);
+
+            RefreshTabBodyDecor();
+        }
+
+        private void AddTabSection(
+            string tab,
+            string title,
+            float y)
+        {
+            GK2UiSectionHeaderView section =
+                GK2UiSectionHeaderBuilder.Create(
+                    _contentRoot.transform,
+                    _theme,
+                    tab + title.Replace(
+                        " ",
+                        string.Empty) + "Section",
+                    title,
+                    20f);
+
+            section.Rect.anchoredPosition =
+                new Vector2(
+                    0f,
+                    BodyY(y));
+
+            section.Rect.sizeDelta =
+                new Vector2(
+                    GK2UiMetrics.Menu.BodyContentWidth,
+                    20f);
+
+            RegisterTabBodyDecor(
+                tab,
+                section.Root);
+        }
+
+        private void RegisterTabBodyDecor(
+            string tab,
+            GameObject obj)
+        {
+            if (obj == null)
+            {
+                return;
+            }
+
+            if (!_tabBodyDecor.TryGetValue(
+                    tab,
+                    out List<GameObject> objects))
+            {
+                objects =
+                    new List<GameObject>();
+
+                _tabBodyDecor[tab] =
+                    objects;
+            }
+
+            objects.Add(
+                obj);
+        }
+
+        private void RefreshTabBodyDecor()
+        {
+            foreach (var pair in _tabBodyDecor)
+            {
+                bool visible =
+                    string.Equals(
+                        pair.Key,
+                        _activeTab,
+                        StringComparison.OrdinalIgnoreCase);
+
+                foreach (GameObject obj in pair.Value)
+                {
+                    if (obj != null)
+                    {
+                        obj.SetActive(
+                            visible);
+                    }
+                }
+            }
+        }
+
+        private void BuildCheatActionButtons(
+            List<GK2MenuAction> actions)
+        {
+            List<GK2MenuAction> silver =
+                actions
+                    .Where(action =>
+                        action.Label.IndexOf(
+                            "Silver",
+                            StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
+
+            List<GK2MenuAction> gold =
+                actions
+                    .Where(action =>
+                        action.Label.IndexOf(
+                            "Gold",
+                            StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
+
+            List<GK2MenuAction> player =
+                actions
+                    .Where(action =>
+                        action.Label.IndexOf(
+                            "Silver",
+                            StringComparison.OrdinalIgnoreCase) < 0 &&
+                        action.Label.IndexOf(
+                            "Gold",
+                            StringComparison.OrdinalIgnoreCase) < 0)
+                    .ToList();
+
+            BuildCheatButtonRow(
+                silver,
+                -94f,
+                108f);
+            BuildCheatButtonRow(
+                gold,
+                -126f,
+                108f);
+            BuildCheatButtonRow(
+                player,
+                -198f,
+                150f);
+        }
+
+        private void BuildCheatButtonRow(
+            List<GK2MenuAction> actions,
+            float y,
+            float preferredWidth)
+        {
+            if (actions == null ||
+                actions.Count == 0)
+            {
+                return;
+            }
+
+            const float gap = 10f;
+            float maxWidth =
+                GK2UiMetrics.Menu.BodyContentWidth - 16f;
+
+            float width =
+                Mathf.Min(
+                    preferredWidth,
+                    (maxWidth -
+                     ((actions.Count - 1) * gap)) /
+                    actions.Count);
+
+            float rowWidth =
+                (actions.Count * width) +
+                ((actions.Count - 1) * gap);
+
+            float firstX =
+                (-rowWidth / 2f) +
+                (width / 2f);
+
+            for (int i = 0; i < actions.Count; i++)
+            {
+                GK2MenuAction action =
+                    actions[i];
+
+                GameObject buttonObject =
+                    CreateActionButton(
+                        _menuButtonLabelTemplate,
+                        _contentRoot.transform,
+                        _menuButtonSprite,
+                        action.Label,
+                        new Vector2(
+                            firstX +
+                            i * (width + gap),
+                            BodyY(y)),
+                        new Vector2(
+                            width,
+                            26f));
+
+                Button button =
+                    buttonObject.GetComponent<Button>();
+
+                button.onClick.AddListener(() =>
+                {
+                    if (!action.CanExecute())
+                    {
+                        _logger?.LogWarning(
+                            $"GK2+ menu action '{action.Id}' is currently unavailable.");
+                        RefreshRegisteredActionButtons();
+                        return;
+                    }
+
+                    try
+                    {
+                        action.Execute();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(
+                            $"GK2+ menu action '{action.Id}' failed: {ex}");
+                    }
+
+                    RefreshRegisteredActionButtons();
+                });
+
+                _registeredActionButtons[action] =
+                    buttonObject;
             }
         }
 
@@ -3474,6 +3832,8 @@ Button close = closeButton.GetComponent<Button>();
             _pageTitle = null;
             _pageText = null;
             _featureSettingsNote = null;
+            _moreAboutText = null;
+            _tabBodyDecor.Clear();
             _featureOptionPickerRoot = null;
             _activeFeatureOptionPickerControl = null;
             _featureOptionPickerPageText = null;
