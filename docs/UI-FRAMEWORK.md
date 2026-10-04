@@ -211,6 +211,15 @@ captured.
 
 ## Controller rules
 
+The persistent F2 menu supports both keyboard and controller access:
+
+- keyboard shortcut is configurable; default is F2;
+- hold L3 + R3 for 0.45 seconds to toggle the menu when controller access is enabled;
+- B mirrors Esc for closing the top-most GK2+ picker/menu surface;
+- opening from controller focuses the active native tab so Unity automatic navigation has a deterministic starting point.
+
+Do not bind Steam Deck rear paddles directly. Players may map those through Steam Input, while GK2+ keeps its built-in shortcut portable across normal controllers and Steam Deck.
+
 1. Controllers own state and lifecycle, not visual constants.
 2. Pull visual assets from `GK2UiTheme`.
 3. Pull dimensions from `GK2UiMetrics`.
