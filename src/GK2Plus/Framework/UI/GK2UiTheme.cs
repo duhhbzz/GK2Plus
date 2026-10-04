@@ -34,6 +34,7 @@ namespace GK2Plus.Framework.UI
         public Sprite ButtonDisabledSprite { get; private set; }
 
         public Sprite ContentCellSprite { get; private set; }
+        public Sprite ContentStoneSprite { get; private set; }
 
         // Native inventory/item cell.
         public Sprite ItemSlotSprite { get; private set; }
@@ -279,6 +280,8 @@ namespace GK2Plus.Framework.UI
                 FindSprite("widget_perks-text_decor-drk_1");
             ContentCellSprite ??=
                 FindSprite("comm-cell_dark_2");
+            ContentStoneSprite ??=
+                FindSprite("comm-content_bg_dark-side-small");
 
             ButtonSprite ??=
                 FindSprite("comm-btn-simple_red-active");
