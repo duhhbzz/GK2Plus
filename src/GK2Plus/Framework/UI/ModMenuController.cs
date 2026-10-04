@@ -536,6 +536,7 @@ namespace GK2Plus.Framework.UI
             }
 
             CreateNativeTitleText(
+                _theme?.MainWindowTabTextTemplate?.gameObject ??
                 titleTemplate,
                 window.transform,
                 "GK2+ Mod Menu",
@@ -543,7 +544,7 @@ namespace GK2Plus.Framework.UI
                     0f,
                     GK2UiMetrics.Menu.HeaderTitleY),
                 new Vector2(250f, 22f),
-                GK2UiMetrics.Menu.HeaderFontScale
+                1f
             );
 
             CreateBodyText(
@@ -592,7 +593,8 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.Menu.TabGap;
 
             float availableTabWidth =
-                GK2UiMetrics.Menu.WindowSize.x - 18f;
+                GK2UiMetrics.Menu.WindowSize.x -
+                (GK2UiMetrics.Native.WindowBackInset * 2f);
 
             float tabHeight =
                 GK2UiMetrics.Menu.TabHeight;
@@ -669,40 +671,10 @@ namespace GK2Plus.Framework.UI
                     Color.white,
                     false);
 
-            // The native left/right tab decorations are mostly transparent
-            // ornament, so keep their original 60x26 geometry and draw them
-            // behind the tab controls.
-            if (_theme.MainWindowHeaderTabLeftSprite != null)
-            {
-                GK2UiFactory.CreateImage(
-                    tabStrip.transform,
-                    "DecorLeft",
-                    _theme.MainWindowHeaderTabLeftSprite,
-                    Image.Type.Simple,
-                    new Vector2(0f, 0f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 0.5f),
-                    Vector2.zero,
-                    new Vector2(60f, 0f),
-                    Color.white,
-                    false);
-            }
-
-            if (_theme.MainWindowHeaderTabRightSprite != null)
-            {
-                GK2UiFactory.CreateImage(
-                    tabStrip.transform,
-                    "DecorRight",
-                    _theme.MainWindowHeaderTabRightSprite,
-                    Image.Type.Simple,
-                    new Vector2(1f, 0f),
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 0.5f),
-                    Vector2.zero,
-                    new Vector2(60f, 0f),
-                    Color.white,
-                    false);
-            }
+            // The vanilla CharacterWindow has extra end-cap ornament outside
+            // its five-tab group. With nine tabs packed into the mod menu those
+            // decorations overlap the first/last labels, so the continuous
+            // native header strip is the correct boundary here.
 
             if (_theme.MainWindowHeaderSeparatorSprite != null)
             {
