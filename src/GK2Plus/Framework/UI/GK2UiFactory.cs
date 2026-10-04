@@ -16,7 +16,7 @@ namespace GK2Plus.Framework.UI
     /// <summary>
     /// Small construction primitives used by every GK2+ UI surface.
     /// </summary>
-    internal static class GK2UiFactory
+    internal static partial class GK2UiFactory
     {
         public static GameObject CreateRect(
             Transform parent,
