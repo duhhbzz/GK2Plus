@@ -3658,6 +3658,12 @@ Button close = closeButton.GetComponent<Button>();
         {
             switch (id ?? string.Empty)
             {
+                case "menu.hotkey":
+                    return
+                        "Keyboard key used to open or close GK2+.";
+                case "menu.controller-shortcut":
+                    return
+                        "Hold L3 + R3 to toggle GK2+; B closes it.";
                 case "stack-sizes.multiplier":
                     return
                         "Multiplier applied to GK2's native stack limits.";
