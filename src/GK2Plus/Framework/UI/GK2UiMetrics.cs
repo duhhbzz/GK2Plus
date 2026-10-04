@@ -63,7 +63,7 @@ namespace GK2Plus.Framework.UI
         internal static class Menu
         {
             public static readonly Vector2 WindowSize =
-                new Vector2(500f, 330f);
+                new Vector2(650f, 330f);
 
             public static readonly Vector4 FrameInsets =
                 new Vector4(9f, 7f, 9f, 7f);
@@ -71,18 +71,18 @@ namespace GK2Plus.Framework.UI
             public const float HeaderTitleY = -17f;
             public const float HeaderDividerY = -38f;
             public const float TabY = -57f;
-            public const float TabHeight = 26f;
+            public const float TabHeight = 30f;
             public const float TabGap = -1f;
-            public const float ContentTopY = -86f;
+            public const float ContentTopY = -91f;
 
             public static readonly Vector2 ContentSize =
-                new Vector2(452f, 202f);
+                new Vector2(602f, 202f);
 
             public const float BodyViewportTopOffset = 34f;
             public const float BodyViewportHeight = 164f;
             public const float BodyContentHorizontalPadding = 14f;
 
-            public const float BodyContentWidth = 414f;
+            public const float BodyContentWidth = 564f;
             public const float PageTextWideHeight = 112f;
             public const float PageTextCompactHeight = 38f;
 
