@@ -104,7 +104,7 @@ initialize against the current game build.
 - quests with zero, one, and several item requirements;
 - selecting quests and preserving a sensible current selection;
 - tracking/untracking an active quest from the journal;
-- controller/gamepad navigation follow-up before release;
+- controller/gamepad navigation through filters, NPC groups, quest rows, and detail actions;
 - disable the feature and confirm the vanilla quest tree returns.
 
 ---
