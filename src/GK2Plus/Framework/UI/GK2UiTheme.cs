@@ -51,6 +51,7 @@ namespace GK2Plus.Framework.UI
         public Sprite MainWindowHeaderSeparatorSprite { get; private set; }
         public Sprite MainWindowHeaderTabLeftSprite { get; private set; }
         public Sprite MainWindowHeaderTabRightSprite { get; private set; }
+        public TextMeshProUGUI MainWindowTabTextTemplate { get; private set; }
 
         // Native inspiration progress bar.
         public Sprite ProgressFrameSprite { get; private set; }
@@ -317,6 +318,8 @@ namespace GK2Plus.Framework.UI
                 FindSprite("main_window-header_1-dec_left");
             MainWindowHeaderTabRightSprite ??=
                 FindSprite("main_window-header_1-dec_right");
+            MainWindowTabTextTemplate ??=
+                ResolveMainWindowTabTextTemplate();
 
             ProgressFrameSprite ??=
                 FindSprite("inspiration-plate-green-value_frame");
@@ -362,6 +365,36 @@ namespace GK2Plus.Framework.UI
                 FindTmpByStyle(
                     "small_font",
                     "regular_text_3");
+        }
+
+        private static TextMeshProUGUI ResolveMainWindowTabTextTemplate()
+        {
+            foreach (MonoBehaviour behaviour in
+                     Resources.FindObjectsOfTypeAll<MonoBehaviour>())
+            {
+                if (behaviour == null ||
+                    behaviour.GetType().Name != "CharPageTabButton")
+                {
+                    continue;
+                }
+
+                Transform labelTransform =
+                    behaviour.transform.Find("Label");
+
+                TextMeshProUGUI label =
+                    labelTransform != null
+                        ? labelTransform.GetComponent<TextMeshProUGUI>()
+                        : behaviour.GetComponentInChildren<TextMeshProUGUI>(
+                            true);
+
+                if (label != null &&
+                    label.font != null)
+                {
+                    return label;
+                }
+            }
+
+            return null;
         }
 
         private void ResolveItemCellStyle()
