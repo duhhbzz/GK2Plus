@@ -291,11 +291,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     _theme.ContentCellSprite != null
                         ? Color.white
-                        : new Color(
-                            0.13f,
-                            0.145f,
-                            0.17f,
-                            0.98f));
+                        : _theme.RowBackground);
 
             RectTransform paneRect =
                 pane.GetComponent<RectTransform>();
@@ -324,29 +320,55 @@ namespace GK2Plus.Framework.UI
             header.Rect.offsetMax =
                 Vector2.zero;
 
-            float halfFilterWidth =
-                (width -
-                 (GK2UiMetrics.QuestJournal.OuterPadding * 2f) -
-                 GK2UiMetrics.QuestJournal.FilterGap) /
-                2f;
-
             float filterTop =
                 GK2UiMetrics.QuestJournal.SectionHeaderHeight +
-                4f;
+                3f;
+
+            float filterWidth =
+                width - 10f;
+
+            GameObject filterStrip =
+                GK2UiFactory.CreateImage(
+                    pane.transform,
+                    "QuestFilterStrip",
+                    _theme.MainWindowHeaderSprite,
+                    _theme.MainWindowHeaderSprite != null
+                        ? Image.Type.Sliced
+                        : Image.Type.Simple,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(
+                        5f,
+                        -filterTop),
+                    new Vector2(
+                        filterWidth,
+                        GK2UiMetrics.QuestJournal.FilterHeight),
+                    _theme.MainWindowHeaderSprite != null
+                        ? Color.white
+                        : _theme.HeaderBackground,
+                    false);
+
+            float gap =
+                GK2UiMetrics.QuestJournal.FilterGap;
+
+            float filterButtonWidth =
+                (filterWidth - gap) /
+                2f;
 
             _activeFilterButton =
-                GK2UiFactory.CreateFlatButton(
-                    pane.transform,
+                GK2UiFactory.CreateNativeWindowTab(
+                    filterStrip.transform,
                     "ActiveFilter",
                     _theme,
                     "Active",
                     new Vector2(
-                        GK2UiMetrics.QuestJournal.OuterPadding +
-                        (halfFilterWidth / 2f),
-                        -filterTop),
+                        -(filterButtonWidth + gap) / 2f,
+                        0f),
                     new Vector2(
-                        halfFilterWidth,
+                        filterButtonWidth,
                         GK2UiMetrics.QuestJournal.FilterHeight),
+                    true,
                     () =>
                     {
                         _filter =
@@ -354,18 +376,7 @@ namespace GK2Plus.Framework.UI
                         _selectedQuestId =
                             string.Empty;
                         Refresh();
-                    },
-                    true);
-
-            RectTransform activeRect =
-                _activeFilterButton.GetComponent<RectTransform>();
-
-            activeRect.anchorMin =
-                new Vector2(0f, 1f);
-            activeRect.anchorMax =
-                new Vector2(0f, 1f);
-            activeRect.pivot =
-                new Vector2(0.5f, 1f);
+                    });
 
             _activeFilterLabel =
                 _activeFilterButton
@@ -373,20 +384,18 @@ namespace GK2Plus.Framework.UI
                         true);
 
             _completedFilterButton =
-                GK2UiFactory.CreateFlatButton(
-                    pane.transform,
+                GK2UiFactory.CreateNativeWindowTab(
+                    filterStrip.transform,
                     "CompletedFilter",
                     _theme,
                     "Completed",
                     new Vector2(
-                        GK2UiMetrics.QuestJournal.OuterPadding +
-                        halfFilterWidth +
-                        GK2UiMetrics.QuestJournal.FilterGap +
-                        (halfFilterWidth / 2f),
-                        -filterTop),
+                        (filterButtonWidth + gap) / 2f,
+                        0f),
                     new Vector2(
-                        halfFilterWidth,
+                        filterButtonWidth,
                         GK2UiMetrics.QuestJournal.FilterHeight),
+                    false,
                     () =>
                     {
                         _filter =
@@ -394,18 +403,7 @@ namespace GK2Plus.Framework.UI
                         _selectedQuestId =
                             string.Empty;
                         Refresh();
-                    },
-                    false);
-
-            RectTransform completedRect =
-                _completedFilterButton.GetComponent<RectTransform>();
-
-            completedRect.anchorMin =
-                new Vector2(0f, 1f);
-            completedRect.anchorMax =
-                new Vector2(0f, 1f);
-            completedRect.pivot =
-                new Vector2(0.5f, 1f);
+                    });
 
             _completedFilterLabel =
                 _completedFilterButton
@@ -472,6 +470,8 @@ namespace GK2Plus.Framework.UI
                 true;
             _questScroll.movementType =
                 ScrollRect.MovementType.Clamped;
+            _questScroll.inertia =
+                false;
             _questScroll.scrollSensitivity =
                 28f;
 
