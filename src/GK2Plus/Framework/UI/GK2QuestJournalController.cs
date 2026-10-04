@@ -76,7 +76,6 @@ namespace GK2Plus.Framework.UI
         private TextMeshProUGUI _detailTitle;
         private TextMeshProUGUI _detailStatus;
         private TextMeshProUGUI _detailDescription;
-        private TextMeshProUGUI _objectivesTitle;
         private TextMeshProUGUI _detailPaneHeaderTitle;
         private GameObject _detailSummaryPanel;
         private RectTransform _detailSummaryRect;
@@ -1267,8 +1266,6 @@ namespace GK2Plus.Framework.UI
 
             _objectivesHeaderRect =
                 objectivesHeader.Rect;
-            _objectivesTitle =
-                objectivesHeader.Title;
 
             _objectivePool =
                 new GK2UiPool<GK2UiItemRequirementView>(
