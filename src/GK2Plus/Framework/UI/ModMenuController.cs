@@ -592,7 +592,7 @@ namespace GK2Plus.Framework.UI
                 GK2UiMetrics.Menu.TabGap;
 
             float availableTabWidth =
-                GK2UiMetrics.Menu.WindowSize.x - 28f;
+                GK2UiMetrics.Menu.WindowSize.x - 18f;
 
             float tabHeight =
                 GK2UiMetrics.Menu.TabHeight;
@@ -664,8 +664,8 @@ namespace GK2Plus.Framework.UI
                         0f,
                         GK2UiMetrics.Menu.TabY),
                     new Vector2(
-                        rowWidth,
-                        26f),
+                        availableTabWidth,
+                        GK2UiMetrics.Menu.TabHeight),
                     Color.white,
                     false);
 
@@ -1070,7 +1070,9 @@ namespace GK2Plus.Framework.UI
                     new Vector2(0.5f, 0f),
                     new Vector2(0.5f, 0f),
                     new Vector2(0f, 36f),
-                    new Vector2(390f, 5f)
+                    new Vector2(
+                        GK2UiMetrics.Menu.WindowSize.x - 110f,
+                        5f)
                 );
             }
 
