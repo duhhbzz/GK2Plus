@@ -70,12 +70,16 @@ Release-specific additions and fixes are tracked separately in the [Changelog](C
 
 GK2+ uses a persistent UI controller attached to the game's persistent GUI root.
 
-Press:
+Default controls:
 
 ~~~text
-F2  Open / close GK2+
-ESC Close GK2+
+F2            Open / close GK2+ (configurable)
+ESC           Close GK2+
+L3 + R3 hold  Open / close GK2+ on controller / Steam Deck
+B             Close GK2+ on controller
 ~~~
+
+The keyboard shortcut and controller shortcut can be changed from the **General** tab.
 
 The menu works from both:
 
