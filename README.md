@@ -271,7 +271,7 @@ GK2+
 └── Misc
 ~~~
 
-Near-term planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, and additional carefully gated convenience/cheat tools.
+Near-term planned work focuses on deeper inventory/crafting automation, zombie management, world/building quality-of-life, reminders/wiki tooling, and additional carefully gated convenience/cheat tools.
 
 See the maintained **[Feature Roadmap](docs/ROADMAP.md)** for high-confidence planned features, intended behavior, and suggested development waves.
 
