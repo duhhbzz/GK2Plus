@@ -1907,14 +1907,14 @@ namespace GK2Plus.Framework.UI
                 _trackButton.gameObject.SetActive(
                     false);
 
-                bool hasTrackedQuests =
+                bool hasTrackedQuestsWhenEmpty =
                     UnifiedTrackerFeature
                         .HasTrackedQuestsForExternalUi();
 
                 _unpinAllButton.gameObject.SetActive(
-                    hasTrackedQuests);
+                    hasTrackedQuestsWhenEmpty);
                 _unpinAllButton.interactable =
-                    hasTrackedQuests;
+                    hasTrackedQuestsWhenEmpty;
 
                 _descriptionHeaderRect.gameObject.SetActive(
                     false);
