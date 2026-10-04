@@ -319,10 +319,10 @@ namespace GK2Plus.Framework.UI
                 CreateText(
                     root.transform,
                     "Label",
-                    theme?.BodyTextTemplate ??
-                    theme?.ButtonTextTemplate,
+                    theme?.ButtonTextTemplate ??
+                    theme?.BodyTextTemplate,
                     text,
-                    10f,
+                    12.5f,
                     TextAlignmentOptions.Center,
                     Vector2.zero,
                     Vector2.one,
@@ -331,9 +331,9 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero);
 
             label.rectTransform.offsetMin =
-                new Vector2(6f, 0f);
+                new Vector2(13f, 0f);
             label.rectTransform.offsetMax =
-                new Vector2(-6f, 0f);
+                new Vector2(-13f, 0f);
             label.color =
                 new Color(
                     1f,
@@ -379,6 +379,47 @@ namespace GK2Plus.Framework.UI
             }
 
             return button;
+        }
+
+        public static float GetNativeWindowTabPreferredWidth(
+            GK2UiTheme theme,
+            string text,
+            float minimum = 42f)
+        {
+            TextMeshProUGUI template =
+                theme?.ButtonTextTemplate ??
+                theme?.BodyTextTemplate;
+
+            if (template == null)
+            {
+                return Mathf.Max(
+                    minimum,
+                    26f + ((text?.Length ?? 0) * 7f));
+            }
+
+            float oldSize =
+                template.fontSize;
+
+            try
+            {
+                template.fontSize =
+                    12.5f;
+
+                Vector2 preferred =
+                    template.GetPreferredValues(
+                        text ?? string.Empty);
+
+                // Native CharPageTabButton content uses 13 units of
+                // left/right padding around the label.
+                return Mathf.Max(
+                    minimum,
+                    preferred.x + 26f);
+            }
+            finally
+            {
+                template.fontSize =
+                    oldSize;
+            }
         }
 
         public static void SetNativeWindowTabSelected(
