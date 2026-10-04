@@ -4013,7 +4013,8 @@ Button close = closeButton.GetComponent<Button>();
         {
             if (!_built || _menuRoot == null)
             {
-                _logger?.LogWarning("GK2+ F2 toggle ignored because the menu shell is not ready.");
+                _logger?.LogWarning(
+                    $"GK2+ {GK2MenuInputSettings.CurrentHotkey} toggle ignored because the menu shell is not ready.");
                 return;
             }
 
