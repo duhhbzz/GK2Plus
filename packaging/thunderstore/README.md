@@ -22,8 +22,10 @@ Features are designed to be independently configurable when practical so players
 
 ## Controls
 
-- **F2** — open/close GK2+
+- **F2** — open/close GK2+ by default; configurable in the General tab
 - **Esc** — close GK2+
+- **L3 + R3 (hold)** — open/close GK2+ on controller / Steam Deck
+- **B** — close GK2+ on controller
 
 ## Save Safety
 
