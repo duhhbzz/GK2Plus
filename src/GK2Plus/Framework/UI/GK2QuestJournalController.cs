@@ -85,6 +85,7 @@ namespace GK2Plus.Framework.UI
         private Image _detailIcon;
         private Button _trackButton;
         private TextMeshProUGUI _trackButtonLabel;
+        private Button _unpinAllButton;
         private GK2UiPool<GK2UiItemRequirementView> _objectivePool;
 
         private JournalFilter _filter =
@@ -1220,6 +1221,38 @@ namespace GK2Plus.Framework.UI
                     .GetComponentInChildren<TextMeshProUGUI>(
                         true);
 
+            _unpinAllButton =
+                GK2UiFactory.CreateNativeRedButton(
+                    _detailSummaryPanel.transform,
+                    "UnpinAllQuestsButton",
+                    _theme,
+                    "Unpin All",
+                    Vector2.zero,
+                    new Vector2(
+                        94f,
+                        GK2UiMetrics.Native.RedButtonSize.y),
+                    () =>
+                    {
+                        UnifiedTrackerFeature
+                            .UnpinAllQuestsFromExternalUi();
+
+                        Refresh();
+                    });
+
+            RectTransform unpinAllRect =
+                _unpinAllButton.GetComponent<RectTransform>();
+
+            unpinAllRect.anchorMin =
+                new Vector2(1f, 0f);
+            unpinAllRect.anchorMax =
+                new Vector2(1f, 0f);
+            unpinAllRect.pivot =
+                new Vector2(1f, 0f);
+            unpinAllRect.anchoredPosition =
+                new Vector2(
+                    -120f,
+                    8f);
+
             GK2UiSectionHeaderView descriptionHeader =
                 GK2UiSectionHeaderBuilder.Create(
                     _detailContent,
@@ -1874,6 +1907,15 @@ namespace GK2Plus.Framework.UI
                 _trackButton.gameObject.SetActive(
                     false);
 
+                bool hasTrackedQuests =
+                    UnifiedTrackerFeature
+                        .HasTrackedQuestsForExternalUi();
+
+                _unpinAllButton.gameObject.SetActive(
+                    hasTrackedQuests);
+                _unpinAllButton.interactable =
+                    hasTrackedQuests;
+
                 _descriptionHeaderRect.gameObject.SetActive(
                     false);
                 _objectivesHeaderRect.gameObject.SetActive(
@@ -1960,6 +2002,15 @@ namespace GK2Plus.Framework.UI
 
             _trackButton.gameObject.SetActive(
                 canTrack);
+
+            bool hasTrackedQuests =
+                UnifiedTrackerFeature
+                    .HasTrackedQuestsForExternalUi();
+
+            _unpinAllButton.gameObject.SetActive(
+                hasTrackedQuests);
+            _unpinAllButton.interactable =
+                hasTrackedQuests;
 
             if (canTrack)
             {
