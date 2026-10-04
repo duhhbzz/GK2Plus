@@ -8,6 +8,7 @@ using GK2Plus.Core;
 using HarmonyLib;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace GK2Plus.Framework.UI
@@ -34,6 +35,12 @@ namespace GK2Plus.Framework.UI
         private GameObject _pageTitle;
         private GameObject _pageText;
         private GameObject _featureSettingsNote;
+        private GameObject _headerToggleHint;
+        private GameObject _headerCloseHint;
+
+        private float _controllerChordStartedAt =
+            -1f;
+        private bool _controllerChordLatched;
 
         private readonly Dictionary<string, List<GameObject>> _tabBodyDecor =
             new Dictionary<string, List<GameObject>>(
@@ -302,7 +309,10 @@ namespace GK2Plus.Framework.UI
                         _built = true;
                         _logger?.LogInfo(
                             "GK2+ mod menu shell ready under persistent GUIElements.Root. " +
-                            "Press F2 to toggle.");
+                            $"Press {GK2MenuInputSettings.CurrentHotkey} to toggle" +
+                            (GK2MenuInputSettings.IsControllerShortcutEnabled
+                                ? " or hold L3 + R3."
+                                : "."));
                     }
                     catch (Exception ex)
                     {
@@ -326,28 +336,32 @@ namespace GK2Plus.Framework.UI
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.F2))
+            KeyCode hotkey =
+                GK2MenuInputSettings.CurrentHotkey;
+
+            if (Input.GetKeyDown(hotkey))
             {
-                _logger?.LogInfo("GK2+ F2 detected; toggling mod menu.");
+                _logger?.LogInfo(
+                    $"GK2+ {hotkey} detected; toggling mod menu.");
                 ToggleMenu();
                 return;
             }
 
-            if (_menuRoot.activeSelf && Input.GetKeyDown(KeyCode.Escape))
+            if (UpdateControllerMenuShortcut())
             {
-                if (_featureOptionPickerRoot != null)
-                {
-                    CloseFeatureOptionPicker();
-                }
-                else if (_itemPickerRoot != null)
-                {
-                    CloseItemPicker();
-                }
-                else
-                {
-                    HideMenu();
-                }
+                return;
+            }
 
+            bool controllerClose =
+                GK2MenuInputSettings.IsControllerShortcutEnabled &&
+                Input.GetKeyDown(
+                    KeyCode.JoystickButton1);
+
+            if (_menuRoot.activeSelf &&
+                (Input.GetKeyDown(KeyCode.Escape) ||
+                 controllerClose))
+            {
+                HandleCloseRequest();
                 return;
             }
 
@@ -356,6 +370,77 @@ namespace GK2Plus.Framework.UI
                 UpdateSpawnQuantityFromInput();
                 UpdateItemPickerSearch();
                 UpdateFeatureOptionPickerSearch();
+            }
+        }
+
+        private bool UpdateControllerMenuShortcut()
+        {
+            if (!GK2MenuInputSettings.IsControllerShortcutEnabled)
+            {
+                _controllerChordStartedAt =
+                    -1f;
+                _controllerChordLatched =
+                    false;
+                return false;
+            }
+
+            bool chordHeld =
+                Input.GetKey(
+                    KeyCode.JoystickButton8) &&
+                Input.GetKey(
+                    KeyCode.JoystickButton9);
+
+            if (!chordHeld)
+            {
+                _controllerChordStartedAt =
+                    -1f;
+                _controllerChordLatched =
+                    false;
+                return false;
+            }
+
+            if (_controllerChordLatched)
+            {
+                return false;
+            }
+
+            if (_controllerChordStartedAt < 0f)
+            {
+                _controllerChordStartedAt =
+                    Time.unscaledTime;
+                return false;
+            }
+
+            if (Time.unscaledTime -
+                _controllerChordStartedAt <
+                GK2MenuInputSettings.ControllerHoldSeconds)
+            {
+                return false;
+            }
+
+            _controllerChordLatched =
+                true;
+
+            _logger?.LogInfo(
+                "GK2+ controller L3 + R3 hold detected; toggling mod menu.");
+
+            ToggleMenu();
+            return true;
+        }
+
+        private void HandleCloseRequest()
+        {
+            if (_featureOptionPickerRoot != null)
+            {
+                CloseFeatureOptionPicker();
+            }
+            else if (_itemPickerRoot != null)
+            {
+                CloseItemPicker();
+            }
+            else
+            {
+                HideMenu();
             }
         }
 
@@ -573,33 +658,35 @@ namespace GK2Plus.Framework.UI
                 "Left"
             );
 
-            CreateBodyText(
-                bodyTemplate,
-                window.transform,
-                "HeaderF2Hint",
-                "F2 Toggle",
-                new Vector2(1f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(-94f, -17f),
-                new Vector2(58f, 14f),
-                8f,
-                "Center"
-            );
+            _headerToggleHint =
+                CreateBodyText(
+                    bodyTemplate,
+                    window.transform,
+                    "HeaderToggleHint",
+                    GK2MenuInputSettings.GetToggleHint(),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(-112f, -17f),
+                    new Vector2(94f, 14f),
+                    7.5f,
+                    "Center"
+                );
 
-            CreateBodyText(
-                bodyTemplate,
-                window.transform,
-                "HeaderEscHint",
-                "ESC Close",
-                new Vector2(1f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(-18f, -17f),
-                new Vector2(62f, 14f),
-                8f,
-                "Center"
-            );
+            _headerCloseHint =
+                CreateBodyText(
+                    bodyTemplate,
+                    window.transform,
+                    "HeaderCloseHint",
+                    GK2MenuInputSettings.GetCloseHint(),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(-18f, -17f),
+                    new Vector2(82f, 14f),
+                    7.5f,
+                    "Center"
+                );
 
             float gap =
                 GK2UiMetrics.Menu.TabGap;
@@ -3884,8 +3971,36 @@ Button close = closeButton.GetComponent<Button>();
                 _pageTitle != null &&
                 _pageText != null)
             {
+                RefreshInputHints();
                 SetActiveTab(_activeTab);
             }
+        }
+
+        private void RefreshInputHints()
+        {
+            SetText(
+                _headerToggleHint,
+                GK2MenuInputSettings.GetToggleHint());
+
+            SetText(
+                _headerCloseHint,
+                GK2MenuInputSettings.GetCloseHint());
+        }
+
+        private void FocusActiveTabForController()
+        {
+            if (!GK2MenuInputSettings.IsControllerShortcutEnabled ||
+                EventSystem.current == null ||
+                !_tabButtons.TryGetValue(
+                    _activeTab,
+                    out GameObject tabButton) ||
+                tabButton == null)
+            {
+                return;
+            }
+
+            EventSystem.current.SetSelectedGameObject(
+                tabButton);
         }
 
         public void ToggleMenu()
@@ -3902,7 +4017,9 @@ Button close = closeButton.GetComponent<Button>();
             if (show)
             {
                 _menuRoot.transform.SetAsLastSibling();
+                RefreshInputHints();
                 SetActiveTab(_activeTab);
+                FocusActiveTabForController();
             }
 
             _logger?.LogInfo(
@@ -3919,7 +4036,9 @@ Button close = closeButton.GetComponent<Button>();
 
             _menuRoot.SetActive(true);
             _menuRoot.transform.SetAsLastSibling();
+            RefreshInputHints();
             SetActiveTab(_activeTab);
+            FocusActiveTabForController();
         }
 
         public void HideMenu()
@@ -3977,6 +4096,8 @@ Button close = closeButton.GetComponent<Button>();
             _pageTitle = null;
             _pageText = null;
             _featureSettingsNote = null;
+            _headerToggleHint = null;
+            _headerCloseHint = null;
             _tabBodyDecor.Clear();
             _featureOptionPickerRoot = null;
             _activeFeatureOptionPickerControl = null;
