@@ -41,6 +41,7 @@ namespace GK2Plus.Framework.UI
         private float _controllerChordStartedAt =
             -1f;
         private bool _controllerChordLatched;
+        private GameObject _previousSelectedObject;
 
         private readonly Dictionary<string, List<GameObject>> _tabBodyDecor =
             new Dictionary<string, List<GameObject>>(
@@ -4018,15 +4019,16 @@ Button close = closeButton.GetComponent<Button>();
                 return;
             }
 
-            bool show = !_menuRoot.activeSelf;
-            _menuRoot.SetActive(show);
+            bool show =
+                !_menuRoot.activeSelf;
 
             if (show)
             {
-                _menuRoot.transform.SetAsLastSibling();
-                RefreshInputHints();
-                SetActiveTab(_activeTab);
-                FocusActiveTabForController();
+                ShowMenu();
+            }
+            else
+            {
+                HideMenu();
             }
 
             _logger?.LogInfo(
@@ -4039,6 +4041,13 @@ Button close = closeButton.GetComponent<Button>();
             if (!_built || _menuRoot == null)
             {
                 return;
+            }
+
+            if (!_menuRoot.activeSelf)
+            {
+                _previousSelectedObject =
+                    EventSystem.current?
+                        .currentSelectedGameObject;
             }
 
             _menuRoot.SetActive(true);
@@ -4057,6 +4066,21 @@ Button close = closeButton.GetComponent<Button>();
             {
                 _menuRoot.SetActive(false);
             }
+
+            if (EventSystem.current != null)
+            {
+                GameObject restore =
+                    _previousSelectedObject;
+
+                EventSystem.current.SetSelectedGameObject(
+                    restore != null &&
+                    restore.activeInHierarchy
+                        ? restore
+                        : null);
+            }
+
+            _previousSelectedObject =
+                null;
         }
 
         public void ShutdownController()
@@ -4105,6 +4129,7 @@ Button close = closeButton.GetComponent<Button>();
             _featureSettingsNote = null;
             _headerToggleHint = null;
             _headerCloseHint = null;
+            _previousSelectedObject = null;
             _tabBodyDecor.Clear();
             _featureOptionPickerRoot = null;
             _activeFeatureOptionPickerControl = null;
