@@ -31,8 +31,11 @@ GK2+ already provides the framework needed to build the roadmap below:
 - ✅ Shared Storage with Current Zone / Global scope and independent access/use/crafting capabilities
 - ✅ Bigger Item Stacks with configurable multiplier
 - ✅ Spawn Item cheat
-- 🧪 Configurable GK2+ menu hotkey
-- 🧪 Continuous Planting
+- ✅ Sprinting
+- ✅ Unified Tracker for quests, crafts/builds, and item targets
+- ✅ RPG Quest Journal
+- ✅ Configurable GK2+ menu hotkey and controller / Steam Deck shortcut
+- ✅ Continuous Planting
 
 ---
 
@@ -149,7 +152,7 @@ Because GK2 1.006 changed parts of craft completion and worker/zombie pickup han
 
 # Movement
 
-## 🎯 Sprinting
+## ✅ Sprinting
 
 Add a configurable sprint action that increases normal walking speed while a button is held.
 
@@ -167,9 +170,9 @@ The binding should use the same conflict-aware keybinding system being developed
 
 # Planner / Tracking / Notes
 
-## 🎯 Pinning System
+## 🧪 Pinning System
 
-Provide one unified player-facing pinboard for several types of information.
+GK2+ 2.0 ships the Unified Tracker foundation for quests, crafts/builds, and item quantity targets. The broader pinboard concept remains in development for custom notes, shopping lists, and reminders.
 
 Planned pin types:
 

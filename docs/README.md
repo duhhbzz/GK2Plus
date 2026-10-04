@@ -11,6 +11,7 @@ If you are contributing manually or with an AI coding assistant, start here inst
 - [Contributing](../CONTRIBUTING.md) — architecture, coding, compatibility, testing, and contribution rules.
 - [Governance](GOVERNANCE.md) — maintainer/contributor boundaries, merge authority, and release ownership.
 - [Configuration](CONFIGURATION.md) — configuration source-of-truth and UI/config expectations.
+- [UI Framework](UI-FRAMEWORK.md) — native GK2 visual primitives, menu layout contract, and rules for new feature UI.
 - [Performance](PERFORMANCE.md) — CPU, GPU, RAM, GC, disk I/O, polling, lifecycle, and cleanup requirements.
 - [Save Safety](SAVE_SAFETY.md) — persistent mutation, checkpoint, backup, and cheat-integrity rules.
 - [Release Checklist](RELEASE_CHECKLIST.md) — feature approval and release validation gates.
@@ -41,6 +42,7 @@ AI tools should be given, at minimum:
 - `docs/FEATURES.md`
 - `docs/ROADMAP.md`
 - `docs/GOVERNANCE.md`
+- `docs/UI-FRAMEWORK.md` when adding or changing player-facing UI
 - the relevant configuration/safety/performance document for the feature being changed
 - the current source files being modified
 

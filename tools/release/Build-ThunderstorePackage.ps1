@@ -25,7 +25,7 @@ if ([string]::IsNullOrWhiteSpace($gameVersion)) {
 
 if (-not $SkipBuild) {
     Write-Host "Building GK2+ v$version (Release)..."
-    dotnet build $projectPath -c Release
+    dotnet build $projectPath -c Release --warnaserror
 
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet build failed with exit code $LASTEXITCODE"
@@ -60,7 +60,7 @@ $manifest = [ordered]@{
     name = 'GK2Plus'
     version_number = $version
     website_url = 'https://github.com/duhhbzz/GK2Plus'
-    description = "Modular Graveyard Keeper 2 QoL suite with Shared Storage, inventory improvements, cheats, save safety, and native-style UI. Tested with GK2 v$gameVersion."
+    description = "Modular GK2 QoL suite with native-style menu, RPG Quest Journal, Unified Tracker, Sprinting, Continuous Planting, Shared Storage, cheats, and save safety. Tested with GK2 v$gameVersion."
     dependencies = @(
         'BepInEx-BepInExPack-5.4.2305'
     )

@@ -15,7 +15,11 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 | General / UI | [GK2+ Mod Menu](#gk2-mod-menu) |
 | General | [Manual Save](#manual-save) |
 | General | [Last Save Status](#last-save-status) |
+| General / UI | [RPG Quest Journal](#rpg-quest-journal) |
+| Farming | [Continuous Planting](#continuous-planting) |
+| Movement | [Sprinting](#sprinting) |
 | Crafting | [Backwards Compatible Extensions](#backwards-compatible-extensions) |
+| Tracker | [Unified Tracker](#unified-tracker) |
 | Inventory | [Bigger Item Stacks](#bigger-item-stacks) |
 | Inventory | [Shared Storage](#shared-storage) |
 | Cheats | [Functional Cheats](#functional-cheats) |
@@ -27,13 +31,15 @@ The README and mod-platform landing pages intentionally stay concise. Detailed f
 
 ## GK2+ Mod Menu
 
-Press **F2** to open or close GK2+. **Esc** closes it.
+The default keyboard shortcut is **F2** to open or close GK2+. **Esc** closes it.
+
+The keyboard shortcut is configurable from the **General** tab. Controller / Steam Deck access is enabled by default: hold **L3 + R3** briefly to open or close GK2+, and **B** closes an open GK2+ menu.
 
 The menu persists between the main menu and gameplay and organizes features into categories such as Inventory, Farming, Cheats, and More.
 
 Where practical, features are independently configurable so players can disable an overlapping GK2+ feature without uninstalling the entire suite.
 
-Settings are ordered intentionally within each tab. Child options stay visually attached beneath their parent feature, and parent-disabled options remain visible but greyed/non-interactive so their saved values are still understandable.
+Settings are ordered intentionally within each tab. Parent features with child options use one expandable native panel; collapsing the panel is presentation-only and preserves the saved child values.
 
 ---
 
@@ -60,6 +66,72 @@ Last saved: 10 minutes ago (4:26 AM).
 ~~~
 
 The value comes from native save metadata and updates after a successful save.
+
+---
+
+## RPG Quest Journal
+
+**Category:** General / UI  
+**Setting mode:** Live enable/disable from the GK2+ menu.
+
+RPG Quest Journal replaces the native **Quests** tab's branching quest-tree
+visualization with a traditional RPG/MMO-style journal while leaving GK2's
+quest progression and save data untouched.
+
+The native Character window and its normal top tabs remain in place. Selecting
+**Quests** mounts the GK2+ journal into the same page area.
+
+The initial journal provides:
+
+- **Active** and **Completed** filters;
+- a scrollable quest list using native quest icons;
+- a selected-quest details pane with status and localized description;
+- native-style item requirement cells for quest objectives;
+- direct integration with the Unified Tracker, including per-quest tracking and a quest-only **Unpin All** action.
+
+The replacement is presentation-only. GK2 remains authoritative for quest
+state, completion, localization, requirements, rewards, and persistence.
+
+Disabling RPG Quest Journal restores the native quest tree. The replacement
+also falls back to the native tree automatically if the journal cannot
+initialize against the current game build.
+
+### Validation required
+
+- switch repeatedly between Character / Quests / Map and verify page lifecycle;
+- Active and Completed list filtering;
+- long quest titles/descriptions and scrolling;
+- quests with zero, one, and several item requirements;
+- selecting quests and preserving a sensible current selection;
+- tracking/untracking an active quest from the journal;
+- controller/gamepad navigation through filters, NPC groups, quest rows, and detail actions;
+- disable the feature and confirm the vanilla quest tree returns.
+
+---
+
+## Continuous Planting
+
+**Category:** Farming  
+**Setting mode:** Main-menu enable/disable; read-only status during gameplay.
+
+Continuous Planting keeps the currently selected seed active after a successful planting action while more of the same seed remains in the player's inventory.
+
+Vanilla cancellation still wins: pressing the normal Action/Menu/Tab cancellation controls clears the selected seed and GK2+ does not restore it.
+
+The feature only restores the exact seed id that was successfully planted and stops when the player's remaining count reaches zero.
+
+---
+
+## Sprinting
+
+**Category:** Movement  
+**Setting mode:** Main-menu enable/disable, sprint-key selection, and speed multiplier; read-only status during gameplay.
+
+Sprinting temporarily increases the player's normal free-movement speed while the configured key is held.
+
+Default sprint key: **Left Shift**. Available in-menu keys include left/right Shift, left/right Ctrl, and Caps Lock. Speed presets range from **1.25x to 3x**.
+
+The implementation only wraps `FreePlayerState.FixedUpdate`, temporarily scaling the native `PlayerPhysicalBody.SpeedMultiplier` for that free-movement call and restoring the exact previous value afterward. This avoids intentionally changing planting, combat, scripted movement, ladders, knockback, or other non-free player states.
 
 ---
 
@@ -96,6 +168,59 @@ The implementation is based on GK2's native `CraftComponent.IsCraftAllowedByAtta
 - Fine Tool Rack recipes continue to require the Fine Tool Rack normally;
 - disabling the option restores vanilla Tool Rack requirements;
 - unrelated extensions and workbenches are unaffected.
+
+---
+
+## Unified Tracker
+
+**Category:** Tracker  
+**Setting mode:** Pin management while a save is loaded; overall feature enable/disable from the main menu.
+
+The Unified Tracker provides one compact HUD for **active quests**, **known crafts/recipes**, and **custom item quantity targets**.
+
+### Native tracking + Tracker tab
+
+The primary tracking flow now lives in GK2's normal gameplay UI:
+
+- **right-click an active quest in the quest tree** to track or untrack it;
+- **right-click a supported craft/recipe row** to track or untrack it;
+- **right-click supported construction/town-building rows** to add or remove that plan;
+- optionally enable **Auto-track New Quests** so a quest is pinned when GK2 starts it;
+- optionally enable **Remove Completed Quests** so completed quest pins clean themselves up.
+
+The Tracker tab remains the management/fallback UI. While a save is loaded it exposes searchable selectors for active quests, known crafts/recipes, normal item definitions, and common target quantities for custom item pins.
+
+The tracker supports up to **6 total pins across Quests, Crafts, and Items** so the combined HUD remains compact and does not grow into a full-screen sidebar. It stores only GK2+ tracker metadata; it does not alter quest, crafting, building, or inventory state.
+
+### HUD behavior
+
+The compact HUD refreshes its displayed values four times per second rather than doing expensive game-data discovery every frame. The original IMGUI prototype has been replaced with a persistent Unity/TMP panel using GK2's loaded fonts, frame/background sprites, and rich-text/sprite rendering.
+
+- **Quest pins** show the localized quest name, current description/objective, and item requirements when the quest exposes them.
+- **Craft pins** show the localized/result name and the player's current count versus each recipe requirement.
+- **Item pins** show the player's current inventory count against the configured target and mark the row complete when the target is reached.
+
+Pins remain until the player removes or clears them; completing a quest or reaching an item target does not silently delete the pin.
+
+### Current scope
+
+Initial material/item counts use the **player inventory**. Shared Storage-aware tracker scopes can be added after the core tracker UX is validated.
+
+The initial HUD is intentionally a lightweight vertical slice so quest/craft/item data behavior can be runtime-tested before final native-style presentation polish.
+
+### Validation required
+
+- right-click active quest nodes to track/untrack;
+- enable Auto-track New Quests and start a new quest;
+- complete a tracked quest with Remove Completed Quests enabled;
+- right-click supported craft/build rows to track/untrack;
+- search and pin a known craft;
+- search and pin several normal items with different target quantities;
+- verify counts update as items enter/leave player inventory;
+- verify quest completion/status changes update without mutating the quest;
+- save/reload and confirm tracker pins persist through GK2+ configuration;
+- confirm Clear Pins and HUD toggle behavior;
+- check common resolutions for clipping/overlap before final UI polish.
 
 ---
 

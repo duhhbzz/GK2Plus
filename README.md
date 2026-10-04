@@ -23,11 +23,11 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.1.5-blue">
-  <img alt="Tested GK2 version" src="https://img.shields.io/badge/GK2%20tested-1.006-success">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-blue">
+  <img alt="Tested GK2 version" src="https://img.shields.io/badge/GK2%20tested-1.008-success">
   <img alt="BepInEx" src="https://img.shields.io/badge/BepInEx-5.4.23.5-purple">
   <img alt=".NET Standard" src="https://img.shields.io/badge/.NET%20Standard-2.1-blueviolet">
-  <img alt="Status" src="https://img.shields.io/badge/status-shared%20storage%20update-brightgreen">
+  <img alt="Status" src="https://img.shields.io/badge/status-2.0%20release-brightgreen">
 </p>
 
 ---
@@ -38,9 +38,9 @@
 
 The project combines quality-of-life improvements, gameplay tweaks, management tools, and optional cheats behind one modular framework. The goal is to reduce the need for many tiny overlapping mods while still allowing players to disable individual GK2+ features when another mod provides an implementation they prefer.
 
-**v0.1.5 expands GK2+ with Shared Storage, configurable stack-size scaling, Spawn Item, and substantial menu UX improvements while retaining the Manual Save, cheat-safety, and achievement-integrity foundation from v0.1.0.**
+**v2.0.0 expands GK2+ with the Unified Tracker, RPG Quest Journal, Continuous Planting, Sprinting, Backwards Compatible Extensions, and a reusable native-style UI framework while retaining the storage, stack-size, cheat, save-safety, and manual-save foundation from earlier releases.**
 
-**Compatibility:** GK2+ v0.1.5 has been runtime-tested against **Graveyard Keeper 2 v1.006**. If the game updates, GK2+ reports the running game version as untested but continues loading so minor game patches do not create an unnecessary hard lock.
+**Compatibility:** GK2+ v2.0.0 has been runtime-tested against **Graveyard Keeper 2 v1.008**. If the game updates, GK2+ reports the running game version as untested but continues loading so minor game patches do not create an unnecessary hard lock.
 
 ### Design goals
 
@@ -70,12 +70,16 @@ Release-specific additions and fixes are tracked separately in the [Changelog](C
 
 GK2+ uses a persistent UI controller attached to the game's persistent GUI root.
 
-Press:
+Default controls:
 
 ~~~text
-F2  Open / close GK2+
-ESC Close GK2+
+F2            Open / close GK2+ (configurable)
+ESC           Close GK2+
+L3 + R3 hold  Open / close GK2+ on controller / Steam Deck
+B             Close GK2+ on controller
 ~~~
+
+The keyboard shortcut and controller shortcut can be changed from the **General** tab.
 
 The menu works from both:
 
@@ -88,6 +92,8 @@ Current top-level tabs:
 - Inventory
 - Crafting
 - Farming
+- Movement
+- Tracker
 - Zombies
 - Cheats
 - More
@@ -265,7 +271,7 @@ GK2+
 └── Misc
 ~~~
 
-Near-term planned work includes continuous planting, storage/crafting improvements, zombie management, quest tracking, and additional carefully gated convenience/cheat tools.
+Near-term planned work focuses on deeper inventory/crafting automation, zombie management, world/building quality-of-life, reminders/wiki tooling, and additional carefully gated convenience/cheat tools.
 
 See the maintained **[Feature Roadmap](docs/ROADMAP.md)** for high-confidence planned features, intended behavior, and suggested development waves.
 

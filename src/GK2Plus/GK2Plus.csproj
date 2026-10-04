@@ -14,6 +14,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Root files are the single sources of truth for mod + tested game versions. -->
     <GK2PlusVersion>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\VERSION').Trim())</GK2PlusVersion>
@@ -25,6 +26,15 @@
     <InformationalVersion>$(GK2PlusVersion)</InformationalVersion>
 
     <DeployDir>$(GameDir)\BepInEx\plugins\GK2Plus</DeployDir>
+
+    <!--
+      GK2's Unity assemblies reference System.IO.Compression 4.2.0 while the
+      netstandard2.1 reference pack exposes 4.1.3. MSBuild resolves the project
+      against the netstandard reference assembly and reports MSB3277 even though
+      the game provides the runtime dependency. Keep this known host-framework
+      mismatch visible as a message without treating it as a project warning.
+    -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
   </PropertyGroup>
 
   <ItemGroup>
@@ -73,11 +83,26 @@
       <Private>false</Private>
     </Reference>
 
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
 
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(GameDir)\GraveyardKeeper2_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\UI\tracker_pin.png"
+                      LogicalName="GK2Plus.Assets.UI.tracker_pin.png" />
   </ItemGroup>
 
   <!-- Generate compile-time mod + tested game version constants. -->

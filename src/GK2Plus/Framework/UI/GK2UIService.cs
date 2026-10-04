@@ -26,6 +26,7 @@ namespace GK2Plus.Framework.UI
 
         private GK2SpawnItemControl _spawnItemControl;
         private ModMenuController _modMenuController;
+        private GK2TrackerHudController _trackerHudController;
 
         public GK2UIService(ManualLogSource logger)
             : base(logger)
@@ -166,6 +167,18 @@ namespace GK2Plus.Framework.UI
             }
         }
 
+        public void RegisterTrackerHud(
+            Func<bool> visibleProvider,
+            Func<string> textProvider)
+        {
+            _trackerHudController?.ShutdownController();
+            _trackerHudController =
+                GK2TrackerHudController.Create(
+                    Logger,
+                    visibleProvider,
+                    textProvider);
+        }
+
         public void RefreshMenu()
         {
             _modMenuController?.RefreshActiveTab();
@@ -194,6 +207,14 @@ namespace GK2Plus.Framework.UI
             _featureToggleControls.Clear();
             _featureOptionControls.Clear();
             _spawnItemControl = null;
+
+            if (_trackerHudController != null)
+            {
+                _trackerHudController.ShutdownController();
+                _trackerHudController = null;
+            }
+
+            GK2UiTheme.Reset();
 
             base.Shutdown();
         }

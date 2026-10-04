@@ -25,7 +25,8 @@ Start with:
 7. [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — performance/resource requirements.
 8. [docs/SAVE_SAFETY.md](docs/SAVE_SAFETY.md) — persistent mutation and backup rules.
 9. [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) — feature approval and release gates.
-10. [docs/README.md](docs/README.md) — documentation index and source-of-truth guidance.
+10. [docs/UI-FRAMEWORK.md](docs/UI-FRAMEWORK.md) — native UI primitives and the required F2 feature-page visual contract.
+11. [docs/README.md](docs/README.md) — documentation index and source-of-truth guidance.
 
 Do not treat the roadmap as an implementation specification. It records intended outcomes. The exact game integration must still be confirmed against the current Graveyard Keeper 2 build.
 
@@ -96,6 +97,25 @@ BepInEx `ConfigEntry` values are the normal settings source of truth.
 Do not create an independent settings database just for the in-game UI unless there is a documented technical reason.
 
 Follow [docs/CONFIGURATION.md](docs/CONFIGURATION.md), including deterministic menu order, parent/child grouping, and main-menu-only/live-safe/restart-required behavior.
+
+## F2 Menu UI Rules
+
+When a feature appears in the GK2+ F2 menu, follow
+[docs/UI-FRAMEWORK.md](docs/UI-FRAMEWORK.md#feature-page-visual-contract).
+
+In particular:
+
+- use the existing native-style page shell and section headers;
+- do not create a section for every button/control;
+- a parent ON/OFF feature owns its child options;
+- parent + children share one expandable dark native panel;
+- clicking the parent label expands/collapses; clicking ON/OFF changes state;
+- collapse state is presentation-only;
+- preserve child configuration when a parent feature is disabled;
+- keep descriptions short and inside the parent row;
+- use native red controls for concise actions/values;
+- use `GK2UiTheme`, `GK2UiMetrics`, factories/builders, and
+  `GK2UIService` instead of one-off visual code.
 
 ## Persistent State / Cheats
 
