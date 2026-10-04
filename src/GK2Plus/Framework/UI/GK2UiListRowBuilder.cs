@@ -89,7 +89,7 @@ namespace GK2Plus.Framework.UI
                     labelObjectName,
                     theme?.BodyTextTemplate,
                     expandable
-                        ? $"{(expanded ? "−" : "+")}  {label}"
+                        ? $"{(expanded ? "-" : "+")}  {label}"
                         : label,
                     child
                         ? 9f
@@ -168,6 +168,11 @@ namespace GK2Plus.Framework.UI
 
                 Color normal =
                     labelText.color;
+
+                // Let the Button state own the visible tint so the normal
+                // accent is not multiplied by itself by Unity's ColorTint.
+                labelText.color =
+                    Color.white;
 
                 expandColors.normalColor =
                     normal;
