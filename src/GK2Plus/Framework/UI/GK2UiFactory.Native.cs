@@ -232,7 +232,11 @@ namespace GK2Plus.Framework.UI
                     0.784f,
                     1f);
             colors.selectedColor =
-                Color.white;
+                new Color(
+                    0.961f,
+                    0.961f,
+                    0.961f,
+                    1f);
             colors.disabledColor =
                 new Color(
                     0.784f,
@@ -315,31 +319,113 @@ namespace GK2Plus.Framework.UI
             selection.rectTransform.offsetMax =
                 Vector2.zero;
 
-            TextMeshProUGUI label =
-                CreateText(
-                    root.transform,
-                    "Label",
-                    theme?.ButtonTextTemplate ??
-                    theme?.BodyTextTemplate,
-                    text,
-                    11.5f,
-                    TextAlignmentOptions.Center,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero);
+            TextMeshProUGUI label;
 
-            label.rectTransform.offsetMin =
-                new Vector2(6f, 0f);
-            label.rectTransform.offsetMax =
-                new Vector2(-6f, 0f);
-            label.enableWordWrapping =
-                false;
-            label.overflowMode =
-                TextOverflowModes.Overflow;
-            label.color =
-                Color.white;
+            if (theme?.MainWindowTabTextTemplate != null)
+            {
+                GameObject labelObject =
+                    Object.Instantiate(
+                        theme.MainWindowTabTextTemplate.gameObject,
+                        root.transform,
+                        false);
+
+                labelObject.name =
+                    "Label";
+                labelObject.SetActive(
+                    true);
+
+                foreach (Component component in
+                         labelObject.GetComponents<Component>())
+                {
+                    if (component == null)
+                    {
+                        continue;
+                    }
+
+                    string typeName =
+                        component.GetType().Name;
+
+                    if (typeName == "LocalizedLabel" ||
+                        typeName == "LocalizedVerticalOffset" ||
+                        typeName == "LanguageRtlLabelState")
+                    {
+                        Object.Destroy(
+                            component);
+                    }
+                }
+
+                label =
+                    labelObject.GetComponent<TextMeshProUGUI>();
+
+                RectTransform labelRect =
+                    label.rectTransform;
+
+                labelRect.anchorMin =
+                    Vector2.zero;
+                labelRect.anchorMax =
+                    Vector2.one;
+                labelRect.pivot =
+                    new Vector2(0.5f, 0.5f);
+                labelRect.anchoredPosition =
+                    Vector2.zero;
+                labelRect.offsetMin =
+                    new Vector2(13f, 0f);
+                labelRect.offsetMax =
+                    new Vector2(-13f, 0f);
+                labelRect.localScale =
+                    Vector3.one;
+                labelRect.localRotation =
+                    Quaternion.identity;
+
+                label.text =
+                    text ?? string.Empty;
+                label.fontSize =
+                    16f;
+                label.fontSizeMin =
+                    16f;
+                label.fontSizeMax =
+                    16f;
+                label.enableAutoSizing =
+                    false;
+                label.enableWordWrapping =
+                    false;
+                label.overflowMode =
+                    TextOverflowModes.Overflow;
+                label.alignment =
+                    TextAlignmentOptions.Center;
+                label.color =
+                    Color.white;
+                label.raycastTarget =
+                    false;
+            }
+            else
+            {
+                label =
+                    CreateText(
+                        root.transform,
+                        "Label",
+                        theme?.ButtonTextTemplate ??
+                        theme?.BodyTextTemplate,
+                        text,
+                        16f,
+                        TextAlignmentOptions.Center,
+                        Vector2.zero,
+                        Vector2.one,
+                        new Vector2(0.5f, 0.5f),
+                        Vector2.zero,
+                        Vector2.zero);
+
+                label.rectTransform.offsetMin =
+                    new Vector2(13f, 0f);
+                label.rectTransform.offsetMax =
+                    new Vector2(-13f, 0f);
+                label.enableWordWrapping =
+                    false;
+                label.overflowMode =
+                    TextOverflowModes.Overflow;
+                label.color =
+                    Color.white;
+            }
 
             Button button =
                 root.AddComponent<Button>();
@@ -391,6 +477,7 @@ namespace GK2Plus.Framework.UI
             float minimum = 42f)
         {
             TextMeshProUGUI template =
+                theme?.MainWindowTabTextTemplate ??
                 theme?.ButtonTextTemplate ??
                 theme?.BodyTextTemplate;
 
@@ -398,33 +485,18 @@ namespace GK2Plus.Framework.UI
             {
                 return Mathf.Max(
                     minimum,
-                    26f + ((text?.Length ?? 0) * 7f));
+                    26f + ((text?.Length ?? 0) * 8f));
             }
 
-            float oldSize =
-                template.fontSize;
+            Vector2 preferred =
+                template.GetPreferredValues(
+                    text ?? string.Empty);
 
-            try
-            {
-                template.fontSize =
-                    11.5f;
-
-                Vector2 preferred =
-                    template.GetPreferredValues(
-                        text ?? string.Empty);
-
-                // We have nine tabs in the mod menu, so preserve the native
-                // bold look while tightening the horizontal padding enough to
-                // keep every label on one line.
-                return Mathf.Max(
-                    minimum,
-                    preferred.x + 12f);
-            }
-            finally
-            {
-                template.fontSize =
-                    oldSize;
-            }
+            // Native CharPageTabButton content has 13 units of left/right
+            // padding around its 16pt small_font_bold label.
+            return Mathf.Max(
+                minimum,
+                preferred.x + 26f);
         }
 
         public static void SetNativeWindowTabSelected(
