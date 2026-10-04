@@ -172,28 +172,117 @@ namespace GK2Plus.Framework.UI
             backLayout.childForceExpandHeight =
                 true;
 
-            TextMeshProUGUI label =
-                CreateText(
-                    back.transform,
-                    "Label",
-                    theme?.ButtonTextTemplate,
-                    text,
-                    GK2UiMetrics.Native.RedButtonFontSize *
-                    nativeScale,
-                    TextAlignmentOptions.Center,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero);
+            TextMeshProUGUI label;
 
-            // Captured from Settings on UIGamePauseWindow.
-            label.color =
-                new Color(
-                    1f,
-                    0.663f,
-                    0.333f,
-                    1f);
+            if (theme?.ButtonTextTemplate != null)
+            {
+                GameObject labelObject =
+                    Object.Instantiate(
+                        theme.ButtonTextTemplate.gameObject,
+                        back.transform,
+                        false);
+
+                labelObject.name =
+                    "Label";
+                labelObject.SetActive(
+                    true);
+
+                foreach (Component component in
+                         labelObject.GetComponents<Component>())
+                {
+                    if (component == null)
+                    {
+                        continue;
+                    }
+
+                    string typeName =
+                        component.GetType().Name;
+
+                    if (typeName == "LocalizedLabel" ||
+                        typeName == "LocalizedVerticalOffset" ||
+                        typeName == "LanguageRtlLabelState")
+                    {
+                        Object.Destroy(
+                            component);
+                    }
+                }
+
+                label =
+                    labelObject.GetComponent<TextMeshProUGUI>();
+
+                RectTransform labelRect =
+                    label.rectTransform;
+
+                labelRect.anchorMin =
+                    Vector2.zero;
+                labelRect.anchorMax =
+                    Vector2.one;
+                labelRect.pivot =
+                    new Vector2(0.5f, 0.5f);
+                labelRect.anchoredPosition =
+                    Vector2.zero;
+                labelRect.offsetMin =
+                    Vector2.zero;
+                labelRect.offsetMax =
+                    Vector2.zero;
+                labelRect.localScale =
+                    Vector3.one;
+                labelRect.localRotation =
+                    Quaternion.identity;
+
+                float fontSize =
+                    GK2UiMetrics.Native.RedButtonFontSize *
+                    nativeScale;
+
+                label.text =
+                    text ?? string.Empty;
+                label.fontSize =
+                    fontSize;
+                label.fontSizeMin =
+                    fontSize;
+                label.fontSizeMax =
+                    fontSize;
+                label.enableAutoSizing =
+                    false;
+                label.textWrappingMode =
+                    TextWrappingModes.NoWrap;
+                label.overflowMode =
+                    TextOverflowModes.Overflow;
+                label.alignment =
+                    TextAlignmentOptions.Center;
+                label.color =
+                    new Color(
+                        1f,
+                        0.663f,
+                        0.333f,
+                        1f);
+                label.raycastTarget =
+                    false;
+            }
+            else
+            {
+                label =
+                    CreateText(
+                        back.transform,
+                        "Label",
+                        null,
+                        text,
+                        GK2UiMetrics.Native.RedButtonFontSize *
+                        nativeScale,
+                        TextAlignmentOptions.Center,
+                        Vector2.zero,
+                        Vector2.one,
+                        new Vector2(0.5f, 0.5f),
+                        Vector2.zero,
+                        Vector2.zero);
+
+                label.color =
+                    new Color(
+                        1f,
+                        0.663f,
+                        0.333f,
+                        1f);
+            }
 
             Button button =
                 root.AddComponent<Button>();
@@ -232,11 +321,7 @@ namespace GK2Plus.Framework.UI
                     0.784f,
                     1f);
             colors.selectedColor =
-                new Color(
-                    0.961f,
-                    0.961f,
-                    0.961f,
-                    1f);
+                Color.white;
             colors.disabledColor =
                 new Color(
                     0.784f,
