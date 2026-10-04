@@ -10,6 +10,7 @@ namespace GK2Plus.Framework.UI
         public RectTransform Rect;
         public TextMeshProUGUI Label;
         public TextMeshProUGUI Subtitle;
+        public Button ExpandButton;
         public Button ActionButton;
     }
 
@@ -28,7 +29,9 @@ namespace GK2Plus.Framework.UI
             string buttonObjectName,
             string buttonText,
             bool child = false,
-            string subtitle = null)
+            string subtitle = null,
+            bool expandable = false,
+            bool expanded = true)
         {
             GameObject row =
                 GK2UiFactory.CreateRect(
@@ -85,7 +88,9 @@ namespace GK2Plus.Framework.UI
                     row.transform,
                     labelObjectName,
                     theme?.BodyTextTemplate,
-                    label,
+                    expandable
+                        ? $"{(expanded ? "−" : "+")}  {label}"
+                        : label,
                     child
                         ? 9f
                         : 10f,
@@ -145,6 +150,64 @@ namespace GK2Plus.Framework.UI
                         0.95f);
             }
 
+            Button expandButton =
+                null;
+
+            if (expandable)
+            {
+                expandButton =
+                    labelText.gameObject.AddComponent<Button>();
+
+                expandButton.targetGraphic =
+                    labelText;
+                expandButton.transition =
+                    Selectable.Transition.ColorTint;
+
+                ColorBlock expandColors =
+                    expandButton.colors;
+
+                Color normal =
+                    labelText.color;
+
+                expandColors.normalColor =
+                    normal;
+                expandColors.highlightedColor =
+                    new Color(
+                        1f,
+                        0.678f,
+                        0.227f,
+                        1f);
+                expandColors.pressedColor =
+                    new Color(
+                        1f,
+                        0.678f,
+                        0.227f,
+                        1f);
+                expandColors.selectedColor =
+                    normal;
+                expandColors.disabledColor =
+                    new Color(
+                        normal.r,
+                        normal.g,
+                        normal.b,
+                        0.5f);
+                expandColors.fadeDuration =
+                    0.05f;
+
+                expandButton.colors =
+                    expandColors;
+
+                labelText.raycastTarget =
+                    true;
+
+                Navigation expandNavigation =
+                    expandButton.navigation;
+                expandNavigation.mode =
+                    Navigation.Mode.Automatic;
+                expandButton.navigation =
+                    expandNavigation;
+            }
+
             Button action =
                 GK2UiFactory.CreateNativeRedButton(
                     row.transform,
@@ -176,6 +239,7 @@ namespace GK2Plus.Framework.UI
                 Rect = row.GetComponent<RectTransform>(),
                 Label = labelText,
                 Subtitle = subtitleText,
+                ExpandButton = expandButton,
                 ActionButton = action
             };
         }
