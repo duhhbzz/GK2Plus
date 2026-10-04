@@ -101,48 +101,58 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     windowSize);
 
-            GameObject backing =
-                GK2UiFactory.CreateImage(
-                    window.transform,
-                    "SolidBacking",
-                    null,
-                    Image.Type.Simple,
-                    Vector2.zero,
-                    Vector2.one,
-                    new Vector2(0.5f, 0.5f),
-                    Vector2.zero,
-                    Vector2.zero,
-                    theme?.PanelBackground ??
-                    new Color(0.055f, 0.060f, 0.073f, 0.97f));
+            // Native GK2 windows use comm-frame_bg_1 as a Simple image
+            // inset exactly 13 units inside comm-frame_1-border. Keep the
+            // old solid fill only as a graceful fallback if that sprite has
+            // not loaded yet.
+            if (theme?.WindowBackgroundSprite == null)
+            {
+                GameObject backing =
+                    GK2UiFactory.CreateImage(
+                        window.transform,
+                        "SolidBacking",
+                        null,
+                        Image.Type.Simple,
+                        Vector2.zero,
+                        Vector2.one,
+                        new Vector2(0.5f, 0.5f),
+                        Vector2.zero,
+                        Vector2.zero,
+                        theme?.PanelBackground ??
+                        new Color(0.055f, 0.060f, 0.073f, 0.97f));
 
-            RectTransform backingRect =
-                backing.GetComponent<RectTransform>();
+                RectTransform backingRect =
+                    backing.GetComponent<RectTransform>();
 
-            backingRect.offsetMin =
-                Vector2.zero;
-            backingRect.offsetMax =
-                Vector2.zero;
+                backingRect.offsetMin =
+                    Vector2.zero;
+                backingRect.offsetMax =
+                    Vector2.zero;
+            }
 
             GameObject background =
                 GK2UiFactory.CreateImage(
                     window.transform,
                     "Background",
                     theme?.WindowBackgroundSprite,
-                    Image.Type.Sliced,
+                    Image.Type.Simple,
                     Vector2.zero,
                     Vector2.one,
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
                     Vector2.zero,
-                    new Color(1f, 1f, 1f, 0.98f));
+                    Color.white);
 
             RectTransform backgroundRect =
                 background.GetComponent<RectTransform>();
 
+            float backInset =
+                GK2UiMetrics.Native.WindowBackInset;
+
             backgroundRect.offsetMin =
-                new Vector2(-3f, -3f);
+                new Vector2(backInset, backInset);
             backgroundRect.offsetMax =
-                new Vector2(3f, 3f);
+                new Vector2(-backInset, -backInset);
 
             GameObject frame =
                 GK2UiFactory.CreateImage(
