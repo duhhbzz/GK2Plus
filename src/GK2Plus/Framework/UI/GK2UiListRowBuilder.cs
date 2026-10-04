@@ -43,12 +43,22 @@ namespace GK2Plus.Framework.UI
             Image background =
                 row.AddComponent<Image>();
 
+            background.sprite =
+                theme?.ContentCellSprite;
+            background.type =
+                theme?.ContentCellSprite != null
+                    ? Image.Type.Sliced
+                    : Image.Type.Simple;
             background.color =
-                child
-                    ? (theme?.ChildRowBackground ??
-                       new Color(0.095f, 0.105f, 0.13f, 0.82f))
-                    : (theme?.RowBackground ??
-                       new Color(0.12f, 0.13f, 0.16f, 0.88f));
+                theme?.ContentCellSprite != null
+                    ? (child
+                        ? new Color(0.88f, 0.88f, 0.88f, 0.92f)
+                        : Color.white)
+                    : (child
+                        ? (theme?.ChildRowBackground ??
+                           new Color(0.095f, 0.105f, 0.13f, 0.82f))
+                        : (theme?.RowBackground ??
+                           new Color(0.12f, 0.13f, 0.16f, 0.88f)));
 
             background.raycastTarget =
                 false;
@@ -91,7 +101,7 @@ namespace GK2Plus.Framework.UI
                 new Color(1f, 0.82f, 0.45f, 1f);
 
             Button action =
-                GK2UiFactory.CreateButton(
+                GK2UiFactory.CreateNativeRedButton(
                     row.transform,
                     buttonObjectName,
                     theme,
@@ -99,9 +109,7 @@ namespace GK2Plus.Framework.UI
                     Vector2.zero,
                     new Vector2(
                         buttonWidth,
-                        GK2UiMetrics.Menu.ControlRowHeight - 2f),
-                    null,
-                    GK2UiButtonTone.Neutral);
+                        GK2UiMetrics.Menu.ControlRowHeight - 2f));
 
             RectTransform actionRect =
                 action.GetComponent<RectTransform>();
